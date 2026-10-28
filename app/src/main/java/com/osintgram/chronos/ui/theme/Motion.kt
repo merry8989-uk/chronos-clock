@@ -23,7 +23,6 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFeatureSettings
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
 
@@ -47,7 +46,7 @@ object Motion {
 
 /** Monospaced digits, so a running clock never shifts its own layout. */
 val ClockTextStyle = TextStyle(
-    fontFeatureSettings = FontFeatureSettings("tnum"),
+    fontFeatureSettings = "tnum",
     letterSpacing = 0.sp,
 )
 
