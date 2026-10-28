@@ -3,16 +3,43 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Clock face -->
+
+    <!-- Chronos logo: a three-hand clock face. Hour hand at 10, minute at 2,
+         second at 6, so the mark reads as a working clock at any size. -->
     <path
-        android:fillColor="#4C8DFF"
-        android:pathData="M54,26a28,28 0 1,0 0.01,0z M54,34a20,20 0 1,1 -0.01,0z" />
-    <!-- Hour hand -->
+        android:pathData="M24.0,54.0 a30.0,30.0 0 1,0 60.0,0 a30.0,30.0 0 1,0 -60.0,0"
+        android:strokeColor="#4C8DFF"
+        android:strokeWidth="3.6"
+        android:fillColor="#00000000" />
+
     <path
-        android:fillColor="#4C8DFF"
-        android:pathData="M51,44h6v14h-6z" />
-    <!-- Minute hand -->
+        android:pathData="M54.00,33.00 L54.00,29.00 M64.50,35.81 L66.50,32.35 M72.19,43.50 L75.65,41.50 M75.00,54.00 L79.00,54.00 M72.19,64.50 L75.65,66.50 M64.50,72.19 L66.50,75.65 M54.00,75.00 L54.00,79.00 M43.50,72.19 L41.50,75.65 M35.81,64.50 L32.35,66.50 M33.00,54.00 L29.00,54.00 M35.81,43.50 L32.35,41.50 M43.50,35.81 L41.50,32.35"
+        android:strokeColor="#9AA3B2"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+
     <path
-        android:fillColor="#4C8DFF"
-        android:pathData="M53,54h12v5h-12z" />
+        android:pathData="M55.15,52.01 L44.32,45.76 L42.02,49.74 L52.85,55.99 Z"
+        android:fillColor="#E9EDF4" />
+
+    <path
+        android:pathData="M54.85,55.47 L70.87,46.22 L69.17,43.28 L53.15,52.53 Z"
+        android:fillColor="#E9EDF4" />
+
+    <path
+        android:pathData="M53.15,54.00 L53.15,76.00 L54.85,76.00 L54.85,54.00 Z"
+        android:fillColor="#4C8DFF" />
+
+    <path
+        android:pathData="M54.85,54.00 L54.85,49.00 L53.15,49.00 L53.15,54.00 Z"
+        android:fillColor="#4C8DFF" />
+
+    <path
+        android:pathData="M50.8,54.0 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0"
+        android:fillColor="#4C8DFF" />
+
+    <path
+        android:pathData="M52.6,54.0 a1.4,1.4 0 1,0 2.8,0 a1.4,1.4 0 1,0 -2.8,0"
+        android:fillColor="#E9EDF4" />
 </vector>

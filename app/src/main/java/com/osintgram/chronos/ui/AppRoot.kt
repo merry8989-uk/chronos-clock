@@ -8,6 +8,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -48,7 +52,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.ui.components.AnalogClock
 import com.osintgram.chronos.ui.components.ChronosBackground
+import com.osintgram.chronos.ui.components.DigitalClockLabel
 import com.osintgram.chronos.ui.screens.AlarmEditScreen
 import com.osintgram.chronos.ui.screens.AlarmListScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
@@ -111,11 +117,32 @@ fun AppRoot() {
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = tabs[tabIndex].label,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            // The logo is the clock: three hands, live.
+                            if (Settings.logoStyle.value == "analog") {
+                                AnalogClock(
+                                    modifier = Modifier.size(30.dp),
+                                    showSecondHand = Settings.clockSecondHand.value,
+                                    smoothSweep = Settings.clockSmooth.value,
+                                    rimColor = MaterialTheme.colorScheme.primary,
+                                    tickColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    hourHandColor = MaterialTheme.colorScheme.onBackground,
+                                    minuteHandColor = MaterialTheme.colorScheme.onBackground,
+                                    secondHandColor = MaterialTheme.colorScheme.primary,
+                                )
+                            } else {
+                                DigitalClockLabel(
+                                    modifier = Modifier.padding(end = 8.dp),
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                )
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = tabs[tabIndex].label,
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = androidx.compose.ui.graphics.Color.Transparent,

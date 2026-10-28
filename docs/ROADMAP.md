@@ -52,6 +52,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Animated sleep graphs and level meter
 - [x] Tabular figures so running clocks do not shift layout
 
+## Shipped in 3.1.0
+
+- [x] Live three-hand analog clock composable driven by the device time (hour, minute, second)
+- [x] The app logo is that clock: shown in the top bar of every screen
+- [x] Settings → Logo & clock: live preview, analog/digital style, second hand on/off, smooth sweep
+- [x] Launcher icon redrawn as a three-hand clock face (10:10:30)
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
@@ -84,7 +91,7 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 
 ## Next — outside the app window
 
-- [ ] **P1 M** Home-screen widgets: next alarm, world clock, one-tap timer
+- [ ] **P1 M** Home-screen widgets: live analog clock, next alarm, world clock, one-tap timer
 - [ ] **P2 S** Quick Settings tile and lock-screen shortcuts
 - [ ] **P2 S** Ongoing notification for a running stopwatch
 - [ ] **P3 L** Wear OS companion

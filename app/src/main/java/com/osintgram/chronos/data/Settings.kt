@@ -41,6 +41,11 @@ object Settings {
     val use24Hour = Setting("use_24_hour", false)
     val amoledBlack = Setting("amoled_black", true)
     val showSeconds = Setting("show_seconds", true)
+
+    // ---- Logo / live clock ------------------------------------------------
+    val logoStyle = Setting("logo_style", "analog")          // analog | digital
+    val clockSecondHand = Setting("clock_second_hand", true)
+    val clockSmooth = Setting("clock_smooth", true)
     val textScale = Setting("text_scale", 1.0f)
 
     // ---- Alarms -----------------------------------------------------------
@@ -83,6 +88,9 @@ object Settings {
         use24Hour.load(p.getBoolean(use24Hour.key, use24Hour.default))
         amoledBlack.load(p.getBoolean(amoledBlack.key, amoledBlack.default))
         showSeconds.load(p.getBoolean(showSeconds.key, showSeconds.default))
+        logoStyle.load(p.getString(logoStyle.key, logoStyle.default) ?: "analog")
+        clockSecondHand.load(p.getBoolean(clockSecondHand.key, clockSecondHand.default))
+        clockSmooth.load(p.getBoolean(clockSmooth.key, clockSmooth.default))
         textScale.load(p.getFloat(textScale.key, textScale.default))
 
         defaultSnooze.load(p.getInt(defaultSnooze.key, defaultSnooze.default))
@@ -133,6 +141,9 @@ object Settings {
         use24Hour.resetToDefault()
         amoledBlack.resetToDefault()
         showSeconds.resetToDefault()
+        logoStyle.resetToDefault()
+        clockSecondHand.resetToDefault()
+        clockSmooth.resetToDefault()
         textScale.resetToDefault()
         defaultSnooze.resetToDefault()
         defaultVibrate.resetToDefault()
@@ -164,6 +175,9 @@ object Settings {
         use24Hour.key to use24Hour.value,
         amoledBlack.key to amoledBlack.value,
         showSeconds.key to showSeconds.value,
+        logoStyle.key to logoStyle.value,
+        clockSecondHand.key to clockSecondHand.value,
+        clockSmooth.key to clockSmooth.value,
         textScale.key to textScale.value,
         defaultSnooze.key to defaultSnooze.value,
         defaultVibrate.key to defaultVibrate.value,
@@ -199,6 +213,9 @@ object Settings {
                 use24Hour.key -> asBool?.let { use24Hour.set(it) }
                 amoledBlack.key -> asBool?.let { amoledBlack.set(it) }
                 showSeconds.key -> asBool?.let { showSeconds.set(it) }
+                logoStyle.key -> logoStyle.set(text)
+                clockSecondHand.key -> asBool?.let { clockSecondHand.set(it) }
+                clockSmooth.key -> asBool?.let { clockSmooth.set(it) }
                 textScale.key -> text.toFloatOrNull()?.let { textScale.set(it) }
                 defaultSnooze.key -> text.toIntOrNull()?.let { defaultSnooze.set(it) }
                 defaultVibrate.key -> asBool?.let { defaultVibrate.set(it) }

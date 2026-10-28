@@ -81,7 +81,7 @@
       screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">3.0.0</strong> ·
+      Current version <strong id="version">3.1.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -168,6 +168,7 @@
 
   <h2>Design &amp; interaction</h2>
   <ul>
+    <li><strong>Live clock logo</strong> <span>— the app logo is a working analog clock: hour, minute and second hands driven by the device time. It sits in the top bar of every screen and in Settings → Logo &amp; clock, where you can switch between analog and digital, hide the second hand, or turn on a smooth sweep. The launcher icon uses the same three-hand design (see the note below on why a launcher icon cannot tick).</span></li>
     <li><strong>Next-alarm hero card</strong> <span>— the alarm that will actually ring, with a countdown ring that closes as the moment approaches and a live "in 5 hours 12 min" line.</span></li>
     <li><strong>Swipe to delete, with undo</strong> <span>— swipe an alarm card left; past the threshold it deletes and offers Undo in a snackbar, otherwise it springs back.</span></li>
     <li><strong>Long-press an alarm</strong> <span>— duplicate it, switch it on or off, or delete it, without opening the editor.</span></li>
@@ -243,6 +244,16 @@
   </table>
 
   <h2>What is not in this release</h2>
+  <div class="card">
+    <h3>Why the launcher icon does not tick</h3>
+    <p>
+      Android draws launcher icons from a static drawable, so no app can animate the icon on the
+      home screen — the live three-hand clock is the in-app logo, the Settings preview and the
+      ring screen. The icon carries the same clock-face design with the hands at 10:10:30 so the
+      mark reads as a clock. A home-screen <em>widget</em> can be live, and that is the honest way
+      to get a ticking clock outside the app; it is on the roadmap rather than half-built.
+    </p>
+  </div>
   <div class="card">
     <p>
       Honest scope, so nothing looks bigger than it is. There is no camera-based mission yet —

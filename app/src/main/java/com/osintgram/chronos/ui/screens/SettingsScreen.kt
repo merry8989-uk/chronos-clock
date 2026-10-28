@@ -59,6 +59,7 @@ import com.osintgram.chronos.data.HolidayStore
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.diagnostics.LogExporter
+import com.osintgram.chronos.ui.components.AnalogClock
 import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.SegmentedControl
 import com.osintgram.chronos.ui.components.RowDivider
@@ -226,6 +227,62 @@ fun SettingsScreen(onBack: () -> Unit) {
                     title = "Show seconds on the world clock",
                     checked = Settings.showSeconds.value,
                     onCheckedChange = { Settings.showSeconds.set(it) },
+                )
+            }
+
+            // ---- Logo & live clock ---------------------------------------------
+            SectionCard(title = "LOGO & CLOCK") {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    AnalogClock(
+                        modifier = Modifier.size(132.dp),
+                        showSecondHand = Settings.clockSecondHand.value,
+                        smoothSweep = Settings.clockSmooth.value,
+                        rimColor = MaterialTheme.colorScheme.primary,
+                        tickColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        hourHandColor = MaterialTheme.colorScheme.onSurface,
+                        minuteHandColor = MaterialTheme.colorScheme.onSurface,
+                        secondHandColor = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = "The app logo is a working clock — hour, minute and second " +
+                            "hands run off the device time.",
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                RowDivider()
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Logo style",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    SegmentedControl(
+                        options = listOf("analog" to "Analog clock", "digital" to "Digital"),
+                        selected = Settings.logoStyle.value,
+                        onSelect = { Settings.logoStyle.set(it) },
+                    )
+                }
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Second hand",
+                    subtitle = "Show the sweeping second hand in the logo",
+                    checked = Settings.clockSecondHand.value,
+                    onCheckedChange = { Settings.clockSecondHand.set(it) },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Smooth sweep",
+                    subtitle = "Glide instead of ticking once per second",
+                    enabled = Settings.clockSecondHand.value,
+                    checked = Settings.clockSmooth.value,
+                    onCheckedChange = { Settings.clockSmooth.set(it) },
                 )
             }
 
