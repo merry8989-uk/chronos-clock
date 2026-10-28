@@ -299,7 +299,8 @@ class AlarmService : Service() {
             val manager = RingtoneManager(context).apply {
                 setType(RingtoneManager.TYPE_ALARM)
             }
-            for (i in 0 until manager.count) {
+            val total = runCatching { manager.cursor.count }.getOrDefault(0)
+            for (i in 0 until total) {
                 val uri = manager.getRingtoneUri(i) ?: continue
                 val title = manager.getRingtone(i)?.getTitle(context) ?: continue
                 out.add(title to uri.toString())
