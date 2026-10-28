@@ -3,14 +3,14 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_light"
-    android:padding="6dp">
+    android:padding="4dp">
 
-    <!-- AnalogClock redraws its own hour and minute hands, so this widget is
-         live without any background work. -->
-    <AnalogClock
-        android:id="@+id/analog"
+    <!-- The face is drawn by ClockFaceRenderer so it matches the app icon. -->
+    <ImageView
+        android:id="@+id/analog_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:contentDescription="Chronos clock"
+        android:scaleType="fitCenter" />
 </FrameLayout>

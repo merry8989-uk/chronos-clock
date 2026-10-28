@@ -81,7 +81,7 @@
       screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">4.2.0</strong> ·
+      Current version <strong id="version">5.0.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -166,6 +166,17 @@
   </ul>
 
 
+  <h2>Widget style — make it yours</h2>
+  <p class="hint">
+    Settings → Widget style has a live preview and applies to the clock widgets immediately.
+  </p>
+  <ul>
+    <li><strong>Background</strong> <span>— none (fully transparent), half-transparent, white, blue, or a custom colour from the palette.</span></li>
+    <li><strong>Text colour</strong> <span>— eight colours; picking the white background switches the text to dark ink automatically.</span></li>
+    <li><strong>Time format</strong> <span>— 12h with seconds, 12h, 24h with seconds, or 24h. The format you pick wins over the system setting.</span></li>
+    <li><strong>Text size</strong> <span>— 12sp to 48sp, so the widget reads well whether it is 2×1 or full width.</span></li>
+  </ul>
+
   <h2>Design &amp; interaction</h2>
   <ul>
     <li><strong>Live clock logo</strong> <span>— the app logo is a working analog clock: hour, minute and second hands driven by the device time, refreshed five times a second. It sits in the top bar of every screen; tap it for a full-screen clock with the ticking digital time. Settings → Logo &amp; clock has a large live preview plus analog/digital, second-hand and smooth-sweep options.</span></li>
@@ -191,8 +202,8 @@
     so they keep ticking with the app closed and no background service running.
   </p>
   <ul>
-    <li><strong>Clock (1×1 and up)</strong> <span>— a live analog clock: the hour and minute hands move on their own. This is the way to have a moving clock face on your home screen, because Android launcher icons themselves cannot animate.</span></li>
-    <li><strong>Digital clock</strong> <span>— big time with seconds and the date, drawn by the platform's TextClock so it ticks every second with no background service at all.</span></li>
+    <li><strong>Clock (1×1 and up)</strong> <span>— an analog face drawn by Chronos itself, so it matches the app icon: brand rim, 60 minute ticks, hour and minute hands in your chosen colour, on your chosen background. The hands advance every minute.</span></li>
+    <li><strong>Digital clock</strong> <span>— big time with the date, drawn by the platform's TextClock so it ticks every second with no background service at all.</span></li>
     <li><strong>Next alarm (2×1)</strong> <span>— the next alarm with its label and a live countdown, refreshed every minute.</span></li>
     <li><strong>Alarm list (4×2)</strong> <span>— up to three alarms, each with its own on/off toggle that really schedules or cancels the alarm.</span></li>
     <li><strong>Timer (2×2)</strong> <span>— a self-counting countdown with Start, Pause and Reset; the timer state survives the app being closed.</span></li>

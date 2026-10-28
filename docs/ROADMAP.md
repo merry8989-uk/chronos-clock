@@ -93,6 +93,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] One-tap widget pinning from Settings (requestPinAppWidget) with a clear fallback message
 - [x] Widget guide dialog lists all eight widgets
 
+## Shipped in 5.0.0 — widget styling
+
+- [x] Analog widget redrawn by Chronos itself (ClockFaceRenderer) instead of the platform AnalogClock: brand rim, minute ticks, coloured hands
+- [x] Digital widget: four time formats as separate layouts (12h / 12h+sec / 24h / 24h+sec)
+- [x] Background styles: none, half-transparent, white, blue, custom colour
+- [x] Text colour palette (8), automatic dark ink on a white background, text size 12–48sp
+- [x] Live preview in Settings → Widget style, applied to widgets immediately
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

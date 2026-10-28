@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="10dp">
+
+    <!-- TextClock ticks by itself, every second, with no background work. -->
+    <TextClock
+        android:id="@+id/text_clock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:format12Hour="HH:mm"
+        android:format24Hour="HH:mm"
+        android:textColor="#EDEFF3"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <TextClock
+        android:id="@+id/text_clock_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:format12Hour="EEE, d MMM"
+        android:format24Hour="EEE, d MMM"
+        android:textColor="#4C8DFF"
+        android:textSize="11sp" />
+</LinearLayout>

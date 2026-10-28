@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
+import android.util.TypedValue
 import android.widget.RemoteViews
 import com.osintgram.chronos.MainActivity
 import com.osintgram.chronos.R
@@ -67,12 +68,8 @@ object WidgetUpdater {
     }
 
     fun build(context: Context, type: String): RemoteViews = when (type) {
-        TYPE_CLOCK -> RemoteViews(context.packageName, R.layout.widget_clock).apply {
-            setOnClickPendingIntent(R.id.widget_root, openApp(context, 100))
-        }
-        TYPE_CLOCK_DIGITAL -> RemoteViews(context.packageName, R.layout.widget_clock_digital).apply {
-            setOnClickPendingIntent(R.id.widget_root, openApp(context, 106))
-        }
+        TYPE_CLOCK -> buildClock(context)
+        TYPE_CLOCK_DIGITAL -> buildDigitalClock(context)
         TYPE_NEXT_ALARM -> buildNextAlarm(context)
         TYPE_ALARM_LIST -> buildAlarmList(context)
         TYPE_TIMER -> buildTimer(context)
@@ -82,6 +79,84 @@ object WidgetUpdater {
     }
 
     // ------------------------------------------------------------------ clock
+
+    /** Accent colour per theme choice, kept here so widget code stays lean. */
+    private fun accentColor(): Int = when (Settings.accent.value) {
+        "violet" -> 0xFF8B7CFF.toInt()
+        "teal" -> 0xFF22C7A9.toInt()
+        "amber" -> 0xFFFFB020.toInt()
+        "rose" -> 0xFFFF6E8A.toInt()
+        "green" -> 0xFF4CD07D.toInt()
+        else -> 0xFF4C8DFF.toInt()
+    }
+
+    /** Background colour for the chosen style. */
+    private fun backgroundColor(): Int = when (Settings.widgetBgStyle.value) {
+        "transparent" -> 0x00000000
+        "white" -> 0xFFF2F4F8.toInt()
+        "blue" -> 0xFF1E3A66.toInt()
+        "custom" -> Settings.widgetBgColor.value
+        else -> 0xCC171B23.toInt()
+    }
+
+    /** Rounded preset drawable, or 0 when the user picked a custom colour. */
+    private fun backgroundResource(): Int = when (Settings.widgetBgStyle.value) {
+        "transparent" -> R.drawable.widget_bg_transparent
+        "white" -> R.drawable.widget_bg_white
+        "blue" -> R.drawable.widget_bg_blue
+        "custom" -> 0
+        else -> R.drawable.widget_bg
+    }
+
+    private fun buildClock(context: Context): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.widget_clock)
+        val textColor = Settings.widgetTextColor.value
+        val accent = accentColor()
+        val bitmap = ClockFaceRenderer.face(
+            context = context,
+            sizePx = 512,
+            background = backgroundColor(),
+            rimColor = accent,
+            tickColor = textColor,
+            hourHandColor = textColor,
+            minuteHandColor = textColor,
+            secondHandColor = accent,
+            // Hour and minute hands only: the widget refreshes on the minute, so
+            // a second hand would be visibly wrong between refreshes.
+            showSecondHand = false,
+        )
+        views.setImageViewBitmap(R.id.analog_image, bitmap)
+        views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 100))
+        return views
+    }
+
+    private fun buildDigitalClock(context: Context): RemoteViews {
+        val layout = when (Settings.widgetClockFormat.value) {
+            "12" -> R.layout.widget_clock_digital_12
+            "24s" -> R.layout.widget_clock_digital_24s
+            "24" -> R.layout.widget_clock_digital_24
+            else -> R.layout.widget_clock_digital_12s
+        }
+        val views = RemoteViews(context.packageName, layout)
+        val textColor = Settings.widgetTextColor.value
+
+        val resource = backgroundResource()
+        if (resource != 0) {
+            views.setInt(R.id.widget_root, "setBackgroundResource", resource)
+        } else {
+            views.setInt(R.id.widget_root, "setBackgroundColor", backgroundColor())
+        }
+
+        views.setTextColor(R.id.text_clock, textColor)
+        views.setTextColor(R.id.text_clock_date, accentColor())
+        views.setTextViewTextSize(
+            R.id.text_clock,
+            TypedValue.COMPLEX_UNIT_SP,
+            Settings.widgetTextSize.value.coerceIn(12, 48).toFloat(),
+        )
+        views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 106))
+        return views
+    }
 
     private fun buildNextAlarm(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_next_alarm)

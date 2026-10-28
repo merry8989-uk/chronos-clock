@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -286,6 +289,125 @@ fun SettingsScreen(onBack: () -> Unit) {
                     enabled = Settings.clockSecondHand.value,
                     checked = Settings.clockSmooth.value,
                     onCheckedChange = { Settings.clockSmooth.set(it) },
+                )
+            }
+
+
+            // ---- Widget style --------------------------------------------------
+            SectionCard(title = "WIDGET STYLE") {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    WidgetStylePreview()
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = "Background",
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(
+                            "transparent" to "None",
+                            "half" to "Half",
+                            "white" to "White",
+                            "blue" to "Blue",
+                        ).forEach { (key, label) ->
+                            Pill(
+                                text = label,
+                                selected = Settings.widgetBgStyle.value == key,
+                                onClick = {
+                                    Settings.widgetBgStyle.set(key)
+                                    if (key == "white") {
+                                        Settings.widgetTextColor.set(0xFF10141B.toInt())
+                                    }
+                                    refreshWidgets(context)
+                                },
+                            )
+                        }
+                        Pill(
+                            text = "Custom",
+                            selected = Settings.widgetBgStyle.value == "custom",
+                            onClick = {
+                                Settings.widgetBgStyle.set("custom")
+                                refreshWidgets(context)
+                            },
+                        )
+                    }
+                    if (Settings.widgetBgStyle.value == "custom") {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "Background colour",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            WidgetPalette.forEach { (_, argb) ->
+                                ColourDot(
+                                    argb = argb,
+                                    selected = Settings.widgetBgColor.value == argb,
+                                    onClick = {
+                                        Settings.widgetBgColor.set(argb)
+                                        refreshWidgets(context)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = "Text colour",
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        TextPalette.forEach { (_, argb) ->
+                            ColourDot(
+                                argb = argb,
+                                selected = Settings.widgetTextColor.value == argb,
+                                onClick = {
+                                    Settings.widgetTextColor.set(argb)
+                                    refreshWidgets(context)
+                                },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = "Time format",
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(
+                            "12s" to "12h + sec",
+                            "12" to "12h",
+                            "24s" to "24h + sec",
+                            "24" to "24h",
+                        ).forEach { (key, label) ->
+                            Pill(
+                                text = label,
+                                selected = Settings.widgetClockFormat.value == key,
+                                onClick = {
+                                    Settings.widgetClockFormat.set(key)
+                                    refreshWidgets(context)
+                                },
+                            )
+                        }
+                    }
+                }
+                RowDivider()
+                SettingSliderRow(
+                    title = "Text size",
+                    valueLabel = "${Settings.widgetTextSize.value}sp",
+                    value = Settings.widgetTextSize.value.toFloat(),
+                    valueRange = 12f..48f,
+                    steps = 11,
+                    onValueChange = {
+                        Settings.widgetTextSize.set(it.toInt())
+                        refreshWidgets(context)
+                    },
                 )
             }
 
@@ -1058,6 +1180,108 @@ private fun HolidaysScreen(onBack: () -> Unit) {
                     },
                 )
             }
+        }
+    }
+}
+
+
+private val WidgetPalette = listOf(
+    "Dark" to 0xE6171B23.toInt(),
+    "Black" to 0xFF000000.toInt(),
+    "Navy" to 0xFF1E3A66.toInt(),
+    "White" to 0xFFF2F4F8.toInt(),
+    "Cream" to 0xFFF6EFE2.toInt(),
+    "Forest" to 0xFF17352A.toInt(),
+)
+
+private val TextPalette = listOf(
+    "White" to 0xFFEDEFF3.toInt(),
+    "Ink" to 0xFF10141B.toInt(),
+    "Blue" to 0xFF4C8DFF.toInt(),
+    "Teal" to 0xFF22C7A9.toInt(),
+    "Amber" to 0xFFFFB020.toInt(),
+    "Rose" to 0xFFFF6E8A.toInt(),
+    "Green" to 0xFF4CD07D.toInt(),
+    "Grey" to 0xFF9AA3B2.toInt(),
+)
+
+private fun refreshWidgets(context: android.content.Context) {
+    com.osintgram.chronos.widget.WidgetUpdater.refreshAll(context)
+}
+
+@Composable
+private fun ColourDot(argb: Int, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(30.dp)
+            .clip(CircleShape)
+            .background(Color(argb))
+            .pressable(scale = 0.85f, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Icon(
+                Icons.Filled.Check,
+                contentDescription = "Selected",
+                tint = if (Color(argb).luminance() > 0.5f) Color.Black else Color.White,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+    }
+}
+
+/** A live preview of the digital widget with the chosen style. */
+@Composable
+private fun WidgetStylePreview() {
+    var now by remember { mutableStateOf(java.time.LocalTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            now = java.time.LocalTime.now()
+            kotlinx.coroutines.delay(500)
+        }
+    }
+
+    val pattern = when (Settings.widgetClockFormat.value) {
+        "12" -> "h:mm a"
+        "24s" -> "HH:mm:ss"
+        "24" -> "HH:mm"
+        else -> "h:mm:ss a"
+    }
+    val timeText = now.format(
+        java.time.format.DateTimeFormatter.ofPattern(pattern, java.util.Locale.US),
+    )
+
+    val bg = when (Settings.widgetBgStyle.value) {
+        "transparent" -> Color.Transparent
+        "white" -> Color(0xFFF2F4F8)
+        "blue" -> Color(0xFF1E3A66)
+        "custom" -> Color(Settings.widgetBgColor.value)
+        else -> Color(0xCC171B23.toInt())
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(96.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (bg == Color.Transparent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else bg),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = timeText,
+                color = Color(Settings.widgetTextColor.value),
+                fontSize = Settings.widgetTextSize.value.sp,
+                fontWeight = FontWeight.Bold,
+                style = com.osintgram.chronos.ui.theme.ClockTextStyle,
+            )
+            Text(
+                text = now.format(
+                    java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", java.util.Locale.US),
+                ),
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 11.sp,
+            )
         }
     }
 }

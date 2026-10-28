@@ -82,6 +82,13 @@ object Settings {
     val diagnosticsEnabled = Setting("diagnostics_enabled", true)
     val updateWifiOnly = Setting("update_wifi_only", true)
 
+    // ---- Widget style -----------------------------------------------------
+    val widgetBgStyle = Setting("widget_bg_style", "half")     // half | transparent | white | blue | custom
+    val widgetBgColor = Setting("widget_bg_color", 0xCC171B23.toInt())
+    val widgetTextColor = Setting("widget_text_color", 0xFFEDEFF3.toInt())
+    val widgetTextSize = Setting("widget_text_size", 24)
+    val widgetClockFormat = Setting("widget_clock_format", "12s")   // 12s | 12 | 24s | 24
+
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val p = prefs ?: return
@@ -125,6 +132,13 @@ object Settings {
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
         diagnosticsEnabled.load(p.getBoolean(diagnosticsEnabled.key, diagnosticsEnabled.default))
         updateWifiOnly.load(p.getBoolean(updateWifiOnly.key, updateWifiOnly.default))
+        widgetBgStyle.load(p.getString(widgetBgStyle.key, widgetBgStyle.default) ?: "half")
+        widgetBgColor.load(p.getInt(widgetBgColor.key, widgetBgColor.default))
+        widgetTextColor.load(p.getInt(widgetTextColor.key, widgetTextColor.default))
+        widgetTextSize.load(p.getInt(widgetTextSize.key, widgetTextSize.default))
+        widgetClockFormat.load(
+            p.getString(widgetClockFormat.key, widgetClockFormat.default) ?: "12s",
+        )
     }
 
     internal fun write(key: String, value: Any?) {
@@ -175,6 +189,11 @@ object Settings {
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
         updateWifiOnly.resetToDefault()
+        widgetBgStyle.resetToDefault()
+        widgetBgColor.resetToDefault()
+        widgetTextColor.resetToDefault()
+        widgetTextSize.resetToDefault()
+        widgetClockFormat.resetToDefault()
     }
 
     /** Every option as key/value pairs, for the settings backup file. */
@@ -212,6 +231,11 @@ object Settings {
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
         updateWifiOnly.key to updateWifiOnly.value,
+        widgetBgStyle.key to widgetBgStyle.value,
+        widgetBgColor.key to widgetBgColor.value,
+        widgetTextColor.key to widgetTextColor.value,
+        widgetTextSize.key to widgetTextSize.value,
+        widgetClockFormat.key to widgetClockFormat.value,
     )
 
     /** Applies a settings backup. Unknown or wrong-typed keys are ignored. */
@@ -253,6 +277,11 @@ object Settings {
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }
                 updateWifiOnly.key -> asBool?.let { updateWifiOnly.set(it) }
+                widgetBgStyle.key -> widgetBgStyle.set(text)
+                widgetBgColor.key -> text.toIntOrNull()?.let { widgetBgColor.set(it) }
+                widgetTextColor.key -> text.toIntOrNull()?.let { widgetTextColor.set(it) }
+                widgetTextSize.key -> text.toIntOrNull()?.let { widgetTextSize.set(it) }
+                widgetClockFormat.key -> widgetClockFormat.set(text)
             }
         }
     }
