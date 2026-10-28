@@ -54,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.BuildConfig
@@ -63,7 +62,6 @@ import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.diagnostics.LogExporter
 import com.osintgram.chronos.ui.components.AnalogClock
 import com.osintgram.chronos.ui.components.ChronosBackground
-import com.osintgram.chronos.ui.components.SafeScreen
 import com.osintgram.chronos.ui.components.DigitalClockLabel
 import com.osintgram.chronos.ui.components.LiveClockDialog
 import com.osintgram.chronos.ui.screens.AlarmEditScreen
@@ -116,10 +114,7 @@ fun AppRoot() {
         }
         showSettings -> {
             ChronosBackground {
-                // If anything inside Settings throws, the app survives and says so.
-                SafeScreen("Settings") {
-                    SettingsScreen(onBack = { showSettings = false })
-                }
+                SettingsScreen(onBack = { showSettings = false })
             }
             return
         }
@@ -259,6 +254,8 @@ fun AppRoot() {
                 }
             },
         ) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            CrashBanner()
             AnimatedContent(
                 targetState = tabIndex,
                 transitionSpec = {

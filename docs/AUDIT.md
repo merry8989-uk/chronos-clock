@@ -7,10 +7,9 @@ was wrong and got fixed, and what is still missing.
 
 | # | Issue | Severity | Fix |
 |---|-------|----------|-----|
-| 1 | One broken section could take the whole Settings screen (and the app) down | Critical | `SectionCard` now renders its content inside a guard; a failure shows an inline card naming the section and logs the trace |
-| 2 | If Settings itself threw, the app died with no way to report it | Critical | `SafeScreen` wraps the Settings screen; a failure shows an error screen with instructions instead of crashing |
+| 1 | Settings crashed and there was no way to learn why | Critical | Per-section `try/catch` is impossible — the Compose compiler rejects try/catch around composable calls — so the fix is defensive hardening of every risky call plus a trace the user can send |
+| 2 | A crash left no visible trace on the next launch | Critical | Crash handler writes a marker; the app shows a "Chronos crashed last time" banner with **Send log** |
 | 3 | Diagnostics lived *inside* Settings — unreachable exactly when it was needed | High | New **Diagnostics & logs** entry in the ⋮ menu: last errors, full log, share .txt / .zip, clear |
-| 4 | A crash left no visible trace on the next launch | High | Crash handler writes a marker; the app shows a "Chronos crashed last time" banner with **Send log** |
 | 5 | `Settings.canDrawOverlays` can throw on some OEM ROMs, crashing the Timer section | Medium | Wrapped in `runCatching`; a failure is treated as "not allowed" |
 | 6 | Widget refresh ran unguarded from the settings UI | Medium | Wrapped in `runCatching` and logged; a widget problem can no longer crash Settings |
 | 7 | Widget face bitmap was rendered at 512×512 on every refresh (main thread) | Medium | Reduced to 320×320, still sharp at 2×2 |

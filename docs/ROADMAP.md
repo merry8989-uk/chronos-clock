@@ -103,7 +103,7 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 
 ## Fixed in 5.1.0 — audit pass
 
-- [x] Crash guard around every settings section and around the Settings screen itself
+- [x] Defensive hardening of every risky call in Settings (overlay check, widget refresh, slider value, time formatter)
 - [x] Diagnostics moved to the ⋮ menu so it works even when Settings does not
 - [x] Crash banner on next launch with a one-tap "Send log"
 - [x] OEM overlay-permission check guarded, widget refresh guarded, slider clamped, formatter cached
