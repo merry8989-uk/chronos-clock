@@ -62,7 +62,7 @@ class TimerService : Service() {
             }
             else -> {
                 notifiedFinish = false
-                startForeground(NOTIFICATION_ID, buildNotification())
+                startForeground(NOTIFICATION_ID, buildNotification().build())
                 if (Settings.timerBubble.value) TimerBubble.show(this)
                 startTicking()
             }
@@ -89,7 +89,7 @@ class TimerService : Service() {
 
     private fun refreshNotification() {
         val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, buildNotification())
+        manager.notify(NOTIFICATION_ID, buildNotification().build())
     }
 
     private fun onTimerFinished() {
