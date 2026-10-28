@@ -2,6 +2,7 @@ package com.osintgram.chronos.timer
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,63 @@ object TimerEngine {
     val state: StateFlow<State> = _state
 
     private var endElapsed: Long = 0L
+    private var prefs: SharedPreferences? = null
+
+    /**
+     * Restores the countdown after the process is recreated, so the home-screen
+     * widget and the app agree on what is running.
+     */
+    fun init(context: Context) {
+        prefs = context.applicationContext.getSharedPreferences("chronos_timer", Context.MODE_PRIVATE)
+        val p = prefs ?: return
+        val duration = p.getLong("duration", 15 * 60_000L)
+        val label = p.getString("label", "Timer") ?: "Timer"
+        val running = p.getBoolean("running", false)
+        val endWall = p.getLong("end_wall", 0L)
+        val now = System.currentTimeMillis()
+
+        if (running && endWall > now) {
+            val remaining = endWall - now
+            endElapsed = SystemClock.elapsedRealtime() + remaining
+            _state.value = State(
+                durationMs = duration,
+                remainingMs = remaining,
+                running = true,
+                finished = false,
+                label = label,
+            )
+        } else if (running) {
+            _state.value = State(
+                durationMs = duration,
+                remainingMs = 0L,
+                running = false,
+                finished = true,
+                label = label,
+            )
+        } else {
+            _state.value = State(
+                durationMs = duration,
+                remainingMs = p.getLong("remaining", duration),
+                running = false,
+                finished = false,
+                label = label,
+            )
+        }
+    }
+
+    private fun persist() {
+        val state = _state.value
+        prefs?.edit()
+            ?.putLong("duration", state.durationMs)
+            ?.putLong("remaining", state.remainingMs)
+            ?.putBoolean("running", state.running)
+            ?.putString("label", state.label)
+            ?.putLong(
+                "end_wall",
+                if (state.running) System.currentTimeMillis() + state.remainingMs else 0L,
+            )
+            ?.apply()
+    }
 
     fun setDuration(ms: Long) {
         if (_state.value.running) return
@@ -34,6 +92,7 @@ object TimerEngine {
             remainingMs = clamped,
             finished = false,
         )
+        persist()
     }
 
     /** Adds time to a running countdown (used by the "+1 minute" button). */
@@ -49,10 +108,12 @@ object TimerEngine {
             val next = current.remainingMs + ms
             _state.value = current.copy(durationMs = next, remainingMs = next, finished = false)
         }
+        persist()
     }
 
     fun setLabel(label: String) {
         _state.value = _state.value.copy(label = label.ifBlank { "Timer" })
+        persist()
     }
 
     fun start(context: Context) {
@@ -60,6 +121,7 @@ object TimerEngine {
         if (current.running || current.remainingMs <= 0L) return
         endElapsed = SystemClock.elapsedRealtime() + current.remainingMs
         _state.value = current.copy(running = true, finished = false)
+        persist()
         ContextCompat.startForegroundService(
             context,
             Intent(context, TimerService::class.java).apply { action = TimerService.ACTION_START },
@@ -71,6 +133,7 @@ object TimerEngine {
         if (!current.running) return
         val remaining = (endElapsed - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
         _state.value = current.copy(running = false, remainingMs = remaining)
+        persist()
         context.stopService(Intent(context, TimerService::class.java))
     }
 
@@ -81,6 +144,7 @@ object TimerEngine {
             finished = false,
             remainingMs = _state.value.durationMs,
         )
+        persist()
     }
 
     /** Called by [TimerService] on every tick. */
@@ -88,11 +152,13 @@ object TimerEngine {
         val current = _state.value
         if (!current.running) return
         val remaining = (endElapsed - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
-        _state.value = current.copy(
+        val updated = current.copy(
             remainingMs = remaining,
             running = remaining > 0L,
             finished = remaining == 0L,
         )
+        _state.value = updated
+        if (!updated.running) persist()
     }
 
     fun remainingMillis(): Long =

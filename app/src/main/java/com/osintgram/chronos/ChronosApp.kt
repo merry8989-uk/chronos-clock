@@ -9,6 +9,7 @@ import com.osintgram.chronos.data.SleepStore
 import com.osintgram.chronos.data.WorldClockStore
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.stopwatch.StopwatchEngine
+import com.osintgram.chronos.timer.TimerEngine
 import com.osintgram.chronos.timer.TimerPresets
 
 class ChronosApp : Application() {
@@ -27,9 +28,11 @@ class ChronosApp : Application() {
         WorldClockStore.init(this)
         StopwatchEngine.init(this)
         TimerPresets.init(this)
+        TimerEngine.init(this)
         SleepStore.init(this)
 
         AlarmScheduler.rescheduleAll(this)
+        com.osintgram.chronos.widget.WidgetUpdater.refreshAll(this)
         DiagnosticsLogger.log("ChronosApp", "Started, version ${BuildConfig.VERSION_NAME}")
     }
 }

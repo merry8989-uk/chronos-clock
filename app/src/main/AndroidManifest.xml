@@ -17,7 +17,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- Full-screen alarm takeover on Android 14+ requires this explicitly. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <!-- Used by the updater to honour "update over Wi-Fi only". -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
 
     <application
@@ -83,6 +88,108 @@
             android:name=".sleep.SleepService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+
+        <!-- Home-screen widgets -->
+        <receiver
+            android:name=".widget.ClockWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_clock_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.NextAlarmWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_next_alarm_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.AlarmListWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_alarm_list_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TimerWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_timer_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.StopwatchWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_stopwatch_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.HolidaysWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_holidays_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TimerPresetsWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_timer_presets_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WidgetActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.osintgram.chronos.widget.TICK" />
+                <action android:name="com.osintgram.chronos.widget.TOGGLE_ALARM" />
+                <action android:name="com.osintgram.chronos.widget.TIMER_START" />
+                <action android:name="com.osintgram.chronos.widget.TIMER_PAUSE" />
+                <action android:name="com.osintgram.chronos.widget.TIMER_RESET" />
+                <action android:name="com.osintgram.chronos.widget.TIMER_PRESET" />
+                <action android:name="com.osintgram.chronos.widget.STOPWATCH_START" />
+                <action android:name="com.osintgram.chronos.widget.STOPWATCH_PAUSE" />
+                <action android:name="com.osintgram.chronos.widget.STOPWATCH_RESET" />
+            </intent-filter>
+        </receiver>
 
         <!-- Shares the downloaded APK with the system installer (Rule 6). -->
         <provider

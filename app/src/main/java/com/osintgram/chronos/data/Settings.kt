@@ -78,6 +78,7 @@ object Settings {
     val keepScreenOn = Setting("keep_screen_on", false)
     val confirmDelete = Setting("confirm_delete", true)
     val diagnosticsEnabled = Setting("diagnostics_enabled", true)
+    val updateWifiOnly = Setting("update_wifi_only", true)
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -119,6 +120,7 @@ object Settings {
         keepScreenOn.load(p.getBoolean(keepScreenOn.key, keepScreenOn.default))
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
         diagnosticsEnabled.load(p.getBoolean(diagnosticsEnabled.key, diagnosticsEnabled.default))
+        updateWifiOnly.load(p.getBoolean(updateWifiOnly.key, updateWifiOnly.default))
     }
 
     internal fun write(key: String, value: Any?) {
@@ -166,6 +168,7 @@ object Settings {
         keepScreenOn.resetToDefault()
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
+        updateWifiOnly.resetToDefault()
     }
 
     /** Every option as key/value pairs, for the settings backup file. */
@@ -200,6 +203,7 @@ object Settings {
         keepScreenOn.key to keepScreenOn.value,
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
+        updateWifiOnly.key to updateWifiOnly.value,
     )
 
     /** Applies a settings backup. Unknown or wrong-typed keys are ignored. */
@@ -238,6 +242,7 @@ object Settings {
                 keepScreenOn.key -> asBool?.let { keepScreenOn.set(it) }
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }
+                updateWifiOnly.key -> asBool?.let { updateWifiOnly.set(it) }
             }
         }
     }

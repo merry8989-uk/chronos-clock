@@ -17,9 +17,11 @@ object AlarmStore {
     private const val KEY = "alarms"
 
     private var prefs: android.content.SharedPreferences? = null
+    private var appContext: android.content.Context? = null
     private val alarms: SnapshotStateList<Alarm> = mutableStateListOf()
 
     fun init(context: Context) {
+        appContext = context.applicationContext
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         alarms.clear()
         alarms.addAll(readAll())
@@ -74,6 +76,8 @@ object AlarmStore {
         val arr = JSONArray()
         alarms.forEach { arr.put(it.toJson()) }
         prefs?.edit()?.putString(KEY, arr.toString())?.apply()
+        // Keep the home-screen widgets in step with the list.
+        appContext?.let { com.osintgram.chronos.widget.WidgetUpdater.refreshAll(it) }
     }
 
     private fun readAll(): List<Alarm> {

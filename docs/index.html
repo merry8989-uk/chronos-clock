@@ -81,7 +81,7 @@
       screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">3.1.1</strong> ·
+      Current version <strong id="version">4.0.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -182,6 +182,23 @@
     <li><strong>Tabular figures</strong> <span>— clock digits are monospaced, so a running timer never makes the layout jump.</span></li>
   </ul>
 
+
+  <h2>Home-screen widgets — seven of them</h2>
+  <p class="hint">
+    Long-press an empty spot on the home screen → Widgets → Chronos. The clock, timer and
+    stopwatch widgets animate themselves using the platform's own AnalogClock and Chronometer,
+    so they keep ticking with the app closed and no background service running.
+  </p>
+  <ul>
+    <li><strong>Clock (1×1 and up)</strong> <span>— a live analog clock: the hour and minute hands move on their own. This is the way to have a moving clock face on your home screen, because Android launcher icons themselves cannot animate.</span></li>
+    <li><strong>Next alarm (2×1)</strong> <span>— the next alarm with its label and a live countdown, refreshed every minute.</span></li>
+    <li><strong>Alarm list (4×2)</strong> <span>— up to three alarms, each with its own on/off toggle that really schedules or cancels the alarm.</span></li>
+    <li><strong>Timer (2×2)</strong> <span>— a self-counting countdown with Start, Pause and Reset; the timer state survives the app being closed.</span></li>
+    <li><strong>Stopwatch (2×1)</strong> <span>— a self-counting stopwatch with Start/Pause and Reset.</span></li>
+    <li><strong>Holidays (2×2)</strong> <span>— the next three holidays from the built-in Indian list plus your own dates.</span></li>
+    <li><strong>Timer presets (4×1)</strong> <span>— four of your saved presets; one tap starts that timer.</span></li>
+  </ul>
+
   <h2>World clock</h2>
   <ul>
     <li><strong>Every timezone on the device</strong> <span>— the city list comes from Android's own timezone database, grouped alphabetically with a tap-to-jump letter rail.</span></li>
@@ -219,7 +236,7 @@
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
     <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
     <tr><td>Diagnostics</td><td>Log collection (on by default), log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
-    <tr><td>About</td><td>Version, check for updates and install in-app, source code link</td></tr>
+    <tr><td>About</td><td>Version, check for updates and install in-app, Wi-Fi-only updates, home-screen widget guide, source code link</td></tr>
   </table>
 
   <h2>Privacy and data</h2>
@@ -241,6 +258,8 @@
     <tr><td>Boot completed</td><td>Re-arming your alarms after a restart</td></tr>
     <tr><td>Microphone</td><td>Detecting snoring during a sleep session and recording your own alarm tone — never used at any other time</td></tr>
     <tr><td>Activity recognition</td><td>Reading the step counter for the step mission</td></tr>
+    <tr><td>Full-screen notifications</td><td>Taking over the screen when an alarm rings on Android 14+</td></tr>
+    <tr><td>Network state / Wi-Fi state</td><td>Holding an update download until you are on Wi-Fi, if that option is on</td></tr>
     <tr><td>Internet / install packages</td><td>Checking for and installing app updates from inside the app</td></tr>
   </table>
 

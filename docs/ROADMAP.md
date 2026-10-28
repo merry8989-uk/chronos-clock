@@ -66,6 +66,19 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Clock state refreshes five times a second (33ms with smooth sweep), so movement is visible
 - [x] Tap the logo to open a full-screen clock with the ticking digital time
 
+## Shipped in 4.0.0 — home-screen widgets
+
+- [x] Clock widget: live analog clock (1×1 and larger), self-updating
+- [x] Next alarm widget with a live countdown
+- [x] Alarm list widget with up to three alarms and working on/off toggles
+- [x] Timer widget with self-counting Chronometer, Start / Pause / Reset, and persisted state
+- [x] Stopwatch widget with Start / Pause / Reset
+- [x] Holidays widget with the next three holidays
+- [x] Timer presets widget: one tap starts a saved preset
+- [x] Once-a-minute refresh alarm for the text widgets; cancelled when no widgets are placed
+- [x] Wi-Fi-only update option (uses the network-state permission)
+- [x] USE_FULL_SCREEN_INTENT added for the alarm takeover on Android 14+
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
@@ -98,7 +111,8 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 
 ## Next — outside the app window
 
-- [ ] **P1 M** Home-screen widgets: live analog clock, next alarm, world clock, one-tap timer
+- [x] **Done** Home-screen widgets: live analog clock, next alarm, alarm list, timer, stopwatch, holidays, presets
+- [ ] **P2 M** World clock widget (multi-city)
 - [ ] **P2 S** Quick Settings tile and lock-screen shortcuts
 - [ ] **P2 S** Ongoing notification for a running stopwatch
 - [ ] **P3 L** Wear OS companion

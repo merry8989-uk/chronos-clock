@@ -90,6 +90,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showExportDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showSensitivityDialog by remember { mutableStateOf(false) }
+    var showWidgetInfo by remember { mutableStateOf(false) }
 
     val exportBackup = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -561,6 +562,19 @@ fun SettingsScreen(onBack: () -> Unit) {
                     )
                 }
                 RowDivider()
+                SettingSwitchRow(
+                    title = "Update over Wi-Fi only",
+                    subtitle = "Holds the download until you are on Wi-Fi",
+                    checked = Settings.updateWifiOnly.value,
+                    onCheckedChange = { Settings.updateWifiOnly.set(it) },
+                )
+                RowDivider()
+                SettingActionRow(
+                    title = "Home-screen widgets",
+                    subtitle = "Clock, next alarm, alarm list, timer, stopwatch, holidays, presets",
+                    onClick = { showWidgetInfo = true },
+                )
+                RowDivider()
                 SettingActionRow(
                     title = "Source code",
                     subtitle = "github.com/merry8989-uk/chronos-clock",
@@ -634,6 +648,50 @@ fun SettingsScreen(onBack: () -> Unit) {
             onPick = {
                 Settings.snoozeLimit.set(it)
                 showSnoozeLimitDialog = false
+            },
+        )
+    }
+
+    if (showWidgetInfo) {
+        AlertDialog(
+            onDismissRequest = { showWidgetInfo = false },
+            title = { Text("Home-screen widgets") },
+            text = {
+                Column {
+                    Text(
+                        "Long-press an empty spot on your home screen → Widgets → Chronos, " +
+                            "then drag the one you want.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    listOf(
+                        "Clock — live analog clock, hands move on their own",
+                        "Next alarm — the next alarm with a countdown",
+                        "Alarm list — up to three alarms with on/off toggles",
+                        "Timer — countdown with start, pause and reset",
+                        "Stopwatch — start, pause and reset",
+                        "Holidays — the next holidays coming up",
+                        "Timer presets — one tap starts a saved timer",
+                    ).forEach { line ->
+                        Text(
+                            text = "·  $line",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(vertical = 3.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "The clock, timer and stopwatch widgets animate themselves, so they " +
+                            "keep running without the app being open.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showWidgetInfo = false }) { Text("Got it") }
             },
         )
     }
