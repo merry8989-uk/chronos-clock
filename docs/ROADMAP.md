@@ -32,6 +32,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Sound library: eight bundled tones in four categories, any device audio file, and recorded custom tones
 - [x] Per-alarm mission, wallpaper and sound configuration
 
+## Shipped in 2.1.0
+
+- [x] Screen on/off tracking during a sleep session, registered at runtime inside the recorder
+- [x] Total screen-off time as a sleep proxy, screen-on moments as wake-ups, unlock count
+- [x] Sleep-onset marker (first screen-off) and a timeline bar of when the phone was in use
+- [x] Live screen status while recording
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
@@ -58,7 +65,7 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 ## Next — missions and sleep depth
 
 - [ ] **P2 M** Camera missions: QR/barcode scan, take-a-photo, and pose-counted push-ups, squats and jumping jacks
-- [ ] **P2 M** Sleep trends: weekly and monthly averages for snoring and movement
+- [ ] **P2 M** Sleep trends: weekly and monthly averages for snoring, movement and screen-off time
 - [ ] **P2 S** Snore clip sharing and a "worst night" summary
 - [ ] **P3 M** Bedtime reminder that pairs with the sleep recorder
 

@@ -28,11 +28,22 @@ data class SleepSession(
     val noise: List<Int> = emptyList(),
     val movement: List<Int> = emptyList(),
     val intervalMs: Long = SAMPLE_INTERVAL_MS,
+    val screenOffEvents: List<Long> = emptyList(),
+    val screenOnEvents: List<Long> = emptyList(),
+    val unlocks: Int = 0,
+    val screenOffMillis: Long = 0L,
+    val screenOnMillis: Long = 0L,
 ) {
     val durationMs: Long get() = (endMillis - startMillis).coerceAtLeast(0)
 
     /** Total snore time, counted as one interval per detected event. */
     val snoreMs: Long get() = snores.size * 2_000L
+
+    /** How many times the screen came on during the night. */
+    val wakeUps: Int get() = screenOnEvents.size
+
+    /** First moment the screen went off — the best available sleep-onset marker. */
+    fun sleepOnsetMillis(): Long? = screenOffEvents.firstOrNull()
 
     fun date(): LocalDate =
         Instant.ofEpochMilli(startMillis).atZone(ZoneId.systemDefault()).toLocalDate()
@@ -55,6 +66,11 @@ data class SleepSession(
             .put("snores", snoreArray)
             .put("noise", JSONArray(noise))
             .put("movement", JSONArray(movement))
+            .put("screenOff", JSONArray(screenOffEvents))
+            .put("screenOn", JSONArray(screenOnEvents))
+            .put("unlocks", unlocks)
+            .put("screenOffMs", screenOffMillis)
+            .put("screenOnMs", screenOnMillis)
     }
 
     companion object {
@@ -80,6 +96,10 @@ data class SleepSession(
                 val arr = o.optJSONArray(key) ?: return emptyList()
                 return (0 until arr.length()).map { arr.optInt(it) }
             }
+            fun longs(key: String): List<Long> {
+                val arr = o.optJSONArray(key) ?: return emptyList()
+                return (0 until arr.length()).map { arr.optLong(it) }
+            }
             return SleepSession(
                 id = o.optLong("id"),
                 startMillis = o.optLong("start"),
@@ -88,6 +108,11 @@ data class SleepSession(
                 noise = ints("noise"),
                 movement = ints("movement"),
                 intervalMs = o.optLong("intervalMs", SAMPLE_INTERVAL_MS),
+                screenOffEvents = longs("screenOff"),
+                screenOnEvents = longs("screenOn"),
+                unlocks = o.optInt("unlocks", 0),
+                screenOffMillis = o.optLong("screenOffMs", 0L),
+                screenOnMillis = o.optLong("screenOnMs", 0L),
             )
         }
     }

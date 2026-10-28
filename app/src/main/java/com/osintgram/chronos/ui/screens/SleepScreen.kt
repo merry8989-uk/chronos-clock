@@ -169,6 +169,13 @@ fun SleepScreen(modifier: Modifier = Modifier) {
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            Text(
+                                text = "Screen off ${durationText(tracker.screenOffMs)} · " +
+                                    "${tracker.wakeUps} wake-up(s) · " +
+                                    if (tracker.screenIsOff) "screen is off" else "screen is on",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                         Button(onClick = { SleepTracker.stop(context) }) {
                             Icon(Icons.Filled.Stop, contentDescription = null)
@@ -338,6 +345,69 @@ private fun SessionReport(
         }
     }
 
+    SectionCard(title = "SCREEN ACTIVITY") {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Metric(
+                    "Screen off (sleep proxy)",
+                    durationText(session.screenOffMillis),
+                    Modifier.weight(1f),
+                )
+                Metric("Wake-ups", "${session.wakeUps}", Modifier.weight(1f))
+                Metric("Unlocks", "${session.unlocks}", Modifier.weight(1f))
+            }
+
+            val onset = session.sleepOnsetMillis()
+            if (onset != null) {
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "First screen-off at ${clockText(onset)} — " +
+                        "${durationText((onset - session.startMillis).coerceAtLeast(0L))} " +
+                        "after recording started.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (session.screenOnEvents.isNotEmpty() || session.screenOffEvents.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                ScreenTimeline(session)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "Dark = screen off, blue = screen on. Every block is a real " +
+                        "screen event from the device, so this shows when the phone was in " +
+                        "use — a proxy for wake-ups, not a measurement of sleep stages.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (session.wakeUps > 0) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Screen-on moments",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                session.screenOnEvents.take(12).forEach { at ->
+                    Text(
+                        text = "· ${clockText(at)}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (session.screenOnEvents.size > 12) {
+                    Text(
+                        text = "… and ${session.screenOnEvents.size - 12} more",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+
     if (session.noise.isNotEmpty()) {
         SectionCard(title = "ROOM NOISE") {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -440,5 +510,59 @@ private fun Metric(label: String, value: String, modifier: Modifier = Modifier) 
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * Draws the night as one bar: screen-off stretches muted, screen-on stretches
+ * highlighted. Built from the real screen events recorded overnight.
+ */
+@Composable
+private fun ScreenTimeline(session: SleepSession) {
+    val start = session.startMillis
+    val total = (session.endMillis - start).coerceAtLeast(1L)
+
+    val onSpans = remember(session.id) {
+        val marks = mutableListOf<Pair<Long, Boolean>>()
+        session.screenOffEvents.forEach { marks.add(it to false) }
+        session.screenOnEvents.forEach { marks.add(it to true) }
+        val sorted = marks.sortedBy { it.first }
+        val spans = mutableListOf<Pair<Float, Float>>()
+        var onFrom: Long? = null
+        sorted.forEach { (at, on) ->
+            if (on) {
+                onFrom = at
+            } else if (onFrom != null) {
+                spans.add(
+                    ((onFrom!! - start).toFloat() / total) to ((at - start).toFloat() / total),
+                )
+                onFrom = null
+            }
+        }
+        onFrom?.let { from ->
+            spans.add(((from - start).toFloat() / total) to 1f)
+        }
+        spans
+    }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(26.dp)
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                RoundedCornerShape(6.dp),
+            ),
+    ) {
+        onSpans.forEach { (from, to) ->
+            val left = (from.coerceIn(0f, 1f)) * size.width
+            val right = (to.coerceIn(0f, 1f)) * size.width
+            val width = (right - left).coerceAtLeast(2f)
+            drawRect(
+                color = Color(0xFF4C8DFF),
+                topLeft = Offset(left, 0f),
+                size = androidx.compose.ui.geometry.Size(width, size.height),
+            )
+        }
     }
 }

@@ -5,8 +5,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -54,6 +56,9 @@ object SleepTracker {
         val elapsedMs: Long = 0L,
         val snoreCount: Int = 0,
         val level: Int = 0,
+        val screenOffMs: Long = 0L,
+        val wakeUps: Int = 0,
+        val screenIsOff: Boolean = false,
     )
 
     private val _state = MutableStateFlow(State())
@@ -111,6 +116,16 @@ class SleepService : Service(), SensorEventListener {
     private var lastMagnitude = 0f
     private var clipCounter = 0
 
+    // Screen activity: the honest, measurable half of "sleep activity".
+    private var screenReceiver: BroadcastReceiver? = null
+    private var lastScreenOffAt = 0L
+    private var lastScreenOnAt = 0L
+    private var screenOffTotal = 0L
+    private var screenOnTotal = 0L
+    private val screenOffEvents = mutableListOf<Long>()
+    private val screenOnEvents = mutableListOf<Long>()
+    private var unlockCount = 0
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -146,6 +161,13 @@ class SleepService : Service(), SensorEventListener {
         movementSamples.clear()
         clipCounter = 0
         intervalMovement = 0.0
+        screenOffEvents.clear()
+        screenOnEvents.clear()
+        screenOffTotal = 0L
+        screenOnTotal = 0L
+        unlockCount = 0
+        lastScreenOffAt = 0L
+        lastScreenOnAt = 0L
         running = true
 
         startForeground(NOTIFICATION_ID, buildNotification(0, 0))
@@ -160,6 +182,8 @@ class SleepService : Service(), SensorEventListener {
         sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { accelerometer ->
             sensorManager?.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
         }
+
+        registerScreenTracking()
 
         audioJob = scope.launch { recordLoop() }
         DiagnosticsLogger.log("SleepService", "Sleep session $sessionId started")
@@ -363,6 +387,7 @@ class SleepService : Service(), SensorEventListener {
         sensorManager?.unregisterListener(this)
 
         val end = System.currentTimeMillis()
+        unregisterScreenTracking(end)
         val session = SleepSession(
             id = sessionId,
             startMillis = startedAt,
@@ -370,12 +395,18 @@ class SleepService : Service(), SensorEventListener {
             snores = snoreEvents.toList(),
             noise = noiseSamples.toList(),
             movement = movementSamples.toList(),
+            screenOffEvents = screenOffEvents.toList(),
+            screenOnEvents = screenOnEvents.toList(),
+            unlocks = unlockCount,
+            screenOffMillis = screenOffTotal,
+            screenOnMillis = screenOnTotal,
         )
         if (end - startedAt > 60_000L) {
             SleepStore.save(session)
             DiagnosticsLogger.log(
                 "SleepService",
-                "Saved session ${session.id}: ${snoreEvents.size} snore(s) over ${(end - startedAt) / 60000} min",
+                "Saved session ${session.id}: ${snoreEvents.size} snore(s), " +
+                    "${screenOnEvents.size} screen-on event(s) over ${(end - startedAt) / 60000} min",
             )
         } else {
             DiagnosticsLogger.log("SleepService", "Session too short to keep — discarded")
@@ -386,6 +417,88 @@ class SleepService : Service(), SensorEventListener {
         wakeLock = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    /**
+     * Watches the screen turning on and off. Screen-off is the best sleep proxy a
+     * phone has without a wearable, and every screen-on is a plausible wake-up or
+     * a phone check. Registered at runtime because the platform does not deliver
+     * these broadcasts to manifest-declared receivers.
+     */
+    private fun registerScreenTracking() {
+        val now = System.currentTimeMillis()
+        val interactive = (getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
+        if (interactive) {
+            lastScreenOnAt = now
+        } else {
+            lastScreenOffAt = now
+            screenOffEvents.add(now)
+        }
+        SleepTracker.update { it.copy(screenIsOff = !interactive) }
+
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                when (intent?.action) {
+                    Intent.ACTION_SCREEN_OFF -> {
+                        val at = System.currentTimeMillis()
+                        if (lastScreenOnAt > 0L) {
+                            screenOnTotal += at - lastScreenOnAt
+                            lastScreenOnAt = 0L
+                        }
+                        if (lastScreenOffAt == 0L) {
+                            lastScreenOffAt = at
+                            screenOffEvents.add(at)
+                        }
+                    }
+                    Intent.ACTION_SCREEN_ON -> {
+                        val at = System.currentTimeMillis()
+                        if (lastScreenOffAt > 0L) {
+                            screenOffTotal += at - lastScreenOffAt
+                            lastScreenOffAt = 0L
+                        }
+                        lastScreenOnAt = at
+                        screenOnEvents.add(at)
+                    }
+                    Intent.ACTION_USER_PRESENT -> unlockCount += 1
+                }
+                SleepTracker.update {
+                    it.copy(
+                        screenOffMs = currentScreenOffMillis(),
+                        wakeUps = screenOnEvents.size,
+                        screenIsOff = lastScreenOffAt > 0L,
+                    )
+                }
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        ContextCompat.registerReceiver(this, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        screenReceiver = receiver
+    }
+
+    private fun unregisterScreenTracking(end: Long) {
+        screenReceiver?.let { runCatching { unregisterReceiver(it) } }
+        screenReceiver = null
+        if (lastScreenOffAt > 0L) {
+            screenOffTotal += (end - lastScreenOffAt).coerceAtLeast(0L)
+            lastScreenOffAt = 0L
+        }
+        if (lastScreenOnAt > 0L) {
+            screenOnTotal += (end - lastScreenOnAt).coerceAtLeast(0L)
+            lastScreenOnAt = 0L
+        }
+    }
+
+    private fun currentScreenOffMillis(): Long {
+        val runningSpan = if (lastScreenOffAt > 0L) {
+            (System.currentTimeMillis() - lastScreenOffAt).coerceAtLeast(0L)
+        } else {
+            0L
+        }
+        return screenOffTotal + runningSpan
     }
 
     private fun buildNotification(snores: Int, level: Int) = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -435,6 +548,8 @@ class SleepService : Service(), SensorEventListener {
         runCatching { record?.release() }
         runCatching { wakeLock?.release() }
         sensorManager?.unregisterListener(this)
+        screenReceiver?.let { runCatching { unregisterReceiver(it) } }
+        screenReceiver = null
         super.onDestroy()
     }
 
