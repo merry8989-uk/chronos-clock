@@ -3,6 +3,20 @@
 An honest pass over the codebase after the Settings crash report. Two parts: what
 was wrong and got fixed, and what is still missing.
 
+## Audit round — 5.2.0
+
+Seven defects found by reading every file, in addition to the crash:
+
+| Severity | Defect | Fix |
+|---|---|---|
+| High | Timer-finished alert was silent — it reused the IMPORTANCE_LOW progress channel | Separate IMPORTANCE_HIGH channel with vibration |
+| High | The Step mission could never work: ACTIVITY_RECOGNITION is a runtime permission the app never requested | Ring screen requests it when the mission appears |
+| Medium | Private storage only grew: removed wallpapers and deleted sessions left files behind | FileJanitor sweep on launch |
+| Medium | Alarm ids were max+1, so a deleted id could be reused by a stale PendingIntent | Timestamp-based, never reused |
+| Medium | Back on the ring screen closed the UI but left the alarm ringing | Back now snoozes |
+| Low | Two `!!` assertions; widget refresh from a data write was unguarded | Null-safe logic and runCatching |
+| Low | No automated tests — this crash would have been caught by one | Still open (P3) |
+
 ## Root cause found — 5.1.1
 
 The user's log (`logs-20261029-002249.txt`) contained eight identical crashes:

@@ -87,6 +87,17 @@ class RingActivity : ComponentActivity() {
         (getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager)
             ?.requestDismissKeyguard(this, null)
 
+        // Back means "snooze", not "close the screen and leave it ringing".
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    AlarmService.requestSnooze(this@RingActivity)
+                    finish()
+                }
+            },
+        )
+
         val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1L)
         val snoozeCount = intent.getIntExtra(EXTRA_SNOOZE_COUNT, 0)
 
@@ -97,6 +108,24 @@ class RingActivity : ComponentActivity() {
                 val missions = alarm?.missions ?: emptyList()
 
                 var missionIndex by remember { mutableIntStateOf(0) }
+
+                // The step mission needs the activity-recognition permission; ask
+                // for it the moment that mission comes up.
+                val activityPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+                    androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+                ) { }
+                LaunchedEffect(missionIndex) {
+                    val spec = missions.getOrNull(missionIndex) ?: return@LaunchedEffect
+                    if (spec.type == "step" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                            this@RingActivity,
+                            android.Manifest.permission.ACTIVITY_RECOGNITION,
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        if (!granted) {
+                            activityPermission.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
+                        }
+                    }
+                }
                 val pulse = rememberInfiniteTransition(label = "ringPulse")
                 val clockScale by pulse.animateFloat(
                     initialValue = 1f,

@@ -546,11 +546,14 @@ private fun ScreenTimeline(session: SleepSession) {
         sorted.forEach { (at, on) ->
             if (on) {
                 onFrom = at
-            } else if (onFrom != null) {
-                spans.add(
-                    ((onFrom!! - start).toFloat() / total) to ((at - start).toFloat() / total),
-                )
-                onFrom = null
+            } else {
+                val from = onFrom
+                if (from != null) {
+                    spans.add(
+                        ((from - start).toFloat() / total) to ((at - start).toFloat() / total),
+                    )
+                    onFrom = null
+                }
             }
         }
         onFrom?.let { from ->

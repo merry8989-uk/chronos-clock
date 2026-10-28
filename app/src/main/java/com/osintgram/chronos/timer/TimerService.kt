@@ -127,7 +127,7 @@ class TimerService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.notify(
             FINISHED_ID,
-            NotificationCompat.Builder(this, CHANNEL_ID)
+            NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Timer finished")
                 .setContentText(state.label)
@@ -184,12 +184,26 @@ class TimerService : Service() {
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            "Timer",
-            NotificationManager.IMPORTANCE_LOW,
-        ).apply { description = "Countdown timer progress and completion" }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                "Timer progress",
+                NotificationManager.IMPORTANCE_LOW,
+            ).apply { description = "The running countdown in the shade" },
+        )
+        // The completion alert needs its own loud channel: the progress one is
+        // silent by design, so reusing it made finished timers go unnoticed.
+        manager.createNotificationChannel(
+            NotificationChannel(
+                ALERT_CHANNEL_ID,
+                "Timer finished",
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = "Alert when a countdown reaches zero"
+                enableVibration(true)
+            },
+        )
     }
 
     override fun onDestroy() {
@@ -201,6 +215,7 @@ class TimerService : Service() {
 
     companion object {
         const val CHANNEL_ID = "chronos_timer"
+        const val ALERT_CHANNEL_ID = "chronos_timer_alerts"
         const val NOTIFICATION_ID = 4301
         const val FINISHED_ID = 4302
         const val ACTION_START = "com.osintgram.chronos.timer.START"

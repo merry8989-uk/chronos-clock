@@ -206,7 +206,7 @@ fun SoundPickerDialog(
                                 Text("Choose an audio file")
                             }
                             Spacer(Modifier.height(12.dp))
-                            if (selected != null && !selected!!.startsWith("android.resource")) {
+                            if (selected?.startsWith("android.resource") == false) {
                                 Text(
                                     text = "Selected: ${AlarmService.ringtoneTitle(context, selected)}",
                                     fontSize = 13.sp,

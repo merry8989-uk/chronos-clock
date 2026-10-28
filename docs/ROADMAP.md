@@ -116,6 +116,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] **Root cause of the Settings crash:** a date pattern was formatted from a `LocalTime`, which has no day-of-week field. Now formatted from `LocalDate`, and guarded.
 - [x] Same latent bug fixed in the full-screen clock dialog (opened by tapping the logo)
 
+## Fixed in 5.2.0 — audit round
+
+- [x] Timer-finished notification moved to a loud IMPORTANCE_HIGH channel (it was silent)
+- [x] Step mission now requests ACTIVITY_RECOGNITION when it appears
+- [x] FileJanitor removes orphaned wallpapers and snore clips on launch
+- [x] Alarm ids are timestamp-based and never reused
+- [x] Back on the ring screen snoozes instead of leaving it ringing
+- [x] Non-null assertions removed, widget refresh guarded
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

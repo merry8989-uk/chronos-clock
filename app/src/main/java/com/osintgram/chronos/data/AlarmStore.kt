@@ -57,7 +57,11 @@ object AlarmStore {
         }
     }
 
-    fun nextId(): Long = (alarms.maxOfOrNull { it.id } ?: 0L) + 1L
+    /**
+     * Timestamp-based, so an id is never reused after an alarm is deleted —
+     * a reused id could let a stale PendingIntent fire the wrong alarm.
+     */
+    fun nextId(): Long = System.currentTimeMillis()
 
     fun replaceAll(list: List<Alarm>) {
         alarms.clear()
@@ -77,7 +81,9 @@ object AlarmStore {
         alarms.forEach { arr.put(it.toJson()) }
         prefs?.edit()?.putString(KEY, arr.toString())?.apply()
         // Keep the home-screen widgets in step with the list.
-        appContext?.let { com.osintgram.chronos.widget.WidgetUpdater.refreshAll(it) }
+        appContext?.let { context ->
+            runCatching { com.osintgram.chronos.widget.WidgetUpdater.refreshAll(context) }
+        }
     }
 
     private fun readAll(): List<Alarm> {

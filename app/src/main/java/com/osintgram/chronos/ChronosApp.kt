@@ -33,6 +33,7 @@ class ChronosApp : Application() {
         SleepStore.init(this)
 
         AlarmScheduler.rescheduleAll(this)
+        com.osintgram.chronos.data.FileJanitor.sweep(this)
         com.osintgram.chronos.widget.WidgetUpdater.refreshAll(this)
         DiagnosticsLogger.log("ChronosApp", "Started, version ${BuildConfig.VERSION_NAME}")
     }
