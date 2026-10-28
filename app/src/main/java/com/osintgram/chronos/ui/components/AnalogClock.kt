@@ -85,7 +85,7 @@ fun AnalogClock(
 
     BoxWithConstraints(modifier = modifier) {
         val smallest = if (maxWidth < maxHeight) maxWidth else maxHeight
-        val compact = with(density) { smallest.toPx() } < 88.dp.toPx()
+        val compact = with(density) { smallest.toPx() < 88.dp.toPx() }
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2f
