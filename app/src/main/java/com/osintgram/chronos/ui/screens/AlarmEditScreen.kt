@@ -42,7 +42,9 @@ import com.osintgram.chronos.alarm.AlarmScheduler
 import com.osintgram.chronos.alarm.AlarmService
 import com.osintgram.chronos.data.Alarm
 import com.osintgram.chronos.data.AlarmStore
+import com.osintgram.chronos.data.MissionSpec
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.data.Tones
 import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.RowDivider
 import com.osintgram.chronos.ui.components.SectionCard
@@ -75,6 +77,13 @@ fun AlarmEditScreen(alarmId: Long?, onClose: () -> Unit) {
         mutableStateOf(existing?.deleteAfterRing ?: Settings.defaultDeleteAfterRing.value)
     }
     var soundUri by remember { mutableStateOf(existing?.soundUri) }
+    var missions by remember { mutableStateOf(existing?.missions ?: emptyList<MissionSpec>()) }
+    var wallpaperPaths by remember {
+        mutableStateOf(existing?.wallpaperPaths ?: emptyList<String>())
+    }
+    var randomWallpaper by remember { mutableStateOf(existing?.randomWallpaper ?: false) }
+    var showMissionDialog by remember { mutableStateOf(false) }
+    var showWallpaperDialog by remember { mutableStateOf(false) }
 
     var showRepeatDialog by remember { mutableStateOf(false) }
     var showSoundDialog by remember { mutableStateOf(false) }
@@ -96,6 +105,9 @@ fun AlarmEditScreen(alarmId: Long?, onClose: () -> Unit) {
             skipHolidays = skipHolidays && Settings.holidaySkipping.value,
             deleteAfterRing = deleteAfterRing,
             soundUri = soundUri,
+            missions = missions,
+            wallpaperPaths = wallpaperPaths,
+            randomWallpaper = randomWallpaper,
         )
         AlarmStore.upsert(alarm)
         AlarmScheduler.schedule(context, alarm)
@@ -179,7 +191,7 @@ fun AlarmEditScreen(alarmId: Long?, onClose: () -> Unit) {
                 RowDivider()
                 SettingValueRow(
                     title = "Alarm sound",
-                    value = AlarmService.ringtoneTitle(context, soundUri),
+                    value = soundLabel(context, soundUri),
                     onClick = { showSoundDialog = true },
                 )
                 RowDivider()
@@ -193,6 +205,30 @@ fun AlarmEditScreen(alarmId: Long?, onClose: () -> Unit) {
                     title = "Snooze",
                     value = "$snoozeMinutes minutes",
                     onClick = { showSnoozeDialog = true },
+                )
+            }
+
+            SectionCard(title = "WAKE-UP") {
+                SettingValueRow(
+                    title = "Missions",
+                    subtitle = if (missions.isEmpty()) {
+                        "No challenge — one tap dismisses the alarm"
+                    } else {
+                        "Must be completed before you can snooze or dismiss"
+                    },
+                    value = if (missions.isEmpty()) "None" else "${missions.size} set",
+                    onClick = { showMissionDialog = true },
+                )
+                RowDivider()
+                SettingValueRow(
+                    title = "Wallpaper",
+                    subtitle = "Picture behind the clock while this alarm rings",
+                    value = when {
+                        wallpaperPaths.isEmpty() -> "None"
+                        randomWallpaper -> "Random (${wallpaperPaths.size})"
+                        else -> "${wallpaperPaths.size} image(s)"
+                    },
+                    onClick = { showWallpaperDialog = true },
                 )
             }
 
@@ -265,12 +301,36 @@ fun AlarmEditScreen(alarmId: Long?, onClose: () -> Unit) {
     }
 
     if (showSoundDialog) {
-        SoundDialog(
-            selectedUri = soundUri,
+        SoundPickerDialog(
+            current = soundUri,
             onDismiss = { showSoundDialog = false },
             onPick = {
                 soundUri = it
                 showSoundDialog = false
+            },
+        )
+    }
+
+    if (showMissionDialog) {
+        MissionDialog(
+            current = missions,
+            onDismiss = { showMissionDialog = false },
+            onSave = {
+                missions = it
+                showMissionDialog = false
+            },
+        )
+    }
+
+    if (showWallpaperDialog) {
+        WallpaperDialog(
+            currentPaths = wallpaperPaths,
+            currentRandom = randomWallpaper,
+            onDismiss = { showWallpaperDialog = false },
+            onSave = { paths, random ->
+                wallpaperPaths = paths
+                randomWallpaper = random
+                showWallpaperDialog = false
             },
         )
     }
@@ -317,6 +377,11 @@ fun AlarmEditScreen(alarmId: Long?, onClose: () -> Unit) {
             },
         )
     }
+}
+
+private fun soundLabel(context: android.content.Context, uri: String?): String {
+    Tones.toneForUri(uri)?.let { return it.title }
+    return AlarmService.ringtoneTitle(context, uri)
 }
 
 private fun repeatSummary(days: Set<Int>): String {
@@ -378,61 +443,6 @@ private fun RepeatDialog(
         },
         confirmButton = { TextButton(onClick = { onConfirm(working) }) { Text("Done") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
-@Composable
-private fun SoundDialog(
-    selectedUri: String?,
-    onDismiss: () -> Unit,
-    onPick: (String?) -> Unit,
-) {
-    val context = LocalContext.current
-    val options = remember { AlarmService.systemAlarmRingtones(context) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Alarm sound") },
-        text = {
-            Column(
-                modifier = Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Device default",
-                        modifier = Modifier.weight(1f),
-                        fontSize = 15.sp,
-                        fontWeight = if (selectedUri == null) FontWeight.SemiBold else FontWeight.Normal,
-                    )
-                    TextButton(onClick = { onPick(null) }) { Text("Use") }
-                }
-                options.forEach { (title, uri) ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = title,
-                            modifier = Modifier.weight(1f),
-                            fontSize = 14.sp,
-                            fontWeight = if (selectedUri == uri) FontWeight.SemiBold
-                            else FontWeight.Normal,
-                        )
-                        TextButton(onClick = { onPick(uri) }) { Text("Use") }
-                    }
-                }
-                if (options.isEmpty()) {
-                    Text(
-                        text = "No alarm tones found on this device. The default alarm sound will be used.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
 }
 

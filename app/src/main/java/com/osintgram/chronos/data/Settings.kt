@@ -65,6 +65,10 @@ object Settings {
     val stopwatchSound = Setting("stopwatch_sound", true)
     val haptics = Setting("haptics", true)
 
+    // ---- Sleep tracking ---------------------------------------------------
+    val sleepSensitivity = Setting("sleep_sensitivity", "medium")   // low | medium | high
+    val sleepClips = Setting("sleep_clips", true)
+
     // ---- General / diagnostics -------------------------------------------
     val keepScreenOn = Setting("keep_screen_on", false)
     val confirmDelete = Setting("confirm_delete", true)
@@ -101,6 +105,8 @@ object Settings {
 
         stopwatchSound.load(p.getBoolean(stopwatchSound.key, stopwatchSound.default))
         haptics.load(p.getBoolean(haptics.key, haptics.default))
+        sleepSensitivity.load(p.getString(sleepSensitivity.key, sleepSensitivity.default) ?: "medium")
+        sleepClips.load(p.getBoolean(sleepClips.key, sleepClips.default))
 
         keepScreenOn.load(p.getBoolean(keepScreenOn.key, keepScreenOn.default))
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
@@ -144,6 +150,8 @@ object Settings {
         keepScreenOnTimer.resetToDefault()
         stopwatchSound.resetToDefault()
         haptics.resetToDefault()
+        sleepSensitivity.resetToDefault()
+        sleepClips.resetToDefault()
         keepScreenOn.resetToDefault()
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
@@ -173,6 +181,8 @@ object Settings {
         keepScreenOnTimer.key to keepScreenOnTimer.value,
         stopwatchSound.key to stopwatchSound.value,
         haptics.key to haptics.value,
+        sleepSensitivity.key to sleepSensitivity.value,
+        sleepClips.key to sleepClips.value,
         keepScreenOn.key to keepScreenOn.value,
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
@@ -206,6 +216,8 @@ object Settings {
                 keepScreenOnTimer.key -> asBool?.let { keepScreenOnTimer.set(it) }
                 stopwatchSound.key -> asBool?.let { stopwatchSound.set(it) }
                 haptics.key -> asBool?.let { haptics.set(it) }
+                sleepSensitivity.key -> sleepSensitivity.set(text)
+                sleepClips.key -> asBool?.let { sleepClips.set(it) }
                 keepScreenOn.key -> asBool?.let { keepScreenOn.set(it) }
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }

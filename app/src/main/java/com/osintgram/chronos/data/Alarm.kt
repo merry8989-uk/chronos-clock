@@ -25,10 +25,25 @@ data class Alarm(
     val deleteAfterRing: Boolean = false,
     val soundUri: String? = null,
     val volumeRamp: Boolean = true,
+    val missions: List<MissionSpec> = emptyList(),
+    val wallpaperPaths: List<String> = emptyList(),
+    val randomWallpaper: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
 ) {
 
     /** "Every day", "Mon to Fri", "Weekends", "Mon, Wed, Fri" or "Once". */
+    /** True when dismissing this alarm requires completing missions. */
+    val hasMissions: Boolean get() = missions.isNotEmpty()
+
+    fun missionSummary(): String =
+        if (missions.isEmpty()) "None"
+        else missions.joinToString(" → ") { spec ->
+            val info = MissionSpec.info(spec.type)
+            val title = info?.title ?: spec.type
+            val unit = info?.unit ?: ""
+            if (spec.count <= 1) title else "$title ${spec.count}"
+        }
+
     fun repeatSummary(): String {
         if (repeatDays.isEmpty()) return "Once"
         if (repeatDays.size == 7) return "Every day"
@@ -63,6 +78,9 @@ data class Alarm(
         .put("deleteAfterRing", deleteAfterRing)
         .put("soundUri", soundUri ?: JSONObject.NULL)
         .put("volumeRamp", volumeRamp)
+        .put("missions", MissionSpec.listToJson(missions))
+        .put("wallpaperPaths", JSONArray(wallpaperPaths))
+        .put("randomWallpaper", randomWallpaper)
         .put("createdAt", createdAt)
 
     companion object {
@@ -95,6 +113,11 @@ data class Alarm(
                 deleteAfterRing = o.optBoolean("deleteAfterRing", false),
                 soundUri = if (o.isNull("soundUri")) null else o.optString("soundUri").takeIf { it.isNotEmpty() },
                 volumeRamp = o.optBoolean("volumeRamp", true),
+                missions = MissionSpec.listFromJson(o.optJSONArray("missions")),
+                wallpaperPaths = o.optJSONArray("wallpaperPaths")?.let { arr ->
+                    (0 until arr.length()).mapNotNull { arr.optString(it).takeIf { p -> p.isNotEmpty() } }
+                } ?: emptyList(),
+                randomWallpaper = o.optBoolean("randomWallpaper", false),
                 createdAt = o.optLong("createdAt"),
             )
         }

@@ -86,6 +86,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showSnoozeLimitDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var showSensitivityDialog by remember { mutableStateOf(false) }
 
     val exportBackup = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -363,6 +364,23 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
+            // ---- Sleep --------------------------------------------------------
+            SectionCard(title = "SLEEP TRACKING") {
+                SettingValueRow(
+                    title = "Snore sensitivity",
+                    subtitle = "Higher sensitivity catches quieter snoring and more room noise",
+                    value = Settings.sleepSensitivity.value.replaceFirstChar { it.uppercase() },
+                    onClick = { showSensitivityDialog = true },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Save snore clips",
+                    subtitle = "Keeps a 10-second audio clip for each detected snore",
+                    checked = Settings.sleepClips.value,
+                    onCheckedChange = { Settings.sleepClips.set(it) },
+                )
+            }
+
             // ---- General ------------------------------------------------------
             SectionCard(title = "GENERAL") {
                 SettingSwitchRow(
@@ -562,6 +580,45 @@ fun SettingsScreen(onBack: () -> Unit) {
             onPick = {
                 Settings.snoozeLimit.set(it)
                 showSnoozeLimitDialog = false
+            },
+        )
+    }
+
+    if (showSensitivityDialog) {
+        AlertDialog(
+            onDismissRequest = { showSensitivityDialog = false },
+            title = { Text("Snore sensitivity") },
+            text = {
+                Column {
+                    listOf(
+                        "low" to "Low — only loud snoring",
+                        "medium" to "Medium — balanced (default)",
+                        "high" to "High — quiet snoring and breathing",
+                    ).forEach { (key, label) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = label,
+                                modifier = Modifier.weight(1f),
+                                fontSize = 15.sp,
+                                fontWeight = if (Settings.sleepSensitivity.value == key) {
+                                    FontWeight.SemiBold
+                                } else {
+                                    FontWeight.Normal
+                                },
+                            )
+                            TextButton(onClick = {
+                                Settings.sleepSensitivity.set(key)
+                                showSensitivityDialog = false
+                            }) { Text("Use") }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSensitivityDialog = false }) { Text("Close") }
             },
         )
     }

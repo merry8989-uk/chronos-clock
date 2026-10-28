@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.MoreVert
@@ -35,6 +36,7 @@ import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.ui.screens.AlarmEditScreen
 import com.osintgram.chronos.ui.screens.AlarmListScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
+import com.osintgram.chronos.ui.screens.SleepScreen
 import com.osintgram.chronos.ui.screens.StopwatchScreen
 import com.osintgram.chronos.ui.screens.TimerScreen
 import com.osintgram.chronos.ui.screens.WorldClockScreen
@@ -46,6 +48,7 @@ private val tabs = listOf(
     Tab("World Clock", Icons.Filled.Public),
     Tab("Timer", Icons.Filled.HourglassBottom),
     Tab("Stopwatch", Icons.Filled.Timer),
+    Tab("Sleep", Icons.Filled.Bedtime),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -154,7 +157,8 @@ fun AppRoot() {
             )
             1 -> WorldClockScreen(modifier = contentModifier)
             2 -> TimerScreen(modifier = contentModifier)
-            else -> StopwatchScreen(modifier = contentModifier)
+            3 -> StopwatchScreen(modifier = contentModifier)
+            else -> SleepScreen(modifier = contentModifier)
         }
     }
 }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chronos — alarms, world clock, timer and stopwatch for Android</title>
+<title>Chronos — mission alarms, sleep tracking, world clock, timer and stopwatch</title>
 <meta name="description" content="Chronos is a full-screen Android clock: exact alarms with holiday skipping and volume ramp, a world clock, presets-based timer and a stopwatch with laps." />
 <style>
   :root {
@@ -76,12 +76,12 @@
     <div class="badge">Android · Clock &amp; alarms</div>
     <h1>Chronos</h1>
     <p class="lede">
-      A clock that actually wakes you: exact alarms with holiday skipping, a real
-      volume ramp and a full-screen ring screen — plus a world clock, presets-based
-      timer and a lap stopwatch, all in one full-screen app with no ads and no account.
+      A clock that actually wakes you: exact alarms, wake-up missions you have to finish
+      before the alarm stops, sleep and snoring reports, your own photo behind the ring
+      screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">1.0.0</strong> ·
+      Current version <strong id="version">2.0.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -125,6 +125,45 @@
     <li><strong>Survives reboots</strong> <span>— alarms are re-armed after a restart, an app update, a clock change or a timezone change.</span></li>
   </ul>
 
+
+  <h2>Wake-up missions</h2>
+  <p class="hint">
+    An alarm can require up to five missions, run in order, before it can be snoozed or
+    dismissed. Each mission is a real interaction with the device — nothing is faked or
+    auto-completed.
+  </p>
+  <ul>
+    <li><strong>Math</strong> <span>— solve 1–5 arithmetic problems (addition, subtraction, multiplication).</span></li>
+    <li><strong>Typing</strong> <span>— retype a phrase exactly, case-insensitive.</span></li>
+    <li><strong>Color Tiles</strong> <span>— find the one tile whose shade differs, 1–10 times.</span></li>
+    <li><strong>Arrange Shapes</strong> <span>— tap three to five shapes back in the order shown.</span></li>
+    <li><strong>Find Numbers</strong> <span>— pick the target number out of a shuffled grid.</span></li>
+    <li><strong>Find Alphabets</strong> <span>— the same with letters.</span></li>
+    <li><strong>Memory Tiles</strong> <span>— watch a growing light sequence and repeat it.</span></li>
+    <li><strong>Shake</strong> <span>— shake the phone 5–30 times, counted from the accelerometer.</span></li>
+    <li><strong>Step</strong> <span>— walk 10–50 steps, counted by the device's step counter.</span></li>
+    <li><strong>No dead ends</strong> <span>— if a device lacks a sensor or refuses a permission, that mission says so and steps aside instead of trapping you; after three minutes of ringing a skip option appears.</span></li>
+  </ul>
+
+  <h2>Sleep &amp; snoring</h2>
+  <ul>
+    <li><strong>Overnight recording</strong> <span>— a foreground service listens to the microphone and reads the accelerometer while you sleep.</span></li>
+    <li><strong>Snore detection</strong> <span>— an event is logged when the room stays above an adaptive loudness threshold, with sensitivity in Settings (low / medium / high).</span></li>
+    <li><strong>Snore clips</strong> <span>— the ten seconds around each snore are saved as a WAV you can play back in the morning, or switch clip saving off.</span></li>
+    <li><strong>Room noise graph</strong> <span>— one measured bar per 30 seconds for the whole night.</span></li>
+    <li><strong>Movement index</strong> <span>— how much the phone moved, sampled from the accelerometer.</span></li>
+    <li><strong>Week strip</strong> <span>— the last seven nights, with a dot on the ones you recorded; tap any night for its report.</span></li>
+    <li><strong>Honest by design</strong> <span>— Chronos reports what it measured: snoring, noise and movement. It does not claim to read REM or deep-sleep stages, because a phone cannot measure them.</span></li>
+  </ul>
+
+  <h2>Alarm wallpaper &amp; sounds</h2>
+  <ul>
+    <li><strong>Photo behind the ring screen</strong> <span>— add up to eight pictures, choose "Random" to rotate one per ring; images are copied into the app's storage so they keep working.</span></li>
+    <li><strong>Eight bundled tones</strong> <span>— Morning Chime, Sunrise Bells, Soft Pulse, Gentle Waves, Classic Bell, Double Beep, Siren Rise and Hard Alarm, grouped by character and previewable in the picker.</span></li>
+    <li><strong>My music</strong> <span>— any audio file on the device, with a preview.</span></li>
+    <li><strong>Recorded sound</strong> <span>— record your own alarm tone with the microphone, then preview, use or delete it.</span></li>
+  </ul>
+
   <h2>World clock</h2>
   <ul>
     <li><strong>Every timezone on the device</strong> <span>— the city list comes from Android's own timezone database, grouped alphabetically with a tap-to-jump letter rail.</span></li>
@@ -158,6 +197,7 @@
     <tr><td>Alarms</td><td>Default snooze, snooze limit, vibrate new alarms, gradual volume on new alarms, show countdown, full-screen alarm, alarm volume, holiday skipping master switch, holiday date manager, exact-alarm permission status</td></tr>
     <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on</td></tr>
     <tr><td>Stopwatch</td><td>Running sounds, haptic feedback</td></tr>
+    <tr><td>Sleep tracking</td><td>Snore sensitivity (low / medium / high), save snore clips on or off</td></tr>
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
     <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
     <tr><td>Diagnostics</td><td>Log collection (on by default), log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
@@ -170,6 +210,7 @@
     <li>Alarms, settings, cities and holidays are stored on your device only.</li>
     <li>The only network request is the update check against GitHub's public releases API.</li>
     <li>Diagnostic logs stay on the device until you choose to share or export them.</li>
+    <li>Sleep recordings, snore clips, wallpapers and recorded tones never leave the device.</li>
   </ul>
 
   <h2>Permissions and why</h2>
@@ -180,16 +221,20 @@
     <tr><td>Foreground service</td><td>Keeping the alarm tone and a running timer alive while the screen is off</td></tr>
     <tr><td>Vibrate</td><td>The vibration pattern while an alarm rings</td></tr>
     <tr><td>Boot completed</td><td>Re-arming your alarms after a restart</td></tr>
+    <tr><td>Microphone</td><td>Detecting snoring during a sleep session and recording your own alarm tone — never used at any other time</td></tr>
+    <tr><td>Activity recognition</td><td>Reading the step counter for the step mission</td></tr>
     <tr><td>Internet / install packages</td><td>Checking for and installing app updates from inside the app</td></tr>
   </table>
 
   <h2>What is not in this release</h2>
   <div class="card">
     <p>
-      Honest scope, so nothing looks bigger than it is: there is no bedtime/sleep tracking, no
-      Android home-screen widgets yet, no multiple simultaneous timers, and no per-city weather.
-      The Settings screen is English-only for now. These are tracked as the next features rather
-      than half-built placeholders.
+      Honest scope, so nothing looks bigger than it is. There is no camera-based mission yet —
+      QR/barcode, take-a-photo, push-ups, squats and jumping jacks need a camera pipeline that is
+      not in this build, so they are absent rather than faked. Sleep stages (REM / deep) are not
+      shown because a phone cannot measure them; you get measured snoring, noise and movement
+      instead. Still to come: home-screen widgets, multiple simultaneous timers, and translated
+      languages. These are tracked as the next features rather than half-built placeholders.
     </p>
   </div>
 

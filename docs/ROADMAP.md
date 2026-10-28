@@ -22,11 +22,21 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Diagnostics: log collection on by default, share, export .txt/.json/.md/.zip, clear
 - [x] In-app update check and install from GitHub Releases
 
+## Shipped in 2.0.0
+
+- [x] Wake-up missions, up to five per alarm, run in order: Math, Typing, Color Tiles, Arrange Shapes, Find Numbers, Find Alphabets, Memory Tiles, Shake, Step
+- [x] Missions that cannot run on a device (no step sensor, permission refused) step aside instead of trapping the user; a skip option appears after three minutes of ringing
+- [x] Sleep and snoring recorder: microphone snore detection with per-event WAV clips, room-noise graph, movement index, seven-night strip and per-night report
+- [x] Snore sensitivity (low / medium / high) and snore-clip saving toggle
+- [x] Alarm wallpaper: up to eight images, random rotation per ring
+- [x] Sound library: eight bundled tones in four categories, any device audio file, and recorded custom tones
+- [x] Per-alarm mission, wallpaper and sound configuration
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
 - [ ] **P1 M** Alarm history and missed-alarm recovery: record every ring, snooze and miss with the reason
-- [ ] **P1 M** Dismiss challenge: maths, typing, shake or scan-to-dismiss, per alarm
+- [x] **Done** Dismiss challenges (missions) — maths, typing, tiles, shapes, find, memory, shake, step
 - [ ] **P2 L** Wake window: ring somewhere inside a range rather than on one minute
 - [ ] **P2 M** Alarm groups and profiles (work / weekend / travel)
 - [ ] **P2 M** Interval alarms: every N hours, every N days, medication schedules
@@ -44,6 +54,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [ ] **P2 S** Sunrise and sunset per city, computed locally
 - [ ] **P2 S** Stopwatch lap export as CSV or text
 - [ ] **P3 S** Preset reordering, icons and colours
+
+## Next — missions and sleep depth
+
+- [ ] **P2 M** Camera missions: QR/barcode scan, take-a-photo, and pose-counted push-ups, squats and jumping jacks
+- [ ] **P2 M** Sleep trends: weekly and monthly averages for snoring and movement
+- [ ] **P2 S** Snore clip sharing and a "worst night" summary
+- [ ] **P3 M** Bedtime reminder that pairs with the sleep recorder
 
 ## Next — outside the app window
 
