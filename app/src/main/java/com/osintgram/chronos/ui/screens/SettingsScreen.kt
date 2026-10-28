@@ -1287,9 +1287,16 @@ private fun WidgetStylePreview() {
                 style = com.osintgram.chronos.ui.theme.ClockTextStyle,
             )
             Text(
-                text = now.format(
-                    java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM", java.util.Locale.US),
-                ),
+                // A LocalTime has no day-of-week field: formatting a date from it
+                // throws UnsupportedTemporalTypeException (the 5.1.0 Settings crash).
+                text = runCatching {
+                    java.time.LocalDate.now().format(
+                        java.time.format.DateTimeFormatter.ofPattern(
+                            "EEE, d MMM",
+                            java.util.Locale.US,
+                        ),
+                    )
+                }.getOrDefault(""),
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 11.sp,
             )

@@ -3,6 +3,34 @@
 An honest pass over the codebase after the Settings crash report. Two parts: what
 was wrong and got fixed, and what is still missing.
 
+## Root cause found — 5.1.1
+
+The user's log (`logs-20261029-002249.txt`) contained eight identical crashes:
+
+```
+java.time.temporal.UnsupportedTemporalTypeException: Unsupported field: DayOfWeek
+  at java.time.LocalTime.get0(LocalTime.java:704)
+  at java.time.format.DateTimeFormatter.format(DateTimeFormatter.java:1821)
+  at com.osintgram.chronos.ui.screens.SettingsScreenKt.WidgetStylePreview(SettingsScreen.kt:1279)
+```
+
+**The bug:** the widget-style preview held the current time in a `LocalTime` and
+then formatted the *date* from it with the pattern `"EEE, d MMM"`. A `LocalTime`
+has no day-of-week field, so `LocalTime.format` threw, and because it ran inside
+composition the whole Settings screen — and the app — went down.
+
+The same mistake existed in the full-screen clock dialog (tap the logo), where
+`"EEEE, d MMMM"` was formatted from a `LocalTime`. That one had not been
+triggered yet.
+
+**The fix:** both date strings now come from `LocalDate.now()`, with the Settings
+preview additionally wrapped in `runCatching` so a bad pattern can never crash
+the screen again. Every other date/time format in the app was checked: they all
+format from `LocalDate`, `ZonedDateTime` or `Instant`, which carry the fields.
+
+The rest of the log was healthy: an alarm fired and rang, a timer finished, and
+the floating bubble showed and hid correctly.
+
 ## Fixed in 5.1.0
 
 | # | Issue | Severity | Fix |

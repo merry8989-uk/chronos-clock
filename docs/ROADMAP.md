@@ -111,6 +111,11 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Backup now includes timer presets and sleep sessions
 - [x] `docs/AUDIT.md` records what was fixed and what is still missing
 
+## Fixed in 5.1.1
+
+- [x] **Root cause of the Settings crash:** a date pattern was formatted from a `LocalTime`, which has no day-of-week field. Now formatted from `LocalDate`, and guarded.
+- [x] Same latent bug fixed in the full-screen clock dialog (opened by tapping the logo)
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

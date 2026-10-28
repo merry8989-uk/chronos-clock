@@ -263,7 +263,9 @@ fun LiveClockDialog(onDismiss: () -> Unit) {
     } else {
         time.format(DateTimeFormatter.ofPattern("h:mm:ss a", Locale.US))
     }
-    val dateText = time.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.US))
+    // The date comes from LocalDate — a LocalTime cannot format a day-of-week.
+    val dateText = java.time.LocalDate.now()
+        .format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.US))
 
     Dialog(
         onDismissRequest = onDismiss,
