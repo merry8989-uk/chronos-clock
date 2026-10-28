@@ -72,9 +72,12 @@ object Settings {
     val stopwatchSound = Setting("stopwatch_sound", true)
     val haptics = Setting("haptics", true)
 
-    // ---- Sleep tracking ---------------------------------------------------
-    val sleepSensitivity = Setting("sleep_sensitivity", "medium")   // low | medium | high
-    val sleepClips = Setting("sleep_clips", true)
+    // ---- Bedtime mode -----------------------------------------------------
+    val bedtimeEnabled = Setting("bedtime_enabled", false)
+    val bedtimeStart = Setting("bedtime_start", 22 * 60 + 30)   // minutes from midnight
+    val bedtimeEnd = Setting("bedtime_end", 6 * 60 + 30)
+    val bedtimeDnd = Setting("bedtime_dnd", false)
+    val bedtimeNotify = Setting("bedtime_notify", true)
 
     // ---- General / diagnostics -------------------------------------------
     val keepScreenOn = Setting("keep_screen_on", false)
@@ -125,8 +128,11 @@ object Settings {
 
         stopwatchSound.load(p.getBoolean(stopwatchSound.key, stopwatchSound.default))
         haptics.load(p.getBoolean(haptics.key, haptics.default))
-        sleepSensitivity.load(p.getString(sleepSensitivity.key, sleepSensitivity.default) ?: "medium")
-        sleepClips.load(p.getBoolean(sleepClips.key, sleepClips.default))
+        bedtimeEnabled.load(p.getBoolean(bedtimeEnabled.key, bedtimeEnabled.default))
+        bedtimeStart.load(p.getInt(bedtimeStart.key, bedtimeStart.default))
+        bedtimeEnd.load(p.getInt(bedtimeEnd.key, bedtimeEnd.default))
+        bedtimeDnd.load(p.getBoolean(bedtimeDnd.key, bedtimeDnd.default))
+        bedtimeNotify.load(p.getBoolean(bedtimeNotify.key, bedtimeNotify.default))
 
         keepScreenOn.load(p.getBoolean(keepScreenOn.key, keepScreenOn.default))
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
@@ -183,8 +189,11 @@ object Settings {
         timerBubble.resetToDefault()
         stopwatchSound.resetToDefault()
         haptics.resetToDefault()
-        sleepSensitivity.resetToDefault()
-        sleepClips.resetToDefault()
+        bedtimeEnabled.resetToDefault()
+        bedtimeStart.resetToDefault()
+        bedtimeEnd.resetToDefault()
+        bedtimeDnd.resetToDefault()
+        bedtimeNotify.resetToDefault()
         keepScreenOn.resetToDefault()
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
@@ -225,8 +234,11 @@ object Settings {
         timerBubble.key to timerBubble.value,
         stopwatchSound.key to stopwatchSound.value,
         haptics.key to haptics.value,
-        sleepSensitivity.key to sleepSensitivity.value,
-        sleepClips.key to sleepClips.value,
+        bedtimeEnabled.key to bedtimeEnabled.value,
+        bedtimeStart.key to bedtimeStart.value,
+        bedtimeEnd.key to bedtimeEnd.value,
+        bedtimeDnd.key to bedtimeDnd.value,
+        bedtimeNotify.key to bedtimeNotify.value,
         keepScreenOn.key to keepScreenOn.value,
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
@@ -271,8 +283,11 @@ object Settings {
                 timerBubble.key -> asBool?.let { timerBubble.set(it) }
                 stopwatchSound.key -> asBool?.let { stopwatchSound.set(it) }
                 haptics.key -> asBool?.let { haptics.set(it) }
-                sleepSensitivity.key -> sleepSensitivity.set(text)
-                sleepClips.key -> asBool?.let { sleepClips.set(it) }
+                bedtimeEnabled.key -> asBool?.let { bedtimeEnabled.set(it) }
+                bedtimeStart.key -> text.toIntOrNull()?.let { bedtimeStart.set(it) }
+                bedtimeEnd.key -> text.toIntOrNull()?.let { bedtimeEnd.set(it) }
+                bedtimeDnd.key -> asBool?.let { bedtimeDnd.set(it) }
+                bedtimeNotify.key -> asBool?.let { bedtimeNotify.set(it) }
                 keepScreenOn.key -> asBool?.let { keepScreenOn.set(it) }
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }

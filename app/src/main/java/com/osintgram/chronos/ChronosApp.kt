@@ -5,7 +5,6 @@ import com.osintgram.chronos.alarm.AlarmScheduler
 import com.osintgram.chronos.data.AlarmStore
 import com.osintgram.chronos.data.HolidayStore
 import com.osintgram.chronos.data.Settings
-import com.osintgram.chronos.data.SleepStore
 import com.osintgram.chronos.data.WorldClockStore
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.stopwatch.StopwatchEngine
@@ -30,9 +29,9 @@ class ChronosApp : Application() {
         StopwatchEngine.init(this)
         TimerPresets.init(this)
         TimerEngine.init(this)
-        SleepStore.init(this)
 
         AlarmScheduler.rescheduleAll(this)
+        com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(this)
         com.osintgram.chronos.data.FileJanitor.sweep(this)
         com.osintgram.chronos.widget.WidgetUpdater.refreshAll(this)
         DiagnosticsLogger.log("ChronosApp", "Started, version ${BuildConfig.VERSION_NAME}")

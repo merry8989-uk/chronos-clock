@@ -81,7 +81,7 @@
       screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">5.2.0</strong> ·
+      Current version <strong id="version">6.0.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -145,16 +145,13 @@
     <li><strong>No dead ends</strong> <span>— if a device lacks a sensor or refuses a permission, that mission says so and steps aside instead of trapping you; after three minutes of ringing a skip option appears.</span></li>
   </ul>
 
-  <h2>Sleep &amp; snoring</h2>
+  <h2>Bedtime mode</h2>
   <ul>
-    <li><strong>Overnight recording</strong> <span>— a foreground service listens to the microphone and reads the accelerometer while you sleep.</span></li>
-    <li><strong>Snore detection</strong> <span>— an event is logged when the room stays above an adaptive loudness threshold, with sensitivity in Settings (low / medium / high).</span></li>
-    <li><strong>Snore clips</strong> <span>— the ten seconds around each snore are saved as a WAV you can play back in the morning, or switch clip saving off.</span></li>
-    <li><strong>Room noise graph</strong> <span>— one measured bar per 30 seconds for the whole night.</span></li>
-    <li><strong>Movement index</strong> <span>— how much the phone moved, sampled from the accelerometer.</span></li>
-    <li><strong>Screen activity</strong> <span>— the screen turning off and on is recorded all night: total screen-off time as a sleep proxy, every screen-on moment as a wake-up, unlock count, and a timeline bar showing exactly when the phone was in use.</span></li>
-    <li><strong>Week strip</strong> <span>— the last seven nights, with a dot on the ones you recorded; tap any night for its report.</span></li>
-    <li><strong>Honest by design</strong> <span>— Chronos reports what it measured: snoring, noise and movement. It does not claim to read REM or deep-sleep stages, because a phone cannot measure them.</span></li>
+    <li><strong>Scheduled wind-down</strong> <span>— set a bedtime and a wake-up time; both are exact alarms, re-armed after a reboot and skipped on holidays when holiday skipping is on.</span></li>
+    <li><strong>Reminder notification</strong> <span>— a quiet nudge at bedtime, with a shortcut to the bedtime screen.</span></li>
+    <li><strong>Do Not Disturb, optional</strong> <span>— switched on at bedtime and back off at wake-up, using the notification-policy access you grant in Settings. Your alarms still ring.</span></li>
+    <li><strong>Bedtime screen</strong> <span>— a dark nightstand clock: live analog and digital time, your next alarm with how long until it, a one-tap "Dim screen" that drops only this screen's brightness, and a Do Not Disturb toggle.</span></li>
+    <li><strong>Reachable from the ⋮ menu</strong> <span>— open the bedtime screen any time, not just on schedule.</span></li>
   </ul>
 
   <h2>Alarm wallpaper &amp; sounds</h2>
@@ -248,7 +245,7 @@
     <tr><td>Alarms</td><td>Default snooze, snooze limit, vibrate new alarms, gradual volume on new alarms, show countdown, full-screen alarm, alarm volume, holiday skipping master switch, holiday date manager, exact-alarm permission status</td></tr>
     <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on, adjust step for − and +, floating bubble (with its permission shortcut)</td></tr>
     <tr><td>Stopwatch</td><td>Running sounds, haptic feedback</td></tr>
-    <tr><td>Sleep tracking</td><td>Snore sensitivity (low / medium / high), save snore clips on or off</td></tr>
+    <tr><td>Bedtime mode</td><td>On/off, bedtime time, wake-up time, reminder notification, Do Not Disturb (with its permission shortcut), open the bedtime screen</td></tr>
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
     <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
     <tr><td>Diagnostics</td><td>Log collection (on by default), log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
@@ -272,7 +269,8 @@
     <tr><td>Foreground service</td><td>Keeping the alarm tone and a running timer alive while the screen is off</td></tr>
     <tr><td>Vibrate</td><td>The vibration pattern while an alarm rings</td></tr>
     <tr><td>Boot completed</td><td>Re-arming your alarms after a restart</td></tr>
-    <tr><td>Microphone</td><td>Detecting snoring during a sleep session and recording your own alarm tone — never used at any other time</td></tr>
+    <tr><td>Microphone</td><td>Recording your own alarm tone — never used at any other time</td></tr>
+    <tr><td>Do Not Disturb access</td><td>Only if you switch on Do Not Disturb during bedtime</td></tr>
     <tr><td>Activity recognition</td><td>Reading the step counter for the step mission</td></tr>
     <tr><td>Display over other apps</td><td>The optional floating timer bubble — off by default, only used when you switch it on</td></tr>
     <tr><td>Full-screen notifications</td><td>Taking over the screen when an alarm rings on Android 14+</td></tr>
@@ -295,9 +293,8 @@
     <p>
       Honest scope, so nothing looks bigger than it is. There is no camera-based mission yet —
       QR/barcode, take-a-photo, push-ups, squats and jumping jacks need a camera pipeline that is
-      not in this build, so they are absent rather than faked. Sleep stages (REM / deep) are not
-      shown because a phone cannot measure them; you get measured snoring, noise and movement
-      instead. Still to come: home-screen widgets, multiple simultaneous timers, and translated
+      not in this build, so they are absent rather than faked. Sleep tracking was removed in 6.0.0 — the snore recorder and its reports are gone, and bedtime
+      mode replaced it. Still to come: home-screen widgets, multiple simultaneous timers, and translated
       languages. These are tracked as the next features rather than half-built placeholders.
     </p>
   </div>

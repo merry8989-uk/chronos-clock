@@ -38,9 +38,6 @@ object Backup {
         }
         root.put("timerPresets", presets)
 
-        val nights = JSONArray()
-        com.osintgram.chronos.data.SleepStore.all().take(14).forEach { nights.put(it.toJson()) }
-        root.put("sleepSessions", nights)
 
         val dir = File(context.filesDir, "backups").apply { mkdirs() }
         val file = File(dir, "chronos-backup.json")
@@ -87,16 +84,6 @@ object Backup {
                     if (name.isNotBlank() && seconds > 0) {
                         com.osintgram.chronos.timer.TimerPresets.add(
                             com.osintgram.chronos.timer.TimerPresets.Preset(name, seconds),
-                        )
-                    }
-                }
-            }
-
-            root.optJSONArray("sleepSessions")?.let { arr ->
-                for (i in 0 until arr.length()) {
-                    arr.optJSONObject(i)?.let { o ->
-                        com.osintgram.chronos.data.SleepStore.save(
-                            com.osintgram.chronos.data.SleepSession.fromJson(o),
                         )
                     }
                 }

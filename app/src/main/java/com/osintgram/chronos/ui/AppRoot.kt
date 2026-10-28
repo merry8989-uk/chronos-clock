@@ -68,7 +68,6 @@ import com.osintgram.chronos.ui.screens.AlarmEditScreen
 import com.osintgram.chronos.ui.screens.AlarmListScreen
 import com.osintgram.chronos.ui.screens.DiagnosticsScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
-import com.osintgram.chronos.ui.screens.SleepScreen
 import com.osintgram.chronos.ui.screens.StopwatchScreen
 import com.osintgram.chronos.ui.screens.TimerScreen
 import com.osintgram.chronos.ui.screens.WorldClockScreen
@@ -83,7 +82,6 @@ private val tabs = listOf(
     Tab("World", Icons.Filled.Public),
     Tab("Timer", Icons.Filled.HourglassBottom),
     Tab("Stopwatch", Icons.Filled.Timer),
-    Tab("Sleep", Icons.Filled.Bedtime),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -219,6 +217,20 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text("Bedtime mode") },
+                                onClick = {
+                                    menuOpen = false
+                                    runCatching {
+                                        context.startActivity(
+                                            android.content.Intent(
+                                                context,
+                                                com.osintgram.chronos.bedtime.BedtimeActivity::class.java,
+                                            ),
+                                        )
+                                    }
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Diagnostics & logs") },
                                 onClick = {
                                     menuOpen = false
@@ -285,8 +297,7 @@ fun AppRoot() {
                         )
                         1 -> WorldClockScreen()
                         2 -> TimerScreen()
-                        3 -> StopwatchScreen()
-                        else -> SleepScreen()
+                        else -> StopwatchScreen()
                     }
                 }
             }

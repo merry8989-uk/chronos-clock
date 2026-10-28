@@ -576,20 +576,92 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-            // ---- Sleep --------------------------------------------------------
-            SectionCard(title = "SLEEP TRACKING") {
+            // ---- Bedtime mode --------------------------------------------------
+            SectionCard(title = "BEDTIME MODE") {
+                SettingSwitchRow(
+                    title = "Bedtime mode",
+                    subtitle = "A wind-down reminder at night, with optional Do Not Disturb",
+                    checked = Settings.bedtimeEnabled.value,
+                    onCheckedChange = {
+                        Settings.bedtimeEnabled.set(it)
+                        com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(context)
+                    },
+                )
+                RowDivider()
                 SettingValueRow(
-                    title = "Snore sensitivity",
-                    subtitle = "Higher sensitivity catches quieter snoring and more room noise",
-                    value = Settings.sleepSensitivity.value.replaceFirstChar { it.uppercase() },
-                    onClick = { showSensitivityDialog = true },
+                    title = "Bedtime",
+                    subtitle = "When the wind-down reminder fires",
+                    value = minutesLabel(Settings.bedtimeStart.value),
+                    onClick = {
+                        pickTime(context, Settings.bedtimeStart.value) {
+                            Settings.bedtimeStart.set(it)
+                            com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(context)
+                        }
+                    },
+                )
+                RowDivider()
+                SettingValueRow(
+                    title = "Wake-up",
+                    subtitle = "When bedtime mode ends",
+                    value = minutesLabel(Settings.bedtimeEnd.value),
+                    onClick = {
+                        pickTime(context, Settings.bedtimeEnd.value) {
+                            Settings.bedtimeEnd.set(it)
+                            com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(context)
+                        }
+                    },
                 )
                 RowDivider()
                 SettingSwitchRow(
-                    title = "Save snore clips",
-                    subtitle = "Keeps a 10-second audio clip for each detected snore",
-                    checked = Settings.sleepClips.value,
-                    onCheckedChange = { Settings.sleepClips.set(it) },
+                    title = "Reminder notification",
+                    subtitle = "A quiet nudge at bedtime",
+                    checked = Settings.bedtimeNotify.value,
+                    onCheckedChange = { Settings.bedtimeNotify.set(it) },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Do Not Disturb during bedtime",
+                    subtitle = if (com.osintgram.chronos.bedtime.BedtimeDnd.canControl(context)) {
+                        "Switched on at bedtime and off at wake-up. Alarms still ring"
+                    } else {
+                        "Needs notification-policy access — tap below to grant it"
+                    },
+                    checked = Settings.bedtimeDnd.value,
+                    onCheckedChange = { Settings.bedtimeDnd.set(it) },
+                )
+                if (!com.osintgram.chronos.bedtime.BedtimeDnd.canControl(context)) {
+                    RowDivider()
+                    SettingActionRow(
+                        title = "Allow Do Not Disturb control",
+                        subtitle = "Opens the system setting",
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(
+                                        android.provider.Settings
+                                            .ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS,
+                                    ),
+                                )
+                            }.onFailure {
+                                status = "Open Settings > Apps > Special access > Do Not Disturb"
+                            }
+                        },
+                    )
+                }
+                RowDivider()
+                SettingActionRow(
+                    title = "Open the bedtime screen now",
+                    subtitle = "Dim clock with your next alarm on show",
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    context,
+                                    com.osintgram.chronos.bedtime.BedtimeActivity::class.java,
+                                ),
+                            )
+                        }
+                    },
                 )
             }
 
@@ -777,8 +849,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 40.dp),
                 )
-
-                ExploreMoreAppsSection()
             }
         }
     }
@@ -1204,6 +1274,24 @@ private val TextPalette = listOf(
     "Green" to 0xFF4CD07D.toInt(),
     "Grey" to 0xFF9AA3B2.toInt(),
 )
+
+private fun minutesLabel(minutes: Int): String =
+    String.format("%02d:%02d", (minutes / 60).coerceIn(0, 23), (minutes % 60).coerceIn(0, 59))
+
+/** Native time picker, so there is no custom dial to get wrong. */
+private fun pickTime(
+    context: android.content.Context,
+    currentMinutes: Int,
+    onPicked: (Int) -> Unit,
+) {
+    android.app.TimePickerDialog(
+        context,
+        { _, hour, minute -> onPicked(hour * 60 + minute) },
+        (currentMinutes / 60).coerceIn(0, 23),
+        (currentMinutes % 60).coerceIn(0, 59),
+        true,
+    ).show()
+}
 
 /** Some OEM ROMs throw from this check; treat a failure as "not allowed". */
 private fun overlayAllowed(context: android.content.Context): Boolean =

@@ -125,6 +125,12 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Back on the ring screen snoozes instead of leaving it ringing
 - [x] Non-null assertions removed, widget refresh guarded
 
+## Changed in 6.0.0
+
+- [x] **Removed** the entire sleep tracker: SleepService, SleepStore, the Sleep tab, snore clips, sleep settings, sleep backup entries and the microphone foreground service
+- [x] **Added bedtime mode:** scheduled bedtime and wake-up alarms, reminder notification, optional Do Not Disturb with permission shortcut, and a dark nightstand screen with the next alarm and a dim toggle
+- [x] Bedtime re-armed on boot, clock change and timezone change
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

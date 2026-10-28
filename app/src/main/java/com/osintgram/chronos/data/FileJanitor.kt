@@ -28,22 +28,6 @@ object FileJanitor {
                 }
             }
 
-            val clips = File(context.filesDir, "sleep/clips")
-            if (clips.exists()) {
-                val referenced = SleepStore.all()
-                    .flatMap { session -> session.snores.mapNotNull { it.clipPath } }
-                    .toSet()
-                var freed = 0L
-                clips.listFiles()?.forEach { file ->
-                    if (file.isFile && file.absolutePath !in referenced) {
-                        freed += file.length()
-                        file.delete()
-                    }
-                }
-                if (freed > 0) {
-                    DiagnosticsLogger.log("FileJanitor", "Removed ${freed / 1024} KB of old snore clips")
-                }
-            }
         }.onFailure {
             DiagnosticsLogger.log("FileJanitor", "Sweep failed: ${it.message}")
         }
