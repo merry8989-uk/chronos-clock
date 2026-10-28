@@ -93,7 +93,6 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showSnoozeLimitDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
-    var showSensitivityDialog by remember { mutableStateOf(false) }
     var showWidgetInfo by remember { mutableStateOf(false) }
     var showStepDialog by remember { mutableStateOf(false) }
 
@@ -989,45 +988,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     }) { Text("Digital") }
                     TextButton(onClick = { showWidgetInfo = false }) { Text("Close") }
                 }
-            },
-        )
-    }
-
-    if (showSensitivityDialog) {
-        AlertDialog(
-            onDismissRequest = { showSensitivityDialog = false },
-            title = { Text("Snore sensitivity") },
-            text = {
-                Column {
-                    listOf(
-                        "low" to "Low — only loud snoring",
-                        "medium" to "Medium — balanced (default)",
-                        "high" to "High — quiet snoring and breathing",
-                    ).forEach { (key, label) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = label,
-                                modifier = Modifier.weight(1f),
-                                fontSize = 15.sp,
-                                fontWeight = if (Settings.sleepSensitivity.value == key) {
-                                    FontWeight.SemiBold
-                                } else {
-                                    FontWeight.Normal
-                                },
-                            )
-                            TextButton(onClick = {
-                                Settings.sleepSensitivity.set(key)
-                                showSensitivityDialog = false
-                            }) { Text("Use") }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSensitivityDialog = false }) { Text("Close") }
             },
         )
     }
