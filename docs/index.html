@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chronos — alarms, world clock, timer and stopwatch for Android</title>
+<meta name="description" content="Chronos is a full-screen Android clock: exact alarms with holiday skipping and volume ramp, a world clock, presets-based timer and a stopwatch with laps." />
+<style>
+  :root {
+    --bg: #0b0e14;
+    --surface: #141922;
+    --surface-2: #1b2230;
+    --line: #242c3a;
+    --text: #e9edf4;
+    --muted: #96a0b2;
+    --accent: #4c8dff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 56px 22px 40px; }
+  header { margin-bottom: 40px; }
+  .badge {
+    display: inline-block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 10px;
+  }
+  h1 { font-size: 44px; line-height: 1.1; margin: 0 0 12px; font-weight: 700; letter-spacing: -1px; }
+  .lede { font-size: 18px; color: var(--muted); margin: 0 0 22px; max-width: 640px; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .meta strong { color: var(--text); }
+  .buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .btn {
+    display: inline-block; padding: 11px 18px; border-radius: 12px; text-decoration: none;
+    font-size: 14px; font-weight: 600; border: 1px solid var(--line);
+    color: var(--text); background: var(--surface);
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #06101f; }
+  h2 {
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent);
+    margin: 44px 0 14px; font-weight: 700;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px 20px; margin-bottom: 12px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 7px 0; font-size: 15px; }
+  li span { color: var(--muted); }
+  code {
+    background: var(--surface-2); padding: 2px 6px; border-radius: 6px;
+    font-size: 13px; color: #cfe0ff;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  footer {
+    margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
+    font-size: 14px; color: var(--muted); text-align: center;
+  }
+  footer a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; background: var(--surface-2); color: var(--muted); margin-left:6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">Android · Clock &amp; alarms</div>
+    <h1>Chronos</h1>
+    <p class="lede">
+      A clock that actually wakes you: exact alarms with holiday skipping, a real
+      volume ramp and a full-screen ring screen — plus a world clock, presets-based
+      timer and a lap stopwatch, all in one full-screen app with no ads and no account.
+    </p>
+    <p class="meta">
+      Current version <strong id="version">1.0.0</strong> ·
+      Package <strong>com.osintgram.chronos</strong> ·
+      Requires Android 8.0 (API 26) or newer
+    </p>
+    <div class="buttons">
+      <a class="btn primary" href="https://github.com/merry8989-uk/chronos-clock/releases/latest">Download the latest APK</a>
+      <a class="btn" href="https://github.com/merry8989-uk/chronos-clock">Source code</a>
+      <a class="btn" href="https://instagram.com/osintgram_io">@osintgram_io</a>
+    </div>
+  </header>
+
+  <h2>Install</h2>
+  <div class="card">
+    <h3>One-tap install from inside the app</h3>
+    <p>
+      Open <strong>Settings → About → Check for updates</strong>. Chronos asks GitHub for the
+      newest release, downloads the signed APK and hands it to the Android installer, so the
+      update installs straight over the version you already have. No browser involved.
+    </p>
+  </div>
+  <div class="card">
+    <h3>First install</h3>
+    <p>
+      Download the APK from the releases page, open it, and allow "install unknown apps" for
+      your file manager when Android asks. Because the package ID and signing key never change,
+      every future release installs as a normal update.
+    </p>
+  </div>
+
+  <h2>Alarms</h2>
+  <ul>
+    <li><strong>Exact scheduling</strong> <span>— alarms use AlarmManager's alarm-clock API, so they fire on the minute, and the system shows its alarm icon.</span></li>
+    <li><strong>Full-screen ring screen</strong> <span>— turns the screen on and shows over the lock screen, with Snooze and Dismiss.</span></li>
+    <li><strong>Repeat patterns</strong> <span>— once, every day, weekdays, weekends, or any custom set of days.</span></li>
+    <li><strong>Skip public holidays</strong> <span>— fixed Indian national holidays are built in (Republic Day, Independence Day, Gandhi Jayanti) and you can add any date of your own, such as the festivals that move each year.</span></li>
+    <li><strong>Per-alarm sound</strong> <span>— pick any alarm tone already on your device, or keep the system default.</span></li>
+    <li><strong>Gradual volume</strong> <span>— the tone ramps up from quiet instead of jolting you awake.</span></li>
+    <li><strong>Snooze</strong> <span>— 5 to 30 minutes per alarm, with a configurable limit on how many times one alarm can be snoozed.</span></li>
+    <li><strong>Vibrate while ringing</strong> <span>— per alarm, with a repeating pattern.</span></li>
+    <li><strong>Delete after ringing</strong> <span>— a one-off alarm can remove itself, or simply switch off and stay in the list.</span></li>
+    <li><strong>Labels and countdown</strong> <span>— every alarm shows its label and "Alarm in 33 minutes" style countdown on the card.</span></li>
+    <li><strong>Survives reboots</strong> <span>— alarms are re-armed after a restart, an app update, a clock change or a timezone change.</span></li>
+  </ul>
+
+  <h2>World clock</h2>
+  <ul>
+    <li><strong>Every timezone on the device</strong> <span>— the city list comes from Android's own timezone database, grouped alphabetically with a tap-to-jump letter rail.</span></li>
+    <li><strong>Search</strong> <span>— filter by city or region name.</span></li>
+    <li><strong>Use my location</strong> <span>— adds your current timezone in one tap.</span></li>
+    <li><strong>Offsets and day changes</strong> <span>— each city shows its local date, GMT offset difference from you, and marks tomorrow or yesterday.</span></li>
+    <li><strong>Seconds on or off</strong> <span>— controlled from Settings.</span></li>
+  </ul>
+
+  <h2>Timer</h2>
+  <ul>
+    <li><strong>Hour / minute / second wheels</strong> <span>— a snapping picker, not a text box.</span></li>
+    <li><strong>Presets</strong> <span>— Meeting, Sleep, Exercise and Tea are there to start with; save your own from the current duration and remove the ones you don't use.</span></li>
+    <li><strong>Runs in the background</strong> <span>— a foreground service keeps the countdown alive with a live notification while you use other apps.</span></li>
+    <li><strong>Accurate through sleep</strong> <span>— remaining time is derived from the monotonic clock, so a sleeping device cannot make the timer drift.</span></li>
+    <li><strong>Add a minute</strong> <span>— extend a running countdown without restarting it.</span></li>
+    <li><strong>Completion alert</strong> <span>— tone and vibration when it ends, each toggleable.</span></li>
+  </ul>
+
+  <h2>Stopwatch</h2>
+  <ul>
+    <li><strong>Centisecond precision</strong> <span>— 00:00.00, with hours appearing automatically past the hour.</span></li>
+    <li><strong>Laps</strong> <span>— split and total for each lap; the fastest and slowest are highlighted once you have two or more.</span></li>
+    <li><strong>Survives process death</strong> <span>— the start instant is persisted, so the count stays correct if the app is backgrounded or restarted.</span></li>
+  </ul>
+
+  <h2>Settings — every option is wired up</h2>
+  <table>
+    <tr><th>Section</th><th>Options</th></tr>
+    <tr><td>Appearance</td><td>Theme (system / light / dark), six accent colours, text size, 24-hour time, pure-black dark mode, world clock seconds</td></tr>
+    <tr><td>Alarms</td><td>Default snooze, snooze limit, vibrate new alarms, gradual volume on new alarms, show countdown, full-screen alarm, alarm volume, holiday skipping master switch, holiday date manager, exact-alarm permission status</td></tr>
+    <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on</td></tr>
+    <tr><td>Stopwatch</td><td>Running sounds, haptic feedback</td></tr>
+    <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
+    <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
+    <tr><td>Diagnostics</td><td>Log collection (on by default), log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
+    <tr><td>About</td><td>Version, check for updates and install in-app, source code link</td></tr>
+  </table>
+
+  <h2>Privacy and data</h2>
+  <ul>
+    <li>No account, no sign-in, no analytics, no ads.</li>
+    <li>Alarms, settings, cities and holidays are stored on your device only.</li>
+    <li>The only network request is the update check against GitHub's public releases API.</li>
+    <li>Diagnostic logs stay on the device until you choose to share or export them.</li>
+  </ul>
+
+  <h2>Permissions and why</h2>
+  <table>
+    <tr><th>Permission</th><th>Used for</th></tr>
+    <tr><td>Exact alarms</td><td>Firing an alarm on the exact minute rather than "some time around then"</td></tr>
+    <tr><td>Notifications</td><td>The ringing notification, timer progress and the finished-timer alert</td></tr>
+    <tr><td>Foreground service</td><td>Keeping the alarm tone and a running timer alive while the screen is off</td></tr>
+    <tr><td>Vibrate</td><td>The vibration pattern while an alarm rings</td></tr>
+    <tr><td>Boot completed</td><td>Re-arming your alarms after a restart</td></tr>
+    <tr><td>Internet / install packages</td><td>Checking for and installing app updates from inside the app</td></tr>
+  </table>
+
+  <h2>What is not in this release</h2>
+  <div class="card">
+    <p>
+      Honest scope, so nothing looks bigger than it is: there is no bedtime/sleep tracking, no
+      Android home-screen widgets yet, no multiple simultaneous timers, and no per-city weather.
+      The Settings screen is English-only for now. These are tracked as the next features rather
+      than half-built placeholders.
+    </p>
+  </div>
+
+  <footer>
+    Chronos is built and maintained by
+    <a href="https://instagram.com/osintgram_io">@osintgram_io</a>.<br />
+    Suggestions, feedback and feature requests — message
+    <a href="https://instagram.com/osintgram_io">@osintgram_io</a> on Instagram.
+  </footer>
+
+</div>
+</body>
+</html>

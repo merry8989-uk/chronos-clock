@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Where the updater writes the downloaded APK (Rule 6). -->
+    <cache-path name="updates" path="." />
+    <!-- Where diagnostics exports are written before sharing (Rule 7). -->
+    <files-path name="logs" path="logs/" />
+    <!-- Where settings backups are written before sharing. -->
+    <files-path name="backups" path="backups/" />
+</paths>
