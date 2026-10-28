@@ -59,6 +59,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Settings → Logo & clock: live preview, analog/digital style, second hand on/off, smooth sweep
 - [x] Launcher icon redrawn as a three-hand clock face (10:10:30)
 
+## Fixed in 3.1.1
+
+- [x] Clock hands were sized as fractions of the radius, so at 38dp the second hand was under a pixel and the logo looked frozen — all strokes now have pixel minimums
+- [x] Small sizes use a simplified face: no minute ticks, thicker hour/minute hands, longer accent second hand
+- [x] Clock state refreshes five times a second (33ms with smooth sweep), so movement is visible
+- [x] Tap the logo to open a full-screen clock with the ticking digital time
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

@@ -55,6 +55,7 @@ import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.ui.components.AnalogClock
 import com.osintgram.chronos.ui.components.ChronosBackground
 import com.osintgram.chronos.ui.components.DigitalClockLabel
+import com.osintgram.chronos.ui.components.LiveClockDialog
 import com.osintgram.chronos.ui.screens.AlarmEditScreen
 import com.osintgram.chronos.ui.screens.AlarmListScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
@@ -64,6 +65,7 @@ import com.osintgram.chronos.ui.screens.TimerScreen
 import com.osintgram.chronos.ui.screens.WorldClockScreen
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
+import com.osintgram.chronos.ui.theme.pressable
 
 private data class Tab(val label: String, val icon: ImageVector)
 
@@ -84,6 +86,7 @@ fun AppRoot() {
     var showEditor by rememberSaveable { mutableStateOf(false) }
     var editingId by rememberSaveable { mutableStateOf(-1L) }
     var menuOpen by remember { mutableStateOf(false) }
+    var showClock by remember { mutableStateOf(false) }
 
     val keepScreenOn = Settings.keepScreenOn.value
     val view = LocalView.current
@@ -110,6 +113,10 @@ fun AppRoot() {
         }
     }
 
+    if (showClock) {
+        LiveClockDialog(onDismiss = { showClock = false })
+    }
+
     ChronosBackground {
         Scaffold(
             modifier = Modifier.safeDrawingPadding(),
@@ -121,7 +128,9 @@ fun AppRoot() {
                             // The logo is the clock: three hands, live.
                             if (Settings.logoStyle.value == "analog") {
                                 AnalogClock(
-                                    modifier = Modifier.size(30.dp),
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .pressable(scale = 0.9f) { showClock = true },
                                     showSecondHand = Settings.clockSecondHand.value,
                                     smoothSweep = Settings.clockSmooth.value,
                                     rimColor = MaterialTheme.colorScheme.primary,
@@ -132,7 +141,9 @@ fun AppRoot() {
                                 )
                             } else {
                                 DigitalClockLabel(
-                                    modifier = Modifier.padding(end = 8.dp),
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .pressable(scale = 0.94f) { showClock = true },
                                     color = MaterialTheme.colorScheme.onBackground,
                                 )
                             }
