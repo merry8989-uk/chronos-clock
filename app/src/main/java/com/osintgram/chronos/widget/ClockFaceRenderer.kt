@@ -59,7 +59,7 @@ object ClockFaceRenderer {
 
         // Minute ticks, longer every five minutes
         for (i in 0 until 60) {
-            val angle = i * 6.0
+            val angle = i * 6f
             val isHour = i % 5 == 0
             paint.strokeWidth = if (isHour) radius * 0.028f else radius * 0.011f
             paint.color = if (isHour) tickColor else withAlpha(tickColor, 0.45f)
@@ -102,16 +102,16 @@ object ClockFaceRenderer {
         return bitmap
     }
 
-    private fun point(centre: Float, distance: Float, angleDeg: Double): Pair<Float, Float> =
+    private fun point(centre: Float, distance: Float, angleDeg: Float): Pair<Float, Float> =
         pointX(centre, distance, angleDeg) to pointY(centre, distance, angleDeg)
 
-    private fun pointX(centre: Float, distance: Float, angleDeg: Double): Float {
-        val rad = Math.toRadians(angleDeg - 90.0)
+    private fun pointX(centre: Float, distance: Float, angleDeg: Float): Float {
+        val rad = Math.toRadians((angleDeg - 90f).toDouble())
         return centre + (cos(rad) * distance).toFloat()
     }
 
-    private fun pointY(centre: Float, distance: Float, angleDeg: Double): Float {
-        val rad = Math.toRadians(angleDeg - 90.0)
+    private fun pointY(centre: Float, distance: Float, angleDeg: Float): Float {
+        val rad = Math.toRadians((angleDeg - 90f).toDouble())
         return centre + (sin(rad) * distance).toFloat()
     }
 
