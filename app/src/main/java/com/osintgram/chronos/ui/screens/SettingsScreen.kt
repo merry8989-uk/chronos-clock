@@ -777,6 +777,8 @@ fun SettingsScreen(onBack: () -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 40.dp),
                 )
+
+                ExploreMoreAppsSection()
             }
         }
     }
