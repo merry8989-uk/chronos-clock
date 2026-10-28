@@ -79,6 +79,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Wi-Fi-only update option (uses the network-state permission)
 - [x] USE_FULL_SCREEN_INTENT added for the alarm takeover on Android 14+
 
+## Fixed in 4.1.0
+
+- [x] **Bug:** the hour/minute/second wheels only changed the display — the timer that actually ran kept its old duration, so anything other than the last-set value "did not work". The engine is now the single source of truth and the wheels write straight into it.
+- [x] **Bug:** Reset returned to the stale duration instead of what the wheels showed; it now returns to the configured duration and the wheels stay in step.
+- [x] Added a − button next to +, with a configurable step (1/2/5/10/15 minutes) in Settings → Timer
+- [x] Timer notification now ticks by itself and carries Pause, +N min, Stop and New timer actions
+- [x] Optional floating timer bubble (draggable, tap to open, long-press to hide) with a permission shortcut in Settings
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

@@ -65,6 +65,8 @@ object Settings {
     val timerDoneSound = Setting("timer_done_sound", true)
     val timerVibrate = Setting("timer_vibrate", true)
     val keepScreenOnTimer = Setting("keep_screen_on_timer", true)
+    val timerStepMinutes = Setting("timer_step_minutes", 1)
+    val timerBubble = Setting("timer_bubble", false)
 
     // ---- Stopwatch --------------------------------------------------------
     val stopwatchSound = Setting("stopwatch_sound", true)
@@ -111,6 +113,8 @@ object Settings {
         timerDoneSound.load(p.getBoolean(timerDoneSound.key, timerDoneSound.default))
         timerVibrate.load(p.getBoolean(timerVibrate.key, timerVibrate.default))
         keepScreenOnTimer.load(p.getBoolean(keepScreenOnTimer.key, keepScreenOnTimer.default))
+        timerStepMinutes.load(p.getInt(timerStepMinutes.key, timerStepMinutes.default))
+        timerBubble.load(p.getBoolean(timerBubble.key, timerBubble.default))
 
         stopwatchSound.load(p.getBoolean(stopwatchSound.key, stopwatchSound.default))
         haptics.load(p.getBoolean(haptics.key, haptics.default))
@@ -161,6 +165,8 @@ object Settings {
         timerDoneSound.resetToDefault()
         timerVibrate.resetToDefault()
         keepScreenOnTimer.resetToDefault()
+        timerStepMinutes.resetToDefault()
+        timerBubble.resetToDefault()
         stopwatchSound.resetToDefault()
         haptics.resetToDefault()
         sleepSensitivity.resetToDefault()
@@ -196,6 +202,8 @@ object Settings {
         timerDoneSound.key to timerDoneSound.value,
         timerVibrate.key to timerVibrate.value,
         keepScreenOnTimer.key to keepScreenOnTimer.value,
+        timerStepMinutes.key to timerStepMinutes.value,
+        timerBubble.key to timerBubble.value,
         stopwatchSound.key to stopwatchSound.value,
         haptics.key to haptics.value,
         sleepSensitivity.key to sleepSensitivity.value,
@@ -235,6 +243,8 @@ object Settings {
                 timerDoneSound.key -> asBool?.let { timerDoneSound.set(it) }
                 timerVibrate.key -> asBool?.let { timerVibrate.set(it) }
                 keepScreenOnTimer.key -> asBool?.let { keepScreenOnTimer.set(it) }
+                timerStepMinutes.key -> text.toIntOrNull()?.let { timerStepMinutes.set(it) }
+                timerBubble.key -> asBool?.let { timerBubble.set(it) }
                 stopwatchSound.key -> asBool?.let { stopwatchSound.set(it) }
                 haptics.key -> asBool?.let { haptics.set(it) }
                 sleepSensitivity.key -> sleepSensitivity.set(text)

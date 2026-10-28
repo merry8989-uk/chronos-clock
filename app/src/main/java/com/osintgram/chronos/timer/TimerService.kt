@@ -26,8 +26,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Keeps a running timer alive in the background with a live notification, and
- * fires the completion sound and vibration when the countdown reaches zero.
+ * Keeps a running timer alive in the background: a live countdown notification
+ * with pause / add-time / stop / new-timer actions, and the optional floating
+ * bubble when the user has switched it on.
  */
 class TimerService : Service() {
 
@@ -43,13 +44,29 @@ class TimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> {
+                TimerEngine.reset(this)
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_PAUSE -> {
+                TimerEngine.pause(this)
+                return START_NOT_STICKY
+            }
+            ACTION_EXTEND -> {
+                val step = Settings.timerStepMinutes.value.coerceIn(1, 30)
+                TimerEngine.extend(step * 60_000L)
+                refreshNotification()
+                return START_STICKY
+            }
+            else -> {
+                notifiedFinish = false
+                startForeground(NOTIFICATION_ID, buildNotification())
+                if (Settings.timerBubble.value) TimerBubble.show(this)
+                startTicking()
+            }
         }
-        notifiedFinish = false
-        startForeground(NOTIFICATION_ID, buildNotification("Timer running"))
-        startTicking()
         return START_STICKY
     }
 
@@ -59,13 +76,8 @@ class TimerService : Service() {
             while (true) {
                 TimerEngine.tick()
                 val state = TimerEngine.state.value
-                updateNotification(
-                    if (state.running) {
-                        "${TimerEngine.format(state.remainingMs)} · ${state.label}"
-                    } else {
-                        "Timer finished"
-                    },
-                )
+                if (Settings.timerBubble.value) TimerBubble.update(state.remainingMs)
+                refreshNotification()
                 if (!state.running) {
                     if (state.finished) onTimerFinished()
                     break
@@ -75,10 +87,17 @@ class TimerService : Service() {
         }
     }
 
+    private fun refreshNotification() {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(NOTIFICATION_ID, buildNotification())
+    }
+
     private fun onTimerFinished() {
         if (notifiedFinish) return
         notifiedFinish = true
-        DiagnosticsLogger.log("TimerService", "Timer finished: ${TimerEngine.state.value.label}")
+        val state = TimerEngine.state.value
+        DiagnosticsLogger.log("TimerService", "Timer finished: ${state.label}")
+        TimerBubble.hide(this)
 
         if (Settings.timerDoneSound.value) {
             runCatching {
@@ -111,7 +130,7 @@ class TimerService : Service() {
             NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle("Timer finished")
-                .setContentText(TimerEngine.state.value.label)
+                .setContentText(state.label)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(openAppIntent())
@@ -121,26 +140,45 @@ class TimerService : Service() {
         stopSelf()
     }
 
-    private fun buildNotification(text: String) = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
-        .setContentTitle("Chronos timer")
-        .setContentText(text)
-        .setOngoing(true)
-        .setSilent(true)
-        .setOnlyAlertOnce(true)
-        .setContentIntent(openAppIntent())
-        .addAction(0, "Open", openAppIntent())
-        .build()
+    private fun buildNotification(): NotificationCompat.Builder {
+        val state = TimerEngine.state.value
+        val step = Settings.timerStepMinutes.value.coerceIn(1, 30)
+        val running = state.running
+        val remaining = state.remainingMs
 
-    private fun updateNotification(text: String) {
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, buildNotification(text))
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(if (running) "Timer running" else "Timer paused")
+            .setContentText("${TimerEngine.format(remaining)} · ${state.label}")
+            // The system renders the countdown itself, so it ticks every second
+            // without us waking up.
+            .setUsesChronometer(true)
+            .setChronometerCountDown(true)
+            .setWhen(System.currentTimeMillis() + remaining)
+            .setOngoing(running)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setContentIntent(openAppIntent())
+            .addAction(0, if (running) "Pause" else "Resume", serviceIntent(ACTION_PAUSE, 10))
+            .addAction(0, "+$step min", serviceIntent(ACTION_EXTEND, 11))
+            .addAction(0, "Stop", serviceIntent(ACTION_STOP, 12))
+            .addAction(0, "New timer", openAppIntent())
     }
+
+    private fun serviceIntent(actionName: String, requestCode: Int): PendingIntent =
+        PendingIntent.getService(
+            this,
+            requestCode,
+            Intent(this, TimerService::class.java).apply { action = actionName },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
     private fun openAppIntent(): PendingIntent = PendingIntent.getActivity(
         this,
         0,
-        Intent(this, MainActivity::class.java),
+        Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        },
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
 
@@ -157,6 +195,7 @@ class TimerService : Service() {
     override fun onDestroy() {
         tickJob?.cancel()
         scope.cancel()
+        TimerBubble.hide(this)
         super.onDestroy()
     }
 
@@ -166,5 +205,7 @@ class TimerService : Service() {
         const val FINISHED_ID = 4302
         const val ACTION_START = "com.osintgram.chronos.timer.START"
         const val ACTION_STOP = "com.osintgram.chronos.timer.STOP"
+        const val ACTION_PAUSE = "com.osintgram.chronos.timer.PAUSE"
+        const val ACTION_EXTEND = "com.osintgram.chronos.timer.EXTEND"
     }
 }

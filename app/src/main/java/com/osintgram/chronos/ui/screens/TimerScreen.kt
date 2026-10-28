@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,12 +43,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.timer.TimerEngine
 import com.osintgram.chronos.timer.TimerPresets
 import com.osintgram.chronos.ui.components.CircleProgress
@@ -62,23 +63,36 @@ fun TimerScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val state by TimerEngine.state.collectAsState()
     val presets = TimerPresets.all()
+    val step = Settings.timerStepMinutes.value.coerceIn(1, 30)
 
-    var hours by remember { mutableIntStateOf(0) }
-    var minutes by remember { mutableIntStateOf(15) }
-    var seconds by remember { mutableIntStateOf(0) }
+    // The wheels are a view of the engine's duration — the engine is the single
+    // source of truth, which is what was broken before: the wheels changed the
+    // display but never the timer that actually ran.
+    var hours by remember { mutableIntStateOf((state.durationMs / 3_600_000L).toInt()) }
+    var minutes by remember { mutableIntStateOf(((state.durationMs / 60_000L) % 60).toInt()) }
+    var seconds by remember { mutableIntStateOf(((state.durationMs / 1_000L) % 60).toInt()) }
+
+    fun syncWheels(ms: Long) {
+        hours = (ms / 3_600_000L).toInt().coerceIn(0, 23)
+        minutes = ((ms / 60_000L) % 60).toInt().coerceIn(0, 59)
+        seconds = ((ms / 1_000L) % 60).toInt().coerceIn(0, 59)
+    }
+
+    fun applyWheels() {
+        TimerEngine.setDuration(((hours * 3600L) + (minutes * 60L) + seconds) * 1000L)
+    }
+
     var showSavePreset by remember { mutableStateOf(false) }
     var presetName by remember { mutableStateOf("") }
 
-    val pickedMs = ((hours * 3600L) + (minutes * 60L) + seconds) * 1000L
     val running = state.running
-    val displayMs = if (running || state.finished) state.remainingMs else pickedMs
+    val displayMs = state.remainingMs
     val progress = if (state.durationMs > 0) {
         state.remainingMs.toFloat() / state.durationMs.toFloat()
     } else {
-        1f
+        0f
     }
 
-    // A slow breath on the ring while it runs, so a glance tells you it is live.
     val breathe = rememberInfiniteTransition(label = "breathe")
     val pulse by breathe.animateFloat(
         initialValue = 0.97f,
@@ -117,8 +131,9 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                         scaleY = scale
                     },
                 strokeWidth = 10.dp,
-                color = if (state.finished) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.primary.copy(alpha = if (running) 1f else 0.35f),
+                color = MaterialTheme.colorScheme.primary.copy(
+                    alpha = if (running || state.finished) 1f else 0.35f,
+                ),
                 trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -145,7 +160,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
 
         Spacer(Modifier.height(18.dp))
 
-        if (!running && !state.finished) {
+        if (!running) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -154,17 +169,26 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                 WheelPicker(
                     values = (0..23).map { String.format("%02d", it) },
                     selectedIndex = hours,
-                    onSelected = { hours = it },
+                    onSelected = {
+                        hours = it
+                        applyWheels()
+                    },
                 )
                 WheelPicker(
                     values = (0..59).map { String.format("%02d", it) },
                     selectedIndex = minutes,
-                    onSelected = { minutes = it },
+                    onSelected = {
+                        minutes = it
+                        applyWheels()
+                    },
                 )
                 WheelPicker(
                     values = (0..59).map { String.format("%02d", it) },
                     selectedIndex = seconds,
-                    onSelected = { seconds = it },
+                    onSelected = {
+                        seconds = it
+                        applyWheels()
+                    },
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -177,7 +201,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
         }
 
         // ---- Controls -------------------------------------------------------
@@ -189,9 +213,21 @@ fun TimerScreen(modifier: Modifier = Modifier) {
             RoundControl(
                 icon = Icons.Filled.Refresh,
                 description = "Reset timer",
-                onClick = { TimerEngine.reset(context) },
+                onClick = {
+                    TimerEngine.reset(context)
+                    syncWheels(TimerEngine.state.value.remainingMs)
+                },
             )
-            Spacer(Modifier.size(26.dp))
+            Spacer(Modifier.size(12.dp))
+            RoundControl(
+                icon = Icons.Filled.Remove,
+                description = "Remove $step minutes",
+                onClick = {
+                    TimerEngine.extend(-step * 60_000L)
+                    syncWheels(TimerEngine.state.value.remainingMs)
+                },
+            )
+            Spacer(Modifier.size(14.dp))
             Surface(
                 color = MaterialTheme.colorScheme.primary,
                 shape = CircleShape,
@@ -201,7 +237,10 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                         if (running) {
                             TimerEngine.pause(context)
                         } else {
-                            if (pickedMs <= 0L && !state.finished) TimerEngine.setDuration(60_000)
+                            if (TimerEngine.state.value.remainingMs <= 0L) {
+                                TimerEngine.setDuration(60_000L)
+                                syncWheels(60_000L)
+                            }
                             TimerEngine.start(context)
                         }
                     },
@@ -215,15 +254,28 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
-            Spacer(Modifier.size(26.dp))
+            Spacer(Modifier.size(14.dp))
             RoundControl(
                 icon = Icons.Filled.Add,
-                description = "Add a minute",
-                onClick = { TimerEngine.extend(60_000) },
+                description = "Add $step minutes",
+                onClick = {
+                    TimerEngine.extend(step * 60_000L)
+                    syncWheels(TimerEngine.state.value.remainingMs)
+                },
             )
+            Spacer(Modifier.size(12.dp))
+            // Spacer keeps the start button centred between the pairs.
+            Box(Modifier.size(52.dp))
         }
 
-        Spacer(Modifier.height(22.dp))
+        Text(
+            text = "− / + by $step min · change in Settings → Timer",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 10.dp),
+        )
+
+        Spacer(Modifier.height(20.dp))
 
         // ---- Presets --------------------------------------------------------
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
@@ -232,13 +284,11 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     PresetTile(
                         title = preset.name,
                         subtitle = TimerEngine.format(preset.seconds * 1000, showHours = true),
-                        selected = !running && pickedMs == preset.seconds * 1000,
+                        selected = !running && state.durationMs == preset.seconds * 1000,
                         onClick = {
                             TimerEngine.setDuration(preset.seconds * 1000)
-                            hours = (preset.seconds / 3600).toInt()
-                            minutes = ((preset.seconds % 3600) / 60).toInt()
-                            seconds = (preset.seconds % 60).toInt()
                             TimerEngine.setLabel(preset.name)
+                            syncWheels(preset.seconds * 1000)
                         },
                         modifier = Modifier.weight(1f),
                     )
@@ -250,13 +300,11 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     PresetTile(
                         title = preset.name,
                         subtitle = TimerEngine.format(preset.seconds * 1000, showHours = true),
-                        selected = !running && pickedMs == preset.seconds * 1000,
+                        selected = !running && state.durationMs == preset.seconds * 1000,
                         onClick = {
                             TimerEngine.setDuration(preset.seconds * 1000)
-                            hours = (preset.seconds / 3600).toInt()
-                            minutes = ((preset.seconds % 3600) / 60).toInt()
-                            seconds = (preset.seconds % 60).toInt()
                             TimerEngine.setLabel(preset.name)
+                            syncWheels(preset.seconds * 1000)
                         },
                         modifier = Modifier.weight(1f),
                     )
@@ -302,7 +350,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "Duration: ${TimerEngine.format(pickedMs)}",
+                        text = "Duration: ${TimerEngine.format(state.durationMs)}",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -310,7 +358,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val totalSeconds = pickedMs / 1000
+                    val totalSeconds = state.durationMs / 1000
                     if (presetName.isNotBlank() && totalSeconds > 0) {
                         TimerPresets.add(TimerPresets.Preset(presetName.trim(), totalSeconds))
                     }

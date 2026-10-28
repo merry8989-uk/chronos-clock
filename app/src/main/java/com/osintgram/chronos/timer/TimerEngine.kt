@@ -95,17 +95,22 @@ object TimerEngine {
         persist()
     }
 
-    /** Adds time to a running countdown (used by the "+1 minute" button). */
+    /**
+     * Adds (or removes, with a negative value) time. While idle this also moves
+     * the configured duration, so Reset returns to the adjusted value.
+     */
     fun extend(ms: Long) {
         val current = _state.value
         if (current.running) {
-            endElapsed += ms
+            val remaining = (endElapsed - SystemClock.elapsedRealtime() + ms).coerceAtLeast(1_000L)
+            endElapsed = SystemClock.elapsedRealtime() + remaining
             _state.value = current.copy(
-                durationMs = current.durationMs + ms,
-                remainingMs = (endElapsed - SystemClock.elapsedRealtime()).coerceAtLeast(0L),
+                durationMs = (current.durationMs + ms).coerceAtLeast(1_000L),
+                remainingMs = remaining,
+                finished = false,
             )
         } else {
-            val next = current.remainingMs + ms
+            val next = (current.remainingMs + ms).coerceIn(0L, 99L * 3_600_000L)
             _state.value = current.copy(durationMs = next, remainingMs = next, finished = false)
         }
         persist()

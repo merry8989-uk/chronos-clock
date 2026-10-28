@@ -81,7 +81,7 @@
       screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">4.0.0</strong> ·
+      Current version <strong id="version">4.1.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -214,7 +214,10 @@
     <li><strong>Presets</strong> <span>— Meeting, Sleep, Exercise and Tea are there to start with; save your own from the current duration and remove the ones you don't use.</span></li>
     <li><strong>Runs in the background</strong> <span>— a foreground service keeps the countdown alive with a live notification while you use other apps.</span></li>
     <li><strong>Accurate through sleep</strong> <span>— remaining time is derived from the monotonic clock, so a sleeping device cannot make the timer drift.</span></li>
-    <li><strong>Add a minute</strong> <span>— extend a running countdown without restarting it.</span></li>
+    <li><strong>− and + buttons</strong> <span>— change the countdown by your chosen step (1, 2, 5, 10 or 15 minutes, set in Settings → Timer), whether it is running or not.</span></li>
+    <li><strong>Wheels that actually set the timer</strong> <span>— the hour/minute/second wheels drive the running countdown, and Reset returns to exactly what the wheels show.</span></li>
+    <li><strong>Live notification with controls</strong> <span>— the countdown ticks in the notification shade on its own, with Pause, +N min, Stop and New timer actions.</span></li>
+    <li><strong>Floating bubble (optional)</strong> <span>— a small draggable countdown that floats over other apps; tap it to open Chronos, long-press to hide it. Needs the "display over other apps" permission and is off by default.</span></li>
     <li><strong>Completion alert</strong> <span>— tone and vibration when it ends, each toggleable.</span></li>
   </ul>
 
@@ -230,7 +233,7 @@
     <tr><th>Section</th><th>Options</th></tr>
     <tr><td>Appearance</td><td>Theme (system / light / dark), six accent colours, text size, 24-hour time, pure-black dark mode, world clock seconds</td></tr>
     <tr><td>Alarms</td><td>Default snooze, snooze limit, vibrate new alarms, gradual volume on new alarms, show countdown, full-screen alarm, alarm volume, holiday skipping master switch, holiday date manager, exact-alarm permission status</td></tr>
-    <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on</td></tr>
+    <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on, adjust step for − and +, floating bubble (with its permission shortcut)</td></tr>
     <tr><td>Stopwatch</td><td>Running sounds, haptic feedback</td></tr>
     <tr><td>Sleep tracking</td><td>Snore sensitivity (low / medium / high), save snore clips on or off</td></tr>
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
@@ -258,6 +261,7 @@
     <tr><td>Boot completed</td><td>Re-arming your alarms after a restart</td></tr>
     <tr><td>Microphone</td><td>Detecting snoring during a sleep session and recording your own alarm tone — never used at any other time</td></tr>
     <tr><td>Activity recognition</td><td>Reading the step counter for the step mission</td></tr>
+    <tr><td>Display over other apps</td><td>The optional floating timer bubble — off by default, only used when you switch it on</td></tr>
     <tr><td>Full-screen notifications</td><td>Taking over the screen when an alarm rings on Android 14+</td></tr>
     <tr><td>Network state / Wi-Fi state</td><td>Holding an update download until you are on Wi-Fi, if that option is on</td></tr>
     <tr><td>Internet / install packages</td><td>Checking for and installing app updates from inside the app</td></tr>

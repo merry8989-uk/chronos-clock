@@ -91,6 +91,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showResetDialog by remember { mutableStateOf(false) }
     var showSensitivityDialog by remember { mutableStateOf(false) }
     var showWidgetInfo by remember { mutableStateOf(false) }
+    var showStepDialog by remember { mutableStateOf(false) }
 
     val exportBackup = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -402,6 +403,41 @@ fun SettingsScreen(onBack: () -> Unit) {
                     checked = Settings.keepScreenOnTimer.value,
                     onCheckedChange = { Settings.keepScreenOnTimer.set(it) },
                 )
+                RowDivider()
+                SettingValueRow(
+                    title = "Adjust step",
+                    subtitle = "How much the − and + buttons change the timer",
+                    value = "${Settings.timerStepMinutes.value} min",
+                    onClick = { showStepDialog = true },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Floating timer bubble",
+                    subtitle = "A small draggable countdown over other apps while a timer runs",
+                    checked = Settings.timerBubble.value,
+                    onCheckedChange = { Settings.timerBubble.set(it) },
+                )
+                if (Settings.timerBubble.value &&
+                    !android.provider.Settings.canDrawOverlays(context)
+                ) {
+                    RowDivider()
+                    SettingActionRow(
+                        title = "Allow display over other apps",
+                        subtitle = "Required for the bubble — tap to grant it",
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(
+                                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:${context.packageName}"),
+                                    ),
+                                )
+                            }.onFailure {
+                                status = "Open Settings > Apps > Chronos > Display over other apps"
+                            }
+                        },
+                    )
+                }
             }
 
             // ---- Stopwatch ----------------------------------------------------
@@ -648,6 +684,47 @@ fun SettingsScreen(onBack: () -> Unit) {
             onPick = {
                 Settings.snoozeLimit.set(it)
                 showSnoozeLimitDialog = false
+            },
+        )
+    }
+
+    if (showStepDialog) {
+        AlertDialog(
+            onDismissRequest = { showStepDialog = false },
+            title = { Text("Adjust step") },
+            text = {
+                Column {
+                    Text(
+                        text = "Each press of − or + changes the timer by this much.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    listOf(1, 2, 5, 10, 15).forEach { option ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "$option minute${if (option == 1) "" else "s"}",
+                                modifier = Modifier.weight(1f),
+                                fontSize = 15.sp,
+                                fontWeight = if (Settings.timerStepMinutes.value == option) {
+                                    FontWeight.SemiBold
+                                } else {
+                                    FontWeight.Normal
+                                },
+                            )
+                            TextButton(onClick = {
+                                Settings.timerStepMinutes.set(option)
+                                showStepDialog = false
+                            }) { Text("Use") }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showStepDialog = false }) { Text("Close") }
             },
         )
     }
