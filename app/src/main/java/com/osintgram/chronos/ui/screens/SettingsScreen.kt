@@ -71,6 +71,7 @@ import com.osintgram.chronos.ui.components.SettingValueRow
 import com.osintgram.chronos.ui.theme.AccentOptions
 import com.osintgram.chronos.ui.theme.pressable
 import com.osintgram.chronos.updater.UpdateUiState
+import com.osintgram.chronos.widget.WidgetPinner
 import com.osintgram.chronos.updater.UpdateViewModel
 import java.time.LocalDate
 
@@ -768,7 +769,34 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showWidgetInfo = false }) { Text("Got it") }
+                TextButton(onClick = {
+                    val pinned = WidgetPinner.pin(
+                        context,
+                        com.osintgram.chronos.widget.ClockWidgetProvider::class.java,
+                    )
+                    status = if (pinned) {
+                        "Confirm the prompt to place the clock on your home screen"
+                    } else {
+                        "This launcher does not support one-tap pinning — long-press your " +
+                            "home screen and pick Chronos from Widgets"
+                    }
+                }) { Text("Add analog clock") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        val pinned = WidgetPinner.pin(
+                            context,
+                            com.osintgram.chronos.widget.DigitalClockWidgetProvider::class.java,
+                        )
+                        status = if (pinned) {
+                            "Confirm the prompt to place the digital clock"
+                        } else {
+                            "Long-press your home screen → Widgets → Chronos"
+                        }
+                    }) { Text("Digital") }
+                    TextButton(onClick = { showWidgetInfo = false }) { Text("Close") }
+                }
             },
         )
     }

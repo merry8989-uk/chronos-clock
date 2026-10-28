@@ -87,6 +87,12 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Timer notification now ticks by itself and carries Pause, +N min, Stop and New timer actions
 - [x] Optional floating timer bubble (draggable, tap to open, long-press to hide) with a permission shortcut in Settings
 
+## Shipped in 4.2.0
+
+- [x] Digital clock widget with seconds and date, drawn by TextClock so it ticks itself
+- [x] One-tap widget pinning from Settings (requestPinAppWidget) with a clear fallback message
+- [x] Widget guide dialog lists all eight widgets
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

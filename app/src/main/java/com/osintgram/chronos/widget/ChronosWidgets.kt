@@ -2,7 +2,9 @@ package com.osintgram.chronos.widget
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
+import android.os.Build
 
 /** Shared behaviour for every Chronos widget: build, then keep refreshing. */
 abstract class BaseWidgetProvider : AppWidgetProvider() {
@@ -43,6 +45,11 @@ class ClockWidgetProvider : BaseWidgetProvider() {
     override val type = WidgetUpdater.TYPE_CLOCK
 }
 
+/** Digital clock with seconds, drawn by TextClock so it ticks by itself. */
+class DigitalClockWidgetProvider : BaseWidgetProvider() {
+    override val type = WidgetUpdater.TYPE_CLOCK_DIGITAL
+}
+
 /** Next alarm, with a countdown. */
 class NextAlarmWidgetProvider : BaseWidgetProvider() {
     override val type = WidgetUpdater.TYPE_NEXT_ALARM
@@ -71,4 +78,20 @@ class HolidaysWidgetProvider : BaseWidgetProvider() {
 /** One tap starts a saved timer preset. */
 class TimerPresetsWidgetProvider : BaseWidgetProvider() {
     override val type = WidgetUpdater.TYPE_TIMER_PRESETS
+}
+
+/**
+ * Asks the launcher to place a widget, so the user does not have to hunt through
+ * the widget picker. Launchers that do not support pinning return false.
+ */
+object WidgetPinner {
+
+    fun pin(context: Context, provider: Class<out AppWidgetProvider>): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+        val manager = AppWidgetManager.getInstance(context) ?: return false
+        if (!manager.isRequestPinAppWidgetSupported) return false
+        return runCatching {
+            manager.requestPinAppWidget(ComponentName(context, provider), null, null)
+        }.getOrDefault(false)
+    }
 }

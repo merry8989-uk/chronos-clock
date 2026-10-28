@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit
 object WidgetUpdater {
 
     const val TYPE_CLOCK = "clock"
+    const val TYPE_CLOCK_DIGITAL = "clock_digital"
     const val TYPE_NEXT_ALARM = "next_alarm"
     const val TYPE_ALARM_LIST = "alarm_list"
     const val TYPE_TIMER = "timer"
@@ -49,6 +50,7 @@ object WidgetUpdater {
         val manager = AppWidgetManager.getInstance(context) ?: return
         listOf(
             TYPE_CLOCK to ClockWidgetProvider::class.java,
+            TYPE_CLOCK_DIGITAL to DigitalClockWidgetProvider::class.java,
             TYPE_NEXT_ALARM to NextAlarmWidgetProvider::class.java,
             TYPE_ALARM_LIST to AlarmListWidgetProvider::class.java,
             TYPE_TIMER to TimerWidgetProvider::class.java,
@@ -67,6 +69,9 @@ object WidgetUpdater {
     fun build(context: Context, type: String): RemoteViews = when (type) {
         TYPE_CLOCK -> RemoteViews(context.packageName, R.layout.widget_clock).apply {
             setOnClickPendingIntent(R.id.widget_root, openApp(context, 100))
+        }
+        TYPE_CLOCK_DIGITAL -> RemoteViews(context.packageName, R.layout.widget_clock_digital).apply {
+            setOnClickPendingIntent(R.id.widget_root, openApp(context, 106))
         }
         TYPE_NEXT_ALARM -> buildNextAlarm(context)
         TYPE_ALARM_LIST -> buildAlarmList(context)
@@ -387,6 +392,7 @@ object WidgetUpdater {
         val manager = AppWidgetManager.getInstance(context) ?: return false
         return listOf(
             ClockWidgetProvider::class.java,
+            DigitalClockWidgetProvider::class.java,
             NextAlarmWidgetProvider::class.java,
             AlarmListWidgetProvider::class.java,
             TimerWidgetProvider::class.java,
