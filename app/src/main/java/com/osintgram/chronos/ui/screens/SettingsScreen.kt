@@ -292,7 +292,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-
             // ---- Widget style --------------------------------------------------
             SectionCard(title = "WIDGET STYLE") {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -777,7 +776,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 40.dp),
                 )
+
             }
+
+            ExploreMoreAppsSection()
         }
     }
 
@@ -1181,7 +1183,6 @@ private fun HolidaysScreen(onBack: () -> Unit) {
         }
     }
 }
-
 
 private val WidgetPalette = listOf(
     "Dark" to 0xE6171B23.toInt(),
