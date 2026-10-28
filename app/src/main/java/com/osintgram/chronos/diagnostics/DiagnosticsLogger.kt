@@ -75,8 +75,35 @@ object DiagnosticsLogger {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
             log("CRASH", "${error.javaClass.name}: ${error.message}\n${error.stackTraceToString()}")
+            // Leave a marker so the next launch can offer to send the trace,
+            // even if the crash happened in a screen that cannot be opened.
+            runCatching {
+                crashPrefs?.edit()
+                    ?.putLong("last_crash_at", System.currentTimeMillis())
+                    ?.putString("last_crash", "${error.javaClass.name}: ${error.message}")
+                    ?.apply()
+            }
             previous?.uncaughtException(thread, error)
         }
+    }
+
+    private var crashPrefs: android.content.SharedPreferences? = null
+
+    /** Called once from Application.onCreate. */
+    fun initCrashMarker(context: android.content.Context) {
+        crashPrefs = context.getSharedPreferences("chronos_diagnostics", android.content.Context.MODE_PRIVATE)
+    }
+
+    /** The last crash summary, or null when nothing crashed. */
+    fun lastCrash(): Pair<Long, String>? {
+        val prefs = crashPrefs ?: return null
+        val at = prefs.getLong("last_crash_at", 0L)
+        if (at == 0L) return null
+        return at to (prefs.getString("last_crash", "") ?: "")
+    }
+
+    fun clearCrashMarker() {
+        crashPrefs?.edit()?.remove("last_crash_at")?.remove("last_crash")?.apply()
     }
 
     private fun rotate(file: File) {

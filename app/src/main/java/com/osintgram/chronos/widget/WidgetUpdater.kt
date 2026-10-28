@@ -114,7 +114,7 @@ object WidgetUpdater {
         val accent = accentColor()
         val bitmap = ClockFaceRenderer.face(
             context = context,
-            sizePx = 512,
+            sizePx = 320,
             background = backgroundColor(),
             rimColor = accent,
             tickColor = textColor,

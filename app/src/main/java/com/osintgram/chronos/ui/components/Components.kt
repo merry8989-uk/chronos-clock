@@ -39,34 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 
-/** A rounded card that groups related settings rows. */
-@Composable
-fun SectionCard(
-    modifier: Modifier = Modifier,
-    title: String? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        if (title != null) {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 8.dp),
-            )
-        }
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(18.dp),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-        ) {
-            Column(content = content)
-        }
-    }
-}
-
 @Composable
 fun RowDivider() {
     HorizontalDivider(

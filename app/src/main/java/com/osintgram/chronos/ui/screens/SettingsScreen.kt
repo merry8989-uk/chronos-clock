@@ -401,7 +401,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 SettingSliderRow(
                     title = "Text size",
                     valueLabel = "${Settings.widgetTextSize.value}sp",
-                    value = Settings.widgetTextSize.value.toFloat(),
+                    value = Settings.widgetTextSize.value.coerceIn(12, 48).toFloat(),
                     valueRange = 12f..48f,
                     steps = 11,
                     onValueChange = {
@@ -540,9 +540,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     checked = Settings.timerBubble.value,
                     onCheckedChange = { Settings.timerBubble.set(it) },
                 )
-                if (Settings.timerBubble.value &&
-                    !android.provider.Settings.canDrawOverlays(context)
-                ) {
+                if (Settings.timerBubble.value && !overlayAllowed(context)) {
                     RowDivider()
                     SettingActionRow(
                         title = "Allow display over other apps",
@@ -1205,8 +1203,18 @@ private val TextPalette = listOf(
     "Grey" to 0xFF9AA3B2.toInt(),
 )
 
+/** Some OEM ROMs throw from this check; treat a failure as "not allowed". */
+private fun overlayAllowed(context: android.content.Context): Boolean =
+    runCatching { android.provider.Settings.canDrawOverlays(context) }.getOrDefault(false)
+
 private fun refreshWidgets(context: android.content.Context) {
-    com.osintgram.chronos.widget.WidgetUpdater.refreshAll(context)
+    // A widget failure must never crash the settings screen.
+    runCatching { com.osintgram.chronos.widget.WidgetUpdater.refreshAll(context) }
+        .onFailure {
+            com.osintgram.chronos.diagnostics.DiagnosticsLogger.log(
+                "Settings", "Widget refresh failed: ${it.message}",
+            )
+        }
 }
 
 @Composable
@@ -1247,9 +1255,12 @@ private fun WidgetStylePreview() {
         "24" -> "HH:mm"
         else -> "h:mm:ss a"
     }
-    val timeText = now.format(
-        java.time.format.DateTimeFormatter.ofPattern(pattern, java.util.Locale.US),
-    )
+    val formatter = remember(pattern) {
+        runCatching {
+            java.time.format.DateTimeFormatter.ofPattern(pattern, java.util.Locale.US)
+        }.getOrNull()
+    }
+    val timeText = runCatching { now.format(formatter) }.getOrDefault("--:--")
 
     val bg = when (Settings.widgetBgStyle.value) {
         "transparent" -> Color.Transparent

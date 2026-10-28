@@ -12,8 +12,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -33,6 +36,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -45,19 +50,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.BuildConfig
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.diagnostics.DiagnosticsLogger
+import com.osintgram.chronos.diagnostics.LogExporter
 import com.osintgram.chronos.ui.components.AnalogClock
 import com.osintgram.chronos.ui.components.ChronosBackground
+import com.osintgram.chronos.ui.components.SafeScreen
 import com.osintgram.chronos.ui.components.DigitalClockLabel
 import com.osintgram.chronos.ui.components.LiveClockDialog
 import com.osintgram.chronos.ui.screens.AlarmEditScreen
 import com.osintgram.chronos.ui.screens.AlarmListScreen
+import com.osintgram.chronos.ui.screens.DiagnosticsScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
 import com.osintgram.chronos.ui.screens.SleepScreen
 import com.osintgram.chronos.ui.screens.StopwatchScreen
@@ -87,6 +98,7 @@ fun AppRoot() {
     var editingId by rememberSaveable { mutableStateOf(-1L) }
     var menuOpen by remember { mutableStateOf(false) }
     var showClock by remember { mutableStateOf(false) }
+    var showDiagnostics by remember { mutableStateOf(false) }
 
     val keepScreenOn = Settings.keepScreenOn.value
     val view = LocalView.current
@@ -96,9 +108,18 @@ fun AppRoot() {
     }
 
     when {
+        showDiagnostics -> {
+            ChronosBackground {
+                DiagnosticsScreen(onBack = { showDiagnostics = false })
+            }
+            return
+        }
         showSettings -> {
             ChronosBackground {
-                SettingsScreen(onBack = { showSettings = false })
+                // If anything inside Settings throws, the app survives and says so.
+                SafeScreen("Settings") {
+                    SettingsScreen(onBack = { showSettings = false })
+                }
             }
             return
         }
@@ -202,6 +223,13 @@ fun AppRoot() {
                                     showSettings = true
                                 },
                             )
+                            DropdownMenuItem(
+                                text = { Text("Diagnostics & logs") },
+                                onClick = {
+                                    menuOpen = false
+                                    showDiagnostics = true
+                                },
+                            )
                         }
                     },
                 )
@@ -248,7 +276,7 @@ fun AppRoot() {
                     enter togetherWith exit
                 },
                 label = "tabContent",
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize(),
             ) { index ->
                 Box(modifier = Modifier.fillMaxSize()) {
                     when (index) {
@@ -265,6 +293,56 @@ fun AppRoot() {
                     }
                 }
             }
+            }
+        }
+    }
+}
+
+/**
+ * If the app crashed last time, say so and offer the log — reachable even when
+ * the screen that crashed cannot be opened.
+ */
+@Composable
+private fun CrashBanner() {
+    val context = LocalContext.current
+    var crash by remember { mutableStateOf(DiagnosticsLogger.lastCrash()) }
+    val info = crash ?: return
+
+    Surface(
+        color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Chronos crashed last time",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = info.second.ifBlank { "Unknown error" },
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                )
+            }
+            TextButton(onClick = {
+                val file = LogExporter.export(
+                    context, LogExporter.Format.TXT, "Chronos", BuildConfig.VERSION_NAME,
+                )
+                LogExporter.share(context, file, "text/plain")
+            }) { Text("Send log") }
+            TextButton(onClick = {
+                DiagnosticsLogger.clearCrashMarker()
+                crash = null
+            }) { Text("Dismiss") }
         }
     }
 }

@@ -30,6 +30,18 @@ object Backup {
         root.put("worldClock", JSONArray(WorldClockStore.all()))
         root.put("holidays", JSONArray(HolidayStore.customDates()))
 
+        val presets = JSONArray()
+        com.osintgram.chronos.timer.TimerPresets.all().forEach { preset ->
+            presets.put(
+                JSONObject().put("name", preset.name).put("seconds", preset.seconds),
+            )
+        }
+        root.put("timerPresets", presets)
+
+        val nights = JSONArray()
+        com.osintgram.chronos.data.SleepStore.all().take(14).forEach { nights.put(it.toJson()) }
+        root.put("sleepSessions", nights)
+
         val dir = File(context.filesDir, "backups").apply { mkdirs() }
         val file = File(dir, "chronos-backup.json")
         file.writeText(root.toString(2))
@@ -64,6 +76,29 @@ object Backup {
                     val iso = arr.optString(i)
                     runCatching { java.time.LocalDate.parse(iso) }.getOrNull()
                         ?.let { HolidayStore.addCustom(it) }
+                }
+            }
+
+            root.optJSONArray("timerPresets")?.let { arr ->
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    val name = o.optString("name")
+                    val seconds = o.optLong("seconds")
+                    if (name.isNotBlank() && seconds > 0) {
+                        com.osintgram.chronos.timer.TimerPresets.add(
+                            com.osintgram.chronos.timer.TimerPresets.Preset(name, seconds),
+                        )
+                    }
+                }
+            }
+
+            root.optJSONArray("sleepSessions")?.let { arr ->
+                for (i in 0 until arr.length()) {
+                    arr.optJSONObject(i)?.let { o ->
+                        com.osintgram.chronos.data.SleepStore.save(
+                            com.osintgram.chronos.data.SleepSession.fromJson(o),
+                        )
+                    }
                 }
             }
 

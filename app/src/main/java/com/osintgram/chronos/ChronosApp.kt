@@ -18,6 +18,7 @@ class ChronosApp : Application() {
         super.onCreate()
 
         DiagnosticsLogger.init(this)
+        DiagnosticsLogger.initCrashMarker(this)
         DiagnosticsLogger.installCrashHandler()
 
         Settings.init(this)

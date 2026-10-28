@@ -101,6 +101,16 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Text colour palette (8), automatic dark ink on a white background, text size 12–48sp
 - [x] Live preview in Settings → Widget style, applied to widgets immediately
 
+## Fixed in 5.1.0 — audit pass
+
+- [x] Crash guard around every settings section and around the Settings screen itself
+- [x] Diagnostics moved to the ⋮ menu so it works even when Settings does not
+- [x] Crash banner on next launch with a one-tap "Send log"
+- [x] OEM overlay-permission check guarded, widget refresh guarded, slider clamped, formatter cached
+- [x] Widget face bitmap reduced from 512px to 320px
+- [x] Backup now includes timer presets and sleep sessions
+- [x] `docs/AUDIT.md` records what was fixed and what is still missing
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
