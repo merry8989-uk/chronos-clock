@@ -60,6 +60,7 @@ import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.diagnostics.LogExporter
 import com.osintgram.chronos.ui.components.Pill
+import com.osintgram.chronos.ui.components.SegmentedControl
 import com.osintgram.chronos.ui.components.RowDivider
 import com.osintgram.chronos.ui.components.SectionCard
 import com.osintgram.chronos.ui.components.SettingActionRow
@@ -67,6 +68,7 @@ import com.osintgram.chronos.ui.components.SettingSliderRow
 import com.osintgram.chronos.ui.components.SettingSwitchRow
 import com.osintgram.chronos.ui.components.SettingValueRow
 import com.osintgram.chronos.ui.theme.AccentOptions
+import com.osintgram.chronos.ui.theme.pressable
 import com.osintgram.chronos.updater.UpdateUiState
 import com.osintgram.chronos.updater.UpdateViewModel
 import java.time.LocalDate
@@ -168,16 +170,11 @@ fun SettingsScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Theme", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("system" to "System", "light" to "Light", "dark" to "Dark")
-                            .forEach { (key, label) ->
-                                Pill(
-                                    text = label,
-                                    selected = Settings.themeMode.value == key,
-                                    onClick = { Settings.themeMode.set(key) },
-                                )
-                            }
-                    }
+                    SegmentedControl(
+                        options = listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+                        selected = Settings.themeMode.value,
+                        onSelect = { Settings.themeMode.set(it) },
+                    )
                     Spacer(Modifier.height(16.dp))
                     Text("Accent colour", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(10.dp))
@@ -187,7 +184,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 modifier = Modifier
                                     .size(34.dp)
                                     .background(color, CircleShape)
-                                    .clickable { Settings.accent.set(key) },
+                                    .pressable(scale = 0.88f) { Settings.accent.set(key) },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (Settings.accent.value == key) {

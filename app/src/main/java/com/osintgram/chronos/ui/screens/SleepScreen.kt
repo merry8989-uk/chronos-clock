@@ -38,6 +38,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -57,6 +60,7 @@ import com.osintgram.chronos.data.SleepSession
 import com.osintgram.chronos.data.SleepStore
 import com.osintgram.chronos.sleep.SleepTracker
 import com.osintgram.chronos.ui.components.SectionCard
+import com.osintgram.chronos.ui.theme.Motion
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
@@ -291,6 +295,11 @@ fun SleepScreen(modifier: Modifier = Modifier) {
 
 @Composable
 private fun LevelMeter(level: Int) {
+    val animated by animateFloatAsState(
+        targetValue = (level / 100f).coerceIn(0.02f, 1f),
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
+        label = "meter",
+    )
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -299,7 +308,7 @@ private fun LevelMeter(level: Int) {
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth((level / 100f).coerceIn(0.02f, 1f))
+                .fillMaxWidth(animated)
                 .height(8.dp)
                 .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp)),
         )
@@ -411,13 +420,18 @@ private fun SessionReport(
     if (session.noise.isNotEmpty()) {
         SectionCard(title = "ROOM NOISE") {
             Column(modifier = Modifier.padding(16.dp)) {
+                val reveal by animateFloatAsState(
+                    targetValue = 1f,
+                    animationSpec = tween(700, easing = Motion.easeOut),
+                    label = "noiseReveal",
+                )
                 Canvas(
                     modifier = Modifier.fillMaxWidth().height(90.dp),
                 ) {
                     val max = (session.noise.maxOrNull() ?: 1).coerceAtLeast(1).toFloat()
                     val stepX = size.width / session.noise.size.coerceAtLeast(1)
                     session.noise.forEachIndexed { index, value ->
-                        val h = (value / max) * size.height
+                        val h = (value / max) * size.height * reveal
                         drawRect(
                             color = Color(0xFF4C8DFF),
                             topLeft = Offset(index * stepX, size.height - h),

@@ -1,7 +1,11 @@
 package com.osintgram.chronos.ui.screens
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +28,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -40,14 +43,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.timer.TimerEngine
 import com.osintgram.chronos.timer.TimerPresets
-import com.osintgram.chronos.ui.components.ProgressLine
+import com.osintgram.chronos.ui.components.CircleProgress
+import com.osintgram.chronos.ui.components.TickerText
 import com.osintgram.chronos.ui.components.WheelPicker
+import com.osintgram.chronos.ui.theme.ClockTextStyle
+import com.osintgram.chronos.ui.theme.Motion
+import com.osintgram.chronos.ui.theme.pressable
 
 @Composable
 fun TimerScreen(modifier: Modifier = Modifier) {
@@ -63,42 +71,83 @@ fun TimerScreen(modifier: Modifier = Modifier) {
 
     val pickedMs = ((hours * 3600L) + (minutes * 60L) + seconds) * 1000L
     val running = state.running
-    val displayMs = if (running) state.remainingMs else pickedMs
-    val progress = if (running && state.durationMs > 0) {
+    val displayMs = if (running || state.finished) state.remainingMs else pickedMs
+    val progress = if (state.durationMs > 0) {
         state.remainingMs.toFloat() / state.durationMs.toFloat()
     } else {
         1f
     }
 
+    // A slow breath on the ring while it runs, so a glance tells you it is live.
+    val breathe = rememberInfiniteTransition(label = "breathe")
+    val pulse by breathe.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = Motion.easeInOut),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "pulse",
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(bottom = 16.dp),
+            .padding(bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = if (state.finished) "Timer finished" else state.label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp,
-            modifier = Modifier.padding(start = 20.dp, top = 8.dp),
+            modifier = Modifier.padding(top = 8.dp),
         )
 
-        if (running || state.finished) {
-            Spacer(Modifier.height(24.dp))
-            Text(
-                text = TimerEngine.format(state.remainingMs),
+        Spacer(Modifier.height(18.dp))
+
+        Box(contentAlignment = Alignment.Center) {
+            CircleProgress(
+                progress = if (running || state.finished) progress else 1f,
+                modifier = Modifier
+                    .size(250.dp)
+                    .graphicsLayer {
+                        val scale = if (running) pulse else 1f
+                        scaleX = scale
+                        scaleY = scale
+                    },
+                strokeWidth = 10.dp,
                 color = if (state.finished) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onBackground,
-                fontSize = 64.sp,
-                fontWeight = FontWeight.Light,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
-            Spacer(Modifier.height(16.dp))
-            ProgressLine(progress = progress, modifier = Modifier.padding(horizontal = 32.dp))
-        } else {
+                else MaterialTheme.colorScheme.primary.copy(alpha = if (running) 1f else 0.35f),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    TickerText(
+                        text = TimerEngine.format(displayMs),
+                        style = ClockTextStyle.copy(
+                            fontSize = 44.sp,
+                            fontWeight = FontWeight.Light,
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = when {
+                            state.finished -> "tap reset to clear"
+                            running -> "running"
+                            else -> "ready"
+                        },
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+
+        if (!running && !state.finished) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -118,10 +167,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     onSelected = { seconds = it },
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 listOf("hours", "minutes", "seconds").forEach {
                     Text(
                         text = it,
@@ -131,11 +177,55 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
+            Spacer(Modifier.height(14.dp))
         }
 
-        Spacer(Modifier.height(20.dp))
+        // ---- Controls -------------------------------------------------------
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RoundControl(
+                icon = Icons.Filled.Refresh,
+                description = "Reset timer",
+                onClick = { TimerEngine.reset(context) },
+            )
+            Spacer(Modifier.size(26.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(84.dp)
+                    .pressable(scale = 0.92f) {
+                        if (running) {
+                            TimerEngine.pause(context)
+                        } else {
+                            if (pickedMs <= 0L && !state.finished) TimerEngine.setDuration(60_000)
+                            TimerEngine.start(context)
+                        }
+                    },
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (running) "Pause" else "Start",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(38.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.size(26.dp))
+            RoundControl(
+                icon = Icons.Filled.Add,
+                description = "Add a minute",
+                onClick = { TimerEngine.extend(60_000) },
+            )
+        }
 
-        // ---- Presets -------------------------------------------------------
+        Spacer(Modifier.height(22.dp))
+
+        // ---- Presets --------------------------------------------------------
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 presets.take(3).forEach { preset ->
@@ -185,72 +275,8 @@ fun TimerScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        Spacer(Modifier.height(20.dp))
-
-        // ---- Controls ------------------------------------------------------
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                onClick = { TimerEngine.reset(context) },
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-            ) {
-                Icon(
-                    Icons.Filled.Refresh,
-                    contentDescription = "Reset timer",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.size(28.dp))
-            Surface(
-                color = MaterialTheme.colorScheme.primary,
-                shape = CircleShape,
-                modifier = Modifier.size(84.dp).clickable {
-                    if (running) {
-                        TimerEngine.pause(context)
-                    } else {
-                        if (pickedMs <= 0L && !state.finished) {
-                            TimerEngine.setDuration(60_000)
-                        }
-                        TimerEngine.start(context)
-                    }
-                },
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (running) "Pause" else "Start",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(38.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.size(28.dp))
-            IconButton(
-                onClick = { TimerEngine.extend(60_000) },
-                modifier = Modifier
-                    .size(52.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-            ) {
-                Icon(
-                    Icons.Filled.Add,
-                    contentDescription = "Add a minute",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(14.dp))
-
         if (presets.isNotEmpty()) {
-            TextButton(
-                onClick = { TimerPresets.remove(presets.last()) },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            TextButton(onClick = { TimerPresets.remove(presets.last()) }) {
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = null,
@@ -299,6 +325,27 @@ fun TimerScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun RoundControl(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(52.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+            .pressable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun PresetTile(
     title: String,
     subtitle: String,
@@ -311,8 +358,7 @@ private fun PresetTile(
         color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
         else MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(18.dp),
-        modifier = modifier,
-        onClick = onClick,
+        modifier = modifier.pressable(scale = 0.95f, onClick = onClick),
     ) {
         Column(
             modifier = Modifier.padding(vertical = 14.dp, horizontal = 10.dp),

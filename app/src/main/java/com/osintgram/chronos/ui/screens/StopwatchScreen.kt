@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.stopwatch.StopwatchEngine
+import com.osintgram.chronos.ui.components.staggerIn
 import kotlinx.coroutines.delay
 
 @Composable
@@ -63,6 +64,7 @@ fun StopwatchScreen(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
             text = StopwatchEngine.format(elapsed),
+            style = com.osintgram.chronos.ui.theme.ClockTextStyle,
             fontSize = 60.sp,
             fontWeight = FontWeight.Light,
             textAlign = TextAlign.Center,
@@ -143,6 +145,7 @@ fun StopwatchScreen(modifier: Modifier = Modifier) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .staggerIn(lap.index)
                             .padding(horizontal = 24.dp, vertical = 9.dp),
                     ) {
                         Text(

@@ -8,6 +8,16 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +59,7 @@ import com.osintgram.chronos.data.AlarmStore
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.ui.missions.MissionRunner
 import com.osintgram.chronos.ui.theme.ChronosTheme
+import com.osintgram.chronos.ui.theme.Motion
 import kotlinx.coroutines.delay
 import java.io.File
 
@@ -85,6 +97,16 @@ class RingActivity : ComponentActivity() {
                 val missions = alarm?.missions ?: emptyList()
 
                 var missionIndex by remember { mutableIntStateOf(0) }
+                val pulse = rememberInfiniteTransition(label = "ringPulse")
+                val clockScale by pulse.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.04f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1700, easing = Motion.easeInOut),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                    label = "clockPulse",
+                )
                 var dismissed by remember { mutableStateOf(false) }
                 var skipAllowed by remember { mutableStateOf(false) }
 
@@ -142,6 +164,10 @@ class RingActivity : ComponentActivity() {
                             fontSize = 74.sp,
                             fontWeight = FontWeight.Light,
                             textAlign = TextAlign.Center,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = clockScale
+                                scaleY = clockScale
+                            },
                         )
                         if (!use24) {
                             Text(
@@ -168,18 +194,49 @@ class RingActivity : ComponentActivity() {
                         Spacer(Modifier.height(26.dp))
 
                         if (!missionsDone) {
+                            val fraction by animateFloatAsState(
+                                targetValue = missionIndex.toFloat() / missions.size,
+                                animationSpec = tween(320, easing = Motion.easeOut),
+                                label = "missionProgress",
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .background(Color(0xFF232833), RoundedCornerShape(3.dp)),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction)
+                                        .height(6.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.primary,
+                                            RoundedCornerShape(3.dp),
+                                        ),
+                                )
+                            }
                             Text(
-                                text = "Mission ${missionIndex + 1}/${missions.size}",
+                                text = "Mission ${missionIndex + 1} of ${missions.size}",
                                 color = Color(0xFF9AA3B2),
                                 fontSize = 12.sp,
-                                modifier = Modifier.padding(bottom = 10.dp),
+                                modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
                             )
-                            MissionRunner(
-                                spec = missions[missionIndex],
-                                onSolved = { missionIndex += 1 },
-                                onUnavailable = { missionIndex += 1 },
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                            )
+                            AnimatedContent(
+                                targetState = missionIndex,
+                                transitionSpec = {
+                                    fadeIn(animationSpec = tween(260)) togetherWith
+                                        fadeOut(animationSpec = tween(140))
+                                },
+                                label = "missionSwap",
+                            ) { index ->
+                                val safeIndex = index.coerceIn(0, missions.lastIndex)
+                                MissionRunner(
+                                    spec = missions[safeIndex],
+                                    onSolved = { missionIndex += 1 },
+                                    onUnavailable = { missionIndex += 1 },
+                                    modifier = Modifier.padding(horizontal = 4.dp),
+                                )
+                            }
                             if (skipAllowed) {
                                 TextButton(onClick = {
                                     missionIndex = missions.size

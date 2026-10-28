@@ -39,6 +39,19 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Sleep-onset marker (first screen-off) and a timeline bar of when the phone was in use
 - [x] Live screen status while recording
 
+## Shipped in 3.0.0 — visual and interaction upgrade
+
+- [x] Motion system: shared durations/easings, haptics helper honouring the Haptic feedback setting, press-scale modifier
+- [x] Custom spring toggle, sliding segmented control, circular progress ring, digit-ticker text, staggered list entry
+- [x] Next-alarm hero card with a live countdown ring
+- [x] Swipe-to-delete with undo snackbar, and a long-press menu (duplicate / turn off / delete)
+- [x] Animated tab transitions and accent gradient background
+- [x] Circular timer with a breathing ring and animated digits
+- [x] Ring screen: pulsing clock, mission progress bar, cross-fading missions
+- [x] World clock day/night tint and long-press reordering
+- [x] Animated sleep graphs and level meter
+- [x] Tabular figures so running clocks do not shift layout
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
