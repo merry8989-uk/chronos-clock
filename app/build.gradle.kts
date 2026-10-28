@@ -20,8 +20,9 @@ android {
     // ever lands in the repo. CI decodes the keystore and exports these.
     signingConfigs {
         create("release") {
-            val path = System.getenv("KEYSTORE_PATH") ?: "release.jks"
-            storeFile = file(path)
+            val path = System.getenv("KEYSTORE_PATH") ?: "release.p12"
+            // Resolved from the repo root, where CI decodes the keystore.
+            storeFile = rootProject.file(path)
             storePassword = System.getenv("KEYSTORE_PASSWORD")
             keyAlias = System.getenv("KEY_ALIAS")
             keyPassword = System.getenv("KEY_PASSWORD")
