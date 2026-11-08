@@ -77,11 +77,12 @@
     <h1>Chronos</h1>
     <p class="lede">
       A clock that actually wakes you: exact alarms, wake-up missions you have to finish
-      before the alarm stops, sleep and snoring reports, your own photo behind the ring
-      screen — plus a world clock, timer and lap stopwatch. No ads, no account, no cloud.
+      before the alarm stops, your own photo behind the ring screen — plus a world clock,
+      timer, lap stopwatch and a wellness tab for workouts, steps, water, sleep and
+      breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.0.0</strong> ·
+      Current version <strong id="version">6.1.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -238,6 +239,23 @@
     <li><strong>Survives process death</strong> <span>— the start instant is persisted, so the count stays correct if the app is backgrounded or restarted.</span></li>
   </ul>
 
+  <h2>Wellness — movement, health and breathing</h2>
+  <p class="lede">
+    One tab, five sections: Today, Workout, Breathe, Progress and Learn. Every number is
+    either read from a sensor on your phone or typed in by you — nothing is filled in as a
+    sample, so a fresh install honestly shows zeros.
+  </p>
+  <ul>
+    <li><strong>Today</strong> <span>— steps against your goal in a progress ring, water in 250 ml and 500 ml taps, sleep in 30-minute steps, and five habits you can tick off.</span></li>
+    <li><strong>Step counter</strong> <span>— reads this phone's own step sensor. The counter reports steps since boot, so the first reading of the day becomes that day's baseline; a reboot is detected and the baseline moves instead of the number going negative. No sensor, no permission, or a manual correction? −500 and +500 adjust it by hand.</span></li>
+    <li><strong>Workout</strong> <span>— four routines (Full Body Basics, Mobility &amp; Stretch, Upper Body, Walk &amp; Core) with sets, reps and form cues. A session is written the moment it starts, so switching tabs or closing the app never loses it. Log a set with one tap, add a custom exercise with sets, reps and weight, and the session records its real duration and volume.</span></li>
+    <li><strong>Breathe</strong> <span>— four breathing patterns (calm 4–6, box 4-4-4-4, 4–7–8, physiological sigh) drive both the growing circle and the on-screen cue, with a 3, 5, 10, 15 or 20 minute session. The bell that closes a session is one of the bundled tones.</span></li>
+    <li><strong>Progress</strong> <span>— seven-day totals for steps, workouts, workout time, meditation, water, average sleep and volume lifted, a day-by-day step chart, and a streak that only counts days with something actually logged.</span></li>
+    <li><strong>Learn</strong> <span>— eight yoga pose references drawn in the app and described in words, plus follow-along suggestions that open a search on the service named beside them. No stock photo, video or audio file is bundled or passed off as content the app owns.</span></li>
+    <li><strong>Health Connect, optional</strong> <span>— if Health Connect is installed and you grant read access, steps, water and sleep recorded by other apps are pulled in. A sync only raises a number, never overwrites a manual entry, and the tab works exactly the same without it.</span></li>
+    <li><strong>In your backup</strong> <span>— workouts, meditation sessions and daily health records are part of the same JSON export as your alarms and settings, and factory reset clears them.</span></li>
+  </ul>
+
   <h2>Settings — every option is wired up</h2>
   <table>
     <tr><th>Section</th><th>Options</th></tr>
@@ -246,6 +264,7 @@
     <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on, adjust step for − and +, floating bubble (with its permission shortcut)</td></tr>
     <tr><td>Stopwatch</td><td>Running sounds, haptic feedback</td></tr>
     <tr><td>Bedtime mode</td><td>On/off, bedtime time, wake-up time, reminder notification, Do Not Disturb (with its permission shortcut), open the bedtime screen</td></tr>
+    <tr><td>Wellness</td><td>Step goal, water goal, sleep goal, default meditation length, session bell on/off and its tone, Health Connect sync on/off</td></tr>
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
     <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
     <tr><td>Diagnostics</td><td>Log collection (on by default), log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
@@ -255,7 +274,7 @@
   <h2>Privacy and data</h2>
   <ul>
     <li>No account, no sign-in, no analytics, no ads.</li>
-    <li>Alarms, settings, cities and holidays are stored on your device only.</li>
+    <li>Alarms, settings, cities, holidays, workouts, meditation sessions and daily health numbers are stored on your device only.</li>
     <li>The only network request is the update check against GitHub's public releases API.</li>
     <li>Diagnostic logs stay on the device until you choose to share or export them.</li>
     <li>Sleep recordings, snore clips, wallpapers and recorded tones never leave the device.</li>
@@ -271,7 +290,8 @@
     <tr><td>Boot completed</td><td>Re-arming your alarms after a restart</td></tr>
     <tr><td>Microphone</td><td>Recording your own alarm tone — never used at any other time</td></tr>
     <tr><td>Do Not Disturb access</td><td>Only if you switch on Do Not Disturb during bedtime</td></tr>
-    <tr><td>Activity recognition</td><td>Reading the step counter for the step mission</td></tr>
+    <tr><td>Activity recognition</td><td>Reading the step counter for the step mission and for the Wellness tab's step count</td></tr>
+    <tr><td>Health Connect read access (steps, hydration, sleep)</td><td>Optional. Only requested when you tap Connect, and only reads what other apps already recorded. Nothing is written to Health Connect.</td></tr>
     <tr><td>Display over other apps</td><td>The optional floating timer bubble — off by default, only used when you switch it on</td></tr>
     <tr><td>Full-screen notifications</td><td>Taking over the screen when an alarm rings on Android 14+</td></tr>
     <tr><td>Network state / Wi-Fi state</td><td>Holding an update download until you are on Wi-Fi, if that option is on</td></tr>
