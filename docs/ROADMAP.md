@@ -240,6 +240,16 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Step readings are logged (first reading, then every 250 steps) — the log had no step values at all, so a "steps are wrong" report could not be checked
 - [x] The Health Connect card logs its status when shown, so "cannot connect" is visible without a tap
 
+## Shipped in 6.8.0 — screen time
+
+- [x] Screen time area in the Life hub: total time, unlocks, screen-on count and apps used, from Android's own usage database
+- [x] Most-used apps with their share of the day, plus a full per-app list with time and open counts
+- [x] Notifications per app per day, from a notification listener that stores **only counts** — never a title, text or sender — for 14 days
+- [x] Daily limits (15–120 min) per app, enforced by a foreground watcher that polls the foreground app and shows a full-screen blocker with "Go home" / "5 more minutes"
+- [x] Usage access and Notification access are now used for real, and the Special access screen says so
+- [x] Without the grants the tab explains what is missing and opens the right system screen — no fake zeros
+- [x] Unit tests for the duration formatting, limit maths, ordering and share-of-day
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

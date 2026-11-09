@@ -64,6 +64,11 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Screen time: the limiter runs as a foreground service while it watches
+         which app is in front. Notification access lets Chronos *count* alerts
+         per app; the listener never stores their content. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <!-- Health Connect visibility: the provider package on Android 13 and below,
          and the settings activity on Android 14+, where Health Connect is part of
          the platform. Without both, getSdkStatus reports it as unavailable. -->
@@ -130,6 +135,27 @@
         <receiver
             android:name=".tasks.TaskReminderReceiver"
             android:exported="false" />
+
+        <!-- Screen time: counts notifications per app (content is never read). -->
+        <service
+            android:name=".screentime.NotificationWatcher"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Screen time: watches the foreground app and shows the limit blocker. -->
+        <service
+            android:name=".screentime.LimitService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Daily app time limits" />
+        </service>
 
         <receiver
             android:name=".alarm.BootReceiver"

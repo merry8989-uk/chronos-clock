@@ -82,7 +82,7 @@
       breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.7.1</strong> ·
+      Current version <strong id="version">6.8.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -307,6 +307,21 @@
     <li><strong>Export</strong> <span>— <code>.txt</code>, <code>.md</code>, <code>.json</code> or <code>.zip</code> through the system share sheet, each with a header of app version, session, device and Android version, battery, memory, network and storage.</span></li>
   </ul>
 
+  <h2>Screen time — what the phone actually did</h2>
+  <p class="lede">
+    A third area in the Life hub, next to Tasks and Wellness. It reads Android's own usage
+    database, so the numbers are the same ones Digital Wellbeing sees.
+  </p>
+  <ul>
+    <li><strong>Today</strong> <span>— total screen time, how many times the phone was unlocked, how many times the screen came on, and how many apps were used.</span></li>
+    <li><strong>Most used</strong> <span>— the apps that took the most time, each with its share of the day, its open count and how many notifications it posted.</span></li>
+    <li><strong>All apps</strong> <span>— every app with any foreground time today, longest first, with time and how many times it was opened.</span></li>
+    <li><strong>Alerts</strong> <span>— how many notifications each app posted today. Only a count is stored, per app per day, for 14 days; the title, text and sender are never read or written.</span></li>
+    <li><strong>Limits</strong> <span>— set a daily limit (15 to 120 minutes) on any app. With the watcher on, a full-screen blocker appears when that app passes its limit, offering "Go home" or "5 more minutes".</span></li>
+    <li><strong>What it needs</strong> <span>— <em>Usage access</em> for the numbers, <em>Notification access</em> for the counts, and <em>draw over other apps</em> for the blocker. Each row says which one is missing and opens the right screen; without them the tab shows an explanation, never fake zeros.</span></li>
+    <li><strong>Honest limits</strong> <span>— the watcher polls every few seconds, so an app can be used briefly before the blocker appears; and an OEM that kills background services can stop it. The screen says both.</span></li>
+  </ul>
+
   <h2>Settings — every option is wired up</h2>
   <table>
     <tr><th>Section</th><th>Options</th></tr>
@@ -343,11 +358,11 @@
     <tr><td>Do Not Disturb access</td><td>Bedtime mode, only when you switch DND on</td></tr>
     <tr><td>Battery optimisation</td><td>Alarms and the six-hourly health sync surviving Doze</td></tr>
     <tr><td>Notifications</td><td>Alarm ringing, timer finished, task reminders</td></tr>
-    <tr><td>Usage access</td><td><em>Not used by any feature.</em> The row exists so the switch can be found and its state seen.</td></tr>
+    <tr><td>Usage access</td><td>Screen time: app usage time, launch counts, screen-on and unlock counts, and the limit watcher's view of the foreground app</td></tr>
     <tr><td>All files access</td><td><em>Not used by any feature.</em> Backups go through the system file picker, which needs no broad storage access.</td></tr>
     <tr><td>Modify system settings</td><td><em>Not used by any feature.</em> Chronos keeps its own settings.</td></tr>
     <tr><td>Wi-Fi control</td><td><em>Not used by any feature.</em> The update check only reads the connection type.</td></tr>
-    <tr><td>Notification access</td><td><em>Deliberately not requested.</em> It needs a service that can read every notification on the phone, and no feature here needs that.</td></tr>
+    <tr><td>Notification access</td><td>Screen time: counts how many notifications each app posted. The listener never stores a title, text or sender</td></tr>
   </table>
 
   <h2>Permissions and why</h2>

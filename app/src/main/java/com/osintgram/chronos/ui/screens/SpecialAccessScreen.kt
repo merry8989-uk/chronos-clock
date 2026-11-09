@@ -172,9 +172,9 @@ fun SpecialAccessScreen(onBack: () -> Unit) {
             item {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "Notification access is deliberately not requested: it needs a service " +
-                        "that can read every notification on the phone, and no Chronos feature " +
-                        "needs that.",
+                    text = "Notification access is used only by Screen time, and only to count how " +
+                        "many notifications each app posted. The listener never stores a title, " +
+                        "text or sender.",
                     fontSize = 11.sp,
                     lineHeight = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

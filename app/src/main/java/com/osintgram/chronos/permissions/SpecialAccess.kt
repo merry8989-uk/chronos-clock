@@ -95,7 +95,7 @@ object SpecialAccess {
             title = "Usage access",
             state = if (hasUsageAccess(context)) "Allowed" else "Not allowed",
             granted = hasUsageAccess(context),
-            usedBy = "Not used by any feature — listed so the switch can be found",
+            usedBy = "Screen time: app usage, launch counts and the limit watcher",
             openSettings = { start(context, Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
         ),
         AccessItem(
@@ -122,6 +122,15 @@ object SpecialAccess {
             usedBy = "Not used by any feature — Chronos keeps its own settings",
             openSettings = {
                 start(context, Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, packageUri(context)))
+            },
+        ),
+        AccessItem(
+            title = "Notification access",
+            state = if (notificationAccess(context)) "Allowed" else "Not allowed",
+            granted = notificationAccess(context),
+            usedBy = "Screen time: counts notifications per app — the text is never read or stored",
+            openSettings = {
+                start(context, Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
             },
         ),
         AccessItem(
@@ -191,6 +200,9 @@ object SpecialAccess {
 
     fun canWriteSettings(context: Context): Boolean =
         runCatching { Settings.System.canWrite(context) }.getOrDefault(false)
+
+    fun notificationAccess(context: Context): Boolean =
+        com.osintgram.chronos.screentime.NotificationWatcher.isEnabled(context)
 
     fun hasCalendarRead(context: Context): Boolean = ContextCompat.checkSelfPermission(
         context,
