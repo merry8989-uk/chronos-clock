@@ -82,7 +82,7 @@
       breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.6.0</strong> ·
+      Current version <strong id="version">6.7.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -291,6 +291,22 @@
     <li><strong>In your backup</strong> <span>— workouts, meditation sessions and daily health records are part of the same JSON export as your alarms and settings, and factory reset clears them.</span></li>
   </ul>
 
+  <h2>Diagnostics and logs</h2>
+  <p class="lede">
+    Collection is on by default, so a problem can be diagnosed without having to reproduce it
+    first. Everything stays on the phone until you export it.
+  </p>
+  <ul>
+    <li><strong>Six kinds of entries</strong> <span>— app and activity lifecycle, alarms and timers, wellness and Health Connect, tasks and reminders, the updater, and crashes with their full stack trace.</span></li>
+    <li><strong>Platform buffer</strong> <span>— <code>logcat -d</code> is pulled in for this app's own process (Android does not let an app read other apps' logs), for the framework messages the app's own logger never saw. There is a switch for it and a "Capture now" action.</span></li>
+    <li><strong>Network</strong> <span>— every request the app makes is logged with the URL, the status code, the byte count and the time it took. There is no analytics SDK and no third-party traffic to log.</span></li>
+    <li><strong>Breadcrumbs</strong> <span>— tab switches and the actions that matter (opening Settings, Diagnostics, the alarm editor) are recorded in order, so a crash can be tied to what you were doing.</span></li>
+    <li><strong>Device snapshot</strong> <span>— Android version, phone model, ABI, battery and charging state, free memory, low-memory flag, network type and free storage, written at launch and at export time.</span></li>
+    <li><strong>Masked on the way in</strong> <span>— tokens, passwords, authorization headers, GitHub tokens, JWTs, long hex keys, email addresses, Indian phone numbers and card-like numbers are replaced with <code>[redacted]</code> before a line is written. A token that reached the file would already have leaked.</span></li>
+    <li><strong>Rolling files</strong> <span>— three files of at most 2 MB, so the log can never grow past 6 MB. Each line is ISO-8601 with milliseconds and the device offset, plus a session id that changes every launch.</span></li>
+    <li><strong>Export</strong> <span>— <code>.txt</code>, <code>.md</code>, <code>.json</code> or <code>.zip</code> through the system share sheet, each with a header of app version, session, device and Android version, battery, memory, network and storage.</span></li>
+  </ul>
+
   <h2>Settings — every option is wired up</h2>
   <table>
     <tr><th>Section</th><th>Options</th></tr>
@@ -302,7 +318,7 @@
     <tr><td>Wellness</td><td>Step goal, water goal, sleep goal, default meditation length, session bell on/off and its tone, Health Connect sync on/off (schedules or cancels the background job)</td></tr>
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
     <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
-    <tr><td>Diagnostics</td><td>Log collection (on by default), log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
+    <tr><td>Diagnostics</td><td>Log collection (on by default), platform-log capture switch and "Capture now", log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
     <tr><td>About</td><td>Version, check for updates and install in-app, Wi-Fi-only updates, home-screen widget guide, source code link</td></tr>
   </table>
 

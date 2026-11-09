@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.osintgram.chronos.BuildConfig
+import kotlinx.coroutines.launch
 import com.osintgram.chronos.alarm.AlarmScheduler
 import com.osintgram.chronos.data.AlarmStore
 import com.osintgram.chronos.data.Backup
@@ -95,6 +96,7 @@ const val SCROLL_ABOUT = "about"
 fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
     val context = LocalContext.current
     val updateVm: UpdateViewModel = viewModel()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val scrollState = rememberScrollState()
     var aboutOffset by remember { mutableIntStateOf(0) }
     // "About & updates" in the ⋮ menu opens this screen at the About card
@@ -790,6 +792,24 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     onCheckedChange = {
                         Settings.diagnosticsEnabled.set(it)
                         DiagnosticsLogger.setEnabled(it)
+                    },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Capture platform log",
+                    subtitle = "Pulls this app's own logcat buffer in, for crashes the app never saw",
+                    checked = Settings.logcatCapture.value,
+                    onCheckedChange = { Settings.logcatCapture.set(it) },
+                )
+                RowDivider()
+                SettingActionRow(
+                    title = "Capture now",
+                    subtitle = "Reads the last few hundred logcat lines into the log",
+                    onClick = {
+                        scope.launch {
+                            val lines = com.osintgram.chronos.diagnostics.LogcatCollector.capture(context)
+                            status = if (lines > 0) "Captured $lines logcat line(s)" else "logcat returned nothing"
+                        }
                     },
                 )
                 RowDivider()

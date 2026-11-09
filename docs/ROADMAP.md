@@ -219,6 +219,19 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] With Health Connect connected, today's totals are re-read every ten seconds while the card is open — realtime, not on a button press
 - [x] Unit tests for the baseline resolution (stored / rebooted / started now) and the step delta
 
+## Shipped in 6.7.0 — universal logging
+
+- [x] Rolling log: three files of 2 MB each, ISO-8601 timestamps with milliseconds and the device offset, a session id per launch, thread-safe writes
+- [x] Masking on the way in: passwords, tokens, authorization headers, GitHub tokens, JWTs, long hex keys, emails, Indian phone numbers and card-like numbers become `[redacted]` before anything is written
+- [x] Crashes write the full stack trace, not just the exception's message
+- [x] Platform buffer: `logcat -d` for this app's own process, with a switch and a "Capture now" action
+- [x] Activity lifecycle: created / started / resumed / paused / stopped / destroyed, including whether an activity was recreated
+- [x] Breadcrumbs: tab switches and the actions that matter, in order
+- [x] Network: every request with URL, status, bytes and duration
+- [x] Device snapshot at launch and at export: Android version, model, ABI, battery, charging, memory, low-memory, network, storage
+- [x] Exports (.txt / .md / .json / .zip) carry the device and session header
+- [x] Unit tests for the masking rules
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

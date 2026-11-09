@@ -52,7 +52,12 @@ object UpdateChecker {
                 connectTimeout = 15_000
                 readTimeout = 15_000
             }
+            val started = System.currentTimeMillis()
             val code = conn.responseCode
+            DiagnosticsLogger.log(
+                "Net",
+                "GET $LATEST_API -> $code in ${System.currentTimeMillis() - started} ms",
+            )
             if (code != HttpURLConnection.HTTP_OK) {
                 DiagnosticsLogger.log("Updater", "Check failed: HTTP $code")
                 return@withContext UpdateResult.Failed(reasonForStatus(code))
