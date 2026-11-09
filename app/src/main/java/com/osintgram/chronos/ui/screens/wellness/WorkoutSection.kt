@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,12 +53,14 @@ import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.pressable
+import com.osintgram.chronos.wellness.HealthConnectSource
 import com.osintgram.chronos.wellness.WellnessLogic
 import com.osintgram.chronos.wellness.WellnessPlans
 import com.osintgram.chronos.wellness.WellnessStore
 import com.osintgram.chronos.wellness.WorkoutEntry
 import com.osintgram.chronos.wellness.WorkoutSession
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -74,6 +77,7 @@ fun WorkoutSection() {
     val history = WellnessStore.allWorkouts().filter { it.isFinished }.take(6)
     var showCustom by remember { mutableStateOf(false) }
     var confirmFinish by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -288,6 +292,16 @@ fun WorkoutSection() {
                 TextButton(onClick = {
                     Haptics.success(context)
                     WellnessStore.finishWorkout(active.id)
+                    // The finished session is written to Health Connect as exercise.
+                    val ended = System.currentTimeMillis()
+                    scope.launch {
+                        HealthConnectSource.writeExercise(
+                            context = context,
+                            title = active.title,
+                            startMillis = active.startedAt,
+                            endMillis = ended,
+                        )
+                    }
                     confirmFinish = false
                 }) { Text("Finish") }
             },

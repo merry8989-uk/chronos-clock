@@ -82,7 +82,7 @@
       breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.3.1</strong> ·
+      Current version <strong id="version">6.4.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -282,7 +282,7 @@
     <li><strong>Progress</strong> <span>— seven-day totals for steps, workouts, workout time, meditation, water, average sleep and volume lifted, a day-by-day step chart, and a streak that only counts days with something actually logged.</span></li>
     <li><strong>Learn</strong> <span>— eight yoga pose references drawn in the app and described in words, plus follow-along suggestions that open a search on the service named beside them. No stock photo, video or audio file is bundled or passed off as content the app owns.</span></li>
     <li><strong>Heart rate</strong> <span>— reads this phone's own heart-rate sensor while the card is on screen, with the band (low / normal / elevated / high) and the time of the last reading. The sensor runs for 30 seconds after you tap Measure and then stops. The body-sensor permission is asked for when you tap Allow, never at launch, and the reading is not written to Health Connect.</span></li>
-    <li><strong>Health Connect, optional</strong> <span>— if Health Connect is installed and you grant read access, steps, water and sleep recorded by other apps are pulled in. A sync only raises a number, never overwrites a manual entry, and the tab works exactly the same without it.</span></li>
+    <li><strong>Health Connect, optional</strong> <span>— connect once and Chronos reads the steps, water and sleep other apps recorded, and writes back the water you log and the workouts you finish. A sync only raises a number, never overwrites a manual entry, and the tab works exactly the same without it. Connecting asks for read and write together; if your Health Connect build does not know the optional background/history permissions, the app retries with read and write only instead of failing.</span></li>
     <li><strong>Background sync</strong> <span>— with the background read granted, a WorkManager job runs every six hours (only when the battery is not low) and folds today's numbers in while the app is closed. Turn the sync off in Settings and the job is cancelled, not left running.</span></li>
     <li><strong>History import</strong> <span>— one tap imports the last 84 days of steps, water and sleep, which needs Health Connect's history permission because it reaches past the default 30-day window. Days you typed by hand are never lowered.</span></li>
     <li><strong>In your backup</strong> <span>— workouts, meditation sessions and daily health records are part of the same JSON export as your alarms and settings, and factory reset clears them.</span></li>
@@ -342,7 +342,8 @@
     <tr><td>Microphone</td><td>Recording your own alarm tone — never used at any other time</td></tr>
     <tr><td>Do Not Disturb access</td><td>Only if you switch on Do Not Disturb during bedtime</td></tr>
     <tr><td>Activity recognition</td><td>Reading the step counter for the step mission and for the Wellness tab's step count</td></tr>
-    <tr><td>Health Connect read access (steps, hydration, sleep)</td><td>Optional. Only requested when you tap Connect, and only reads what other apps already recorded. Nothing is written to Health Connect.</td></tr>
+    <tr><td>Health Connect read access (steps, hydration, sleep)</td><td>Optional. Requested when you tap Connect, and reads what other apps already recorded.</td></tr>
+    <tr><td>Health Connect write access (hydration, exercise)</td><td>Optional. A glass of water you log is written back as a hydration record, and a finished workout as an exercise session — nothing else is ever written.</td></tr>
     <tr><td>Health Connect background read</td><td>The six-hourly sync, so it can work while the app is closed. Declining it leaves the manual Sync now button working.</td></tr>
     <tr><td>Health Connect history read</td><td>The one-off 84-day import. Declining it hides the Import button; nothing else changes.</td></tr>
     <tr><td>Calendar read / write</td><td>The Calendar view reads events from every visible calendar. Write is used only when you tap the calendar icon on a task, which creates that one event.</td></tr>

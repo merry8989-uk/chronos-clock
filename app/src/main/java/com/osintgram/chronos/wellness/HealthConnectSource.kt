@@ -15,11 +15,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HydrationRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.Volume
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,43 +31,48 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * Optional sync from Health Connect: steps, water and sleep already recorded by
- * another app on the phone.
+ * The phone's Health Connect: read steps, water and sleep, and write back the
+ * water you log and the workouts you finish.
  *
- * Three kinds of access are requested, and each one is used:
- *  - the three record reads, for the Today card;
- *  - background read, so the six-hourly sync can run while the app is closed;
- *  - history read, so the one-off import can reach past Health Connect's
- *    default 30-day window (the import covers 84 days).
- *
- * Everything is guarded: a missing Health Connect, an old provider or a refused
- * permission is reported, never crashed on, and the Wellness tab keeps working
- * on its own numbers.
+ * Permissions are split into two groups on purpose:
+ *  - **required** — the three record reads and the two record writes. "Connect"
+ *    means these; the card reports connected only when all five are granted.
+ *  - **optional** — background read (for the six-hourly sync) and history read
+ *    (for the 84-day import). Some Health Connect builds do not know these
+ *    strings, and asking for an unknown permission makes the whole request
+ *    fail, which is exactly what "it never connects" looks like. So the full
+ *    set is requested first and the request is retried with the required set
+ *    alone if that launch is rejected.
  */
 object HealthConnectSource {
 
-    /** The record reads the Today card needs. */
-    val dataPermissions: Set<String> = setOf(
+    val readPermissions: Set<String> = setOf(
         HealthPermission.getReadPermission(StepsRecord::class),
         HealthPermission.getReadPermission(HydrationRecord::class),
         HealthPermission.getReadPermission(SleepSessionRecord::class),
     )
 
-    /** Lets the six-hourly worker read while the app is not on screen. */
+    val writePermissions: Set<String> = setOf(
+        HealthPermission.getWritePermission(HydrationRecord::class),
+        HealthPermission.getWritePermission(ExerciseSessionRecord::class),
+    )
+
+    /** What "connected" means: read and write, both. */
+    val requiredPermissions: Set<String> = readPermissions + writePermissions
+
     val backgroundPermission: String = HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
 
-    /** Lets the import read older than Health Connect's default 30 days. */
     val historyPermission: String = HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
 
-    /** Everything the permission screen asks for, in one request. */
-    val permissions: Set<String> = dataPermissions + backgroundPermission + historyPermission
+    val optionalPermissions: Set<String> = setOf(backgroundPermission, historyPermission)
 
-    /** How far back the one-off import reaches. */
+    /** Everything asked for in the first attempt. */
+    val permissions: Set<String> = requiredPermissions + optionalPermissions
+
     const val HISTORY_DAYS = 84
 
     enum class Status { Unavailable, UpdateRequired, Ready }
 
-    /** What one read produced. Nulls mean "that record type had no data". */
     data class Snapshot(
         val steps: Int?,
         val waterMl: Int?,
@@ -91,18 +98,24 @@ object HealthConnectSource {
         }.getOrDefault(emptySet())
     }
 
-    /** The record reads are what the Today card needs to show synced numbers. */
+    /** Connected means read *and* write are granted. */
     suspend fun granted(context: Context): Boolean =
-        grantedPermissions(context).containsAll(dataPermissions)
+        grantedPermissions(context).containsAll(requiredPermissions)
 
-    /** True only when the background read was granted as well. */
+    suspend fun hasRead(context: Context): Boolean =
+        grantedPermissions(context).containsAll(readPermissions)
+
+    suspend fun hasWrite(context: Context): Boolean =
+        grantedPermissions(context).containsAll(writePermissions)
+
     suspend fun hasBackground(context: Context): Boolean =
         grantedPermissions(context).contains(backgroundPermission)
 
     suspend fun hasHistory(context: Context): Boolean =
         grantedPermissions(context).contains(historyPermission)
 
-    /** Steps, water and sleep for one day, as Health Connect sees them. */
+    // ---- Reads -------------------------------------------------------------
+
     suspend fun readDay(context: Context, date: LocalDate): Snapshot? = withContext(Dispatchers.IO) {
         runCatching {
             if (status(context) != Status.Ready) return@runCatching null
@@ -135,11 +148,6 @@ object HealthConnectSource {
 
     suspend fun readToday(context: Context): Snapshot? = readDay(context, LocalDate.now())
 
-    /**
-     * Imports the last [days] days, one day at a time. Values only ever go up,
-     * so a day the user typed by hand is never overwritten. Returns how many
-     * days actually had data.
-     */
     suspend fun backfillHistory(context: Context, days: Int = HISTORY_DAYS): Int {
         val zone = ZoneId.systemDefault()
         val today = LocalDate.now(zone)
@@ -165,7 +173,74 @@ object HealthConnectSource {
         return imported
     }
 
-    /** Opens Health Connect's own settings screen, for the uninstall/manage path. */
+    // ---- Writes ------------------------------------------------------------
+
+    /** Writes a glass of water into Health Connect. False when it was not written. */
+    suspend fun writeHydration(
+        context: Context,
+        millilitres: Int,
+        at: Long = System.currentTimeMillis(),
+    ): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            if (millilitres <= 0) return@runCatching false
+            if (status(context) != Status.Ready) return@runCatching false
+            if (!hasWrite(context)) return@runCatching false
+            val client = HealthConnectClient.getOrCreate(context)
+            val instant = Instant.ofEpochMilli(at)
+            val offset = ZoneId.systemDefault().rules.getOffset(instant)
+            client.insertRecords(
+                listOf(
+                    HydrationRecord(
+                        startTime = instant,
+                        startZoneOffset = offset,
+                        endTime = instant,
+                        endZoneOffset = offset,
+                        volume = Volume.milliliters(millilitres.toDouble()),
+                    ),
+                ),
+            )
+            DiagnosticsLogger.log("HealthConnect", "Wrote ${millilitres}ml of water")
+            true
+        }.onFailure {
+            DiagnosticsLogger.log("HealthConnect", "Water write failed: ${it.message}")
+        }.getOrDefault(false)
+    }
+
+    /** Writes a finished workout as an exercise session. */
+    suspend fun writeExercise(
+        context: Context,
+        title: String,
+        startMillis: Long,
+        endMillis: Long,
+    ): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            if (endMillis <= startMillis) return@runCatching false
+            if (status(context) != Status.Ready) return@runCatching false
+            if (!hasWrite(context)) return@runCatching false
+            val client = HealthConnectClient.getOrCreate(context)
+            val zone = ZoneId.systemDefault()
+            val start = Instant.ofEpochMilli(startMillis)
+            val end = Instant.ofEpochMilli(endMillis)
+            client.insertRecords(
+                listOf(
+                    ExerciseSessionRecord(
+                        startTime = start,
+                        startZoneOffset = zone.rules.getOffset(start),
+                        endTime = end,
+                        endZoneOffset = zone.rules.getOffset(end),
+                        exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING,
+                        title = title,
+                    ),
+                ),
+            )
+            DiagnosticsLogger.log("HealthConnect", "Wrote exercise session: $title")
+            true
+        }.onFailure {
+            DiagnosticsLogger.log("HealthConnect", "Exercise write failed: ${it.message}")
+        }.getOrDefault(false)
+    }
+
+    /** Opens Health Connect's own settings screen. */
     fun openSettings(context: Context): Boolean = runCatching {
         val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -198,8 +273,9 @@ data class HealthConnectActions(
 
 /**
  * Wires the permission launcher, the one-shot read and the history import
- * together, so the screen only has to say "connect", "sync" or "import" and
- * render the resulting numbers.
+ * together. The permission request falls back to the required set when the
+ * device's Health Connect rejects the optional background/history strings,
+ * which is the difference between "connects" and "the button does nothing".
  */
 @Composable
 fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, HealthConnectActions> {
@@ -216,27 +292,51 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
     val launcher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
     ) { result ->
-        granted = result.containsAll(HealthConnectSource.dataPermissions)
+        granted = result.containsAll(HealthConnectSource.requiredPermissions)
         hasBackground = result.contains(HealthConnectSource.backgroundPermission)
         hasHistory = result.contains(HealthConnectSource.historyPermission)
         message = when {
-            granted && hasBackground -> "Health Connect connected, background sync on"
-            granted -> "Connected, but background read was not allowed"
-            else -> "Permission not granted"
+            granted && hasBackground -> "Connected: read and write, background sync on"
+            granted -> "Connected: read and write"
+            else -> "Permissions not granted — read and write are both needed"
         }
         if (granted) {
             scope.launch {
-                val read = HealthConnectSource.readToday(context)
-                read?.let { WellnessSync.apply(context, it) }
+                HealthConnectSource.readToday(context)?.let { WellnessSync.apply(context, it) }
                 WellnessSync.scheduleIfEnabled(context)
             }
         }
     }
 
+    fun requestPermissions() {
+        if (status != HealthConnectSource.Status.Ready) {
+            message = "Health Connect is not available on this device"
+            return
+        }
+        runCatching { launcher.launch(HealthConnectSource.permissions) }
+            .onSuccess { return }
+            .onFailure { first ->
+                DiagnosticsLogger.log(
+                    "HealthConnect",
+                    "Full permission request rejected (${first.message}); retrying with the required set",
+                )
+                runCatching { launcher.launch(HealthConnectSource.requiredPermissions) }
+                    .onSuccess {
+                        message = "This Health Connect build has no background/history access; " +
+                            "asked for read and write only"
+                    }
+                    .onFailure { second ->
+                        message = "The Health Connect permission screen could not open: " +
+                            (second.message ?: second.javaClass.simpleName)
+                        DiagnosticsLogger.log("HealthConnect", "Permission launch failed: ${second.message}")
+                    }
+            }
+    }
+
     LaunchedEffect(status, enabled) {
         if (status != HealthConnectSource.Status.Ready || !enabled) return@LaunchedEffect
         val grantedNow = HealthConnectSource.grantedPermissions(context)
-        granted = grantedNow.containsAll(HealthConnectSource.dataPermissions)
+        granted = grantedNow.containsAll(HealthConnectSource.requiredPermissions)
         hasBackground = grantedNow.contains(HealthConnectSource.backgroundPermission)
         hasHistory = grantedNow.contains(HealthConnectSource.historyPermission)
         if (granted) {
@@ -255,14 +355,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
     )
 
     val actions = HealthConnectActions(
-        connect = {
-            when {
-                status != HealthConnectSource.Status.Ready ->
-                    message = "Health Connect is not available on this device"
-                else -> runCatching { launcher.launch(HealthConnectSource.permissions) }
-                    .onFailure { message = "Permission screen could not open" }
-            }
-        },
+        connect = { requestPermissions() },
         sync = {
             scope.launch {
                 busy = true
@@ -282,11 +375,8 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
                 message = "Importing ${HealthConnectSource.HISTORY_DAYS} days…"
                 importedDays = runCatching { HealthConnectSource.backfillHistory(context) }
                     .getOrDefault(0)
-                message = if (importedDays == 0) {
-                    "No history found in Health Connect"
-                } else {
-                    "$importedDays day(s) imported"
-                }
+                message = if (importedDays == 0) "No history found in Health Connect"
+                else "$importedDays day(s) imported"
                 busy = false
             }
         },

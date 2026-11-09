@@ -181,6 +181,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] A late progress update can no longer overwrite the finished or failed state
 - [x] Unit tests for the copy loop: monotonic, ends at the full size, throttled, and still reports when the total size is unknown
 
+## Fixed in 6.4.0 — Health Connect connect flow
+
+- [x] **Bug:** connecting asked for the optional background and history permissions in the same request as the record reads. A Health Connect build that does not know those strings rejects the whole request, so the button appeared to do nothing. The full set is tried first and the request is retried with the required set alone
+- [x] **Bug:** the manifest was missing the `androidx.health.ACTION_HEALTH_CONNECT_SETTINGS` intent query, which Health Connect needs on Android 14+ to be visible at all
+- [x] Health Connect now asks for **read and write** together: `WRITE_HYDRATION` and `WRITE_EXERCISE`
+- [x] A glass of water logged in Chronos is written back as a hydration record; a finished workout is written as an exercise session
+- [x] "Connected" now means read and write are both granted, and the card says which one is missing
+- [x] **Bug:** the Special access rows kept showing the old state after the user changed a switch in system settings — the refresh counter was never read, so nothing recomposed. Rows now refresh when the app returns to the foreground
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
