@@ -96,7 +96,13 @@ object AppUpdater {
                 }
 
                 if (apk.exists()) apk.delete()
+                val started = System.currentTimeMillis()
                 val written = download(info.downloadUrl, apk, info.sizeBytes, onProgress)
+                val took = System.currentTimeMillis() - started
+                DiagnosticsLogger.log(
+                    "Net",
+                    "GET ${info.downloadUrl.take(120)} -> ${apk.length()} bytes in $took ms",
+                )
                 DiagnosticsLogger.log("Updater", "Downloaded ${apk.name}: $written bytes")
 
                 if (!ApkFile.looksLikeApk(apk)) {

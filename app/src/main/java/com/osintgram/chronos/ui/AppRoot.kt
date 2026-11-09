@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.BuildConfig
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.diagnostics.Breadcrumbs
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.diagnostics.LogExporter
 import com.osintgram.chronos.ui.components.AnalogClock
@@ -197,6 +198,7 @@ fun AppRoot() {
                                 Haptics.tap(context)
                                 editingId = -1L
                                 showEditor = true
+                                Breadcrumbs.action("open", "alarm_editor")
                             }) {
                                 Icon(Icons.Filled.Add, contentDescription = "Add alarm")
                             }
@@ -217,6 +219,7 @@ fun AppRoot() {
                                     menuOpen = false
                                     settingsScrollTo = null
                                     showSettings = true
+                                    Breadcrumbs.action("open", "settings")
                                 },
                             )
                             DropdownMenuItem(
@@ -234,6 +237,7 @@ fun AppRoot() {
                                     menuOpen = false
                                     settingsScrollTo = com.osintgram.chronos.ui.screens.SCROLL_ABOUT
                                     showSettings = true
+                                    Breadcrumbs.action("open", "about")
                                 },
                             )
                             DropdownMenuItem(
@@ -255,6 +259,7 @@ fun AppRoot() {
                                 onClick = {
                                     menuOpen = false
                                     showSpecialAccess = true
+                                    Breadcrumbs.action("open", "special_access")
                                 },
                             )
                             DropdownMenuItem(
@@ -262,6 +267,7 @@ fun AppRoot() {
                                 onClick = {
                                     menuOpen = false
                                     showDiagnostics = true
+                                    Breadcrumbs.action("open", "diagnostics")
                                 },
                             )
                         }
@@ -278,6 +284,7 @@ fun AppRoot() {
                             onClick = {
                                 if (tabIndex != index) Haptics.tick(context)
                                 tabIndex = index
+                                Breadcrumbs.screen(tabs[index].label)
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.label) },
                             label = { Text(tab.label, fontSize = 11.sp) },

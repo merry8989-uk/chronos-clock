@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.BuildConfig
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.diagnostics.LogExporter
+import kotlinx.coroutines.launch
 
 /**
  * Diagnostics that does not depend on the Settings screen: reachable straight
@@ -46,6 +47,10 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var version by remember { mutableIntStateOf(0) }
     val log = remember(version) { DiagnosticsLogger.readAll() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val device = remember(version) {
+        com.osintgram.chronos.diagnostics.DeviceMetrics.snapshot(context, BuildConfig.VERSION_NAME)
+    }
     val crash = remember(version) {
         log.lineSequence()
             .filter { it.contains("[CRASH]") || it.contains("failed:") }
@@ -78,8 +83,22 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                 .padding(16.dp),
         ) {
             Text(
-                text = "Chronos ${BuildConfig.VERSION_NAME} · ${log.lineSequence().count { it.isNotBlank() }} log lines",
+                text = "Chronos ${BuildConfig.VERSION_NAME} · ${log.lineSequence().count { it.isNotBlank() }} log lines · " +
+                    "${DiagnosticsLogger.sizeBytes() / 1024} KB",
                 fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = com.osintgram.chronos.diagnostics.DeviceMetrics.describe(device),
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "session ${DiagnosticsLogger.sessionId}",
+                fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -123,6 +142,12 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     )
                     LogExporter.share(context, file, "application/zip")
                 }) { Text("Share .zip") }
+                TextButton(onClick = {
+                    scope.launch {
+                        com.osintgram.chronos.diagnostics.LogcatCollector.capture(context)
+                        version += 1
+                    }
+                }) { Text("Capture logcat") }
                 TextButton(onClick = {
                     DiagnosticsLogger.clear()
                     version += 1
