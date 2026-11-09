@@ -144,6 +144,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Wellness goals and bell settings, wellness records in the backup file and in factory reset
 - [x] Unit tests for the step baseline, week totals, streak rule and JSON round-trip
 
+## Shipped in 6.2.0 — deeper health data
+
+- [x] Heart-rate card on Today: reads the phone's own sensor while the card is on screen, shows bpm, band and the time of the last reading, and stops after 30 seconds
+- [x] `BODY_SENSORS` requested at the moment the user taps Allow, never at launch; the background body-sensor permission is deliberately not requested
+- [x] Background sync: a WorkManager job every six hours folds today's steps, water and sleep in while the app is closed, needs the Health Connect background read permission, skips itself when the permission is missing, and is cancelled when the sync setting is turned off
+- [x] History import: one tap pulls the last 84 days, which needs the Health Connect history permission (past the default 30-day window)
+- [x] A sync only raises a value; a hand-typed number is never lowered
+- [x] Unit tests for the merge rule, the heart-rate bands and the JSON round-trip with heart rate
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
@@ -193,6 +202,7 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 ## Next — wellness depth
 
 - [ ] **P2 M** Write workouts to Health Connect as an exercise session, not just read
+- [ ] **P3 S** Heart-rate trend across the imported history (needs per-reading storage, not one value a day)
 - [ ] **P2 M** Reminders for water, a walk and bedtime breathing
 - [ ] **P2 S** Body measurements (weight, waist) with a trend line
 - [ ] **P3 M** Guided audio meditation — needs recorded voice content, so it is not bundled today

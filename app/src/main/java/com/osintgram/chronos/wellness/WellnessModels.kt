@@ -57,9 +57,12 @@ data class DayLog(
     val waterMl: Int = 0,
     val sleepMinutes: Int = 0,
     val habits: Set<String> = emptySet(),
+    val heartRateBpm: Int = 0,
+    val heartRateAt: Long = 0L,
 ) {
     val isEmpty: Boolean
-        get() = steps == 0 && waterMl == 0 && sleepMinutes == 0 && habits.isEmpty()
+        get() = steps == 0 && waterMl == 0 && sleepMinutes == 0 && habits.isEmpty() &&
+            heartRateBpm == 0
 }
 
 /** Totals for the last seven days, the numbers the Progress tab shows. */

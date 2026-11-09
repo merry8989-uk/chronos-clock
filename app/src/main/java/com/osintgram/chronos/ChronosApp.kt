@@ -30,6 +30,7 @@ class ChronosApp : Application() {
         TimerPresets.init(this)
         TimerEngine.init(this)
         com.osintgram.chronos.wellness.WellnessStore.init(this)
+        com.osintgram.chronos.wellness.WellnessSync.scheduleIfEnabled(this)
 
         AlarmScheduler.rescheduleAll(this)
         com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(this)

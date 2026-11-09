@@ -97,9 +97,33 @@ object WellnessLogic {
         return count
     }
 
+    /**
+     * Folds a Health Connect reading into a day. Values only ever go up: a sync
+     * must never wipe a number the user typed in by hand.
+     */
+    fun mergeHealthSnapshot(
+        day: DayLog,
+        steps: Int?,
+        waterMl: Int?,
+        sleepMinutes: Int?,
+    ): DayLog = day.copy(
+        steps = maxOf(day.steps, steps ?: 0),
+        waterMl = maxOf(day.waterMl, waterMl ?: 0),
+        sleepMinutes = maxOf(day.sleepMinutes, sleepMinutes ?: 0),
+    )
+
     /** A day is "active" when any health number or habit was recorded. */
     fun isActiveDay(day: DayLog, finishedWorkoutDates: Set<String>): Boolean =
         !day.isEmpty || day.date in finishedWorkoutDates
+
+    /** Resting-ish heart rate band used for the colour of the reading. */
+    fun heartRateBand(bpm: Int): String = when {
+        bpm <= 0 -> "none"
+        bpm < 50 -> "low"
+        bpm <= 100 -> "normal"
+        bpm <= 140 -> "elevated"
+        else -> "high"
+    }
 
     /** Water progress as 0f..1f, safe when the goal is zero. */
     fun progress(value: Int, goal: Int): Float {

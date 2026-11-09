@@ -122,7 +122,9 @@ object WellnessCodec {
                     .put("steps", day.steps)
                     .put("waterMl", day.waterMl)
                     .put("sleepMinutes", day.sleepMinutes)
-                    .put("habits", JSONArray(day.habits.toList())),
+                    .put("habits", JSONArray(day.habits.toList()))
+                    .put("heartRateBpm", day.heartRateBpm)
+                    .put("heartRateAt", day.heartRateAt),
             )
         }
         return array
@@ -149,6 +151,8 @@ object WellnessCodec {
                     waterMl = o.optInt("waterMl", 0).coerceAtLeast(0),
                     sleepMinutes = o.optInt("sleepMinutes", 0).coerceAtLeast(0),
                     habits = habits,
+                    heartRateBpm = o.optInt("heartRateBpm", 0).coerceAtLeast(0),
+                    heartRateAt = o.optLong("heartRateAt", 0L).coerceAtLeast(0L),
                 ),
             )
         }
