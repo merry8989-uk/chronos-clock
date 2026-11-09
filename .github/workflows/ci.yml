@@ -30,16 +30,14 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      # The wrapper script is not committed; the release workflow creates it the
-      # same way, so keep both paths identical.
-      - name: Ensure Gradle wrapper exists
-        run: test -f gradlew || gradle wrapper --gradle-version 8.9
-
+      # The wrapper script is not committed, and generating it configures the
+      # project (downloading the plugin classpath) for no benefit here — so use
+      # the Gradle 8.9 that setup-gradle already put on PATH.
       - name: Assemble debug APK
-        run: ./gradlew --no-daemon --stacktrace assembleDebug
+        run: gradle --no-daemon --stacktrace assembleDebug
 
       - name: Unit tests
-        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest
+        run: gradle --no-daemon --stacktrace testDebugUnitTest
 
       - name: Upload test report
         if: always()
