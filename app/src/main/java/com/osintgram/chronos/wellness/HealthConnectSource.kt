@@ -46,28 +46,55 @@ import java.time.ZoneId
  */
 object HealthConnectSource {
 
-    val readPermissions: Set<String> = setOf(
-        HealthPermission.getReadPermission(StepsRecord::class),
-        HealthPermission.getReadPermission(HydrationRecord::class),
-        HealthPermission.getReadPermission(SleepSessionRecord::class),
-    )
+    /**
+     * Built lazily and behind runCatching: these calls touch the Health Connect
+     * client's classes, and on a device whose client is older than the one this
+     * app was compiled against they can fail while the object is being
+     * initialised — which used to take the whole app down on first use.
+     */
+    val readPermissions: Set<String> by lazy {
+        runCatching {
+            setOf(
+                HealthPermission.getReadPermission(StepsRecord::class),
+                HealthPermission.getReadPermission(HydrationRecord::class),
+                HealthPermission.getReadPermission(SleepSessionRecord::class),
+            )
+        }.onFailure {
+            DiagnosticsLogger.log("HealthConnect", "Read permission names failed: ${it.message}")
+        }.getOrDefault(emptySet())
+    }
 
-    val writePermissions: Set<String> = setOf(
-        HealthPermission.getWritePermission(HydrationRecord::class),
-        HealthPermission.getWritePermission(ExerciseSessionRecord::class),
-    )
+    val writePermissions: Set<String> by lazy {
+        runCatching {
+            setOf(
+                HealthPermission.getWritePermission(HydrationRecord::class),
+                HealthPermission.getWritePermission(ExerciseSessionRecord::class),
+            )
+        }.onFailure {
+            DiagnosticsLogger.log("HealthConnect", "Write permission names failed: ${it.message}")
+        }.getOrDefault(emptySet())
+    }
 
     /** What "connected" means: read and write, both. */
-    val requiredPermissions: Set<String> = readPermissions + writePermissions
+    val requiredPermissions: Set<String> by lazy { readPermissions + writePermissions }
 
-    val backgroundPermission: String = HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND
+    val backgroundPermission: String by lazy {
+        runCatching { HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND }
+            .getOrDefault("android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND")
+    }
 
-    val historyPermission: String = HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+    val historyPermission: String by lazy {
+        runCatching { HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY }
+            .getOrDefault("android.permission.health.READ_HEALTH_DATA_HISTORY")
+    }
 
-    val optionalPermissions: Set<String> = setOf(backgroundPermission, historyPermission)
+    val optionalPermissions: Set<String> by lazy { setOf(backgroundPermission, historyPermission) }
 
     /** Everything asked for in the first attempt. */
-    val permissions: Set<String> = requiredPermissions + optionalPermissions
+    val permissions: Set<String> by lazy { requiredPermissions + optionalPermissions }
+
+    /** False when this build cannot even name the permissions (old client). */
+    fun canRequestPermissions(): Boolean = requiredPermissions.isNotEmpty()
 
     const val HISTORY_DAYS = 84
 
@@ -81,26 +108,39 @@ object HealthConnectSource {
         val hasAny: Boolean get() = steps != null || waterMl != null || sleepMinutes != null
     }
 
-    fun status(context: Context): Status = when (
-        HealthConnectClient.getSdkStatus(context)
-    ) {
-        HealthConnectClient.SDK_AVAILABLE -> Status.Ready
-        HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> Status.UpdateRequired
-        else -> Status.Unavailable
-    }
+    fun status(context: Context): Status = runCatching {
+        when (HealthConnectClient.getSdkStatus(context)) {
+            HealthConnectClient.SDK_AVAILABLE -> Status.Ready
+            HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> Status.UpdateRequired
+            else -> Status.Unavailable
+        }
+    }.onFailure {
+        DiagnosticsLogger.log("HealthConnect", "Status check failed: ${it.javaClass.simpleName}: ${it.message}")
+    }.getOrDefault(Status.Unavailable)
+
+    /** One guarded place where the client is created. */
+    private fun healthClient(context: Context): HealthConnectClient? = runCatching {
+        if (status(context) != Status.Ready) return null
+        HealthConnectClient.getOrCreate(context)
+    }.onFailure {
+        DiagnosticsLogger.log("HealthConnect", "Client creation failed: ${it.javaClass.simpleName}: ${it.message}")
+    }.getOrNull()
 
     suspend fun grantedPermissions(context: Context): Set<String> = withContext(Dispatchers.IO) {
         runCatching {
-            if (status(context) != Status.Ready) return@runCatching emptySet()
-            HealthConnectClient.getOrCreate(context).permissionController.getGrantedPermissions()
+            val hc = healthClient(context) ?: return@runCatching emptySet()
+            hc.permissionController.getGrantedPermissions()
         }.onFailure {
             DiagnosticsLogger.log("HealthConnect", "Permission read failed: ${it.message}")
         }.getOrDefault(emptySet())
     }
 
     /** Connected means read *and* write are granted. */
-    suspend fun granted(context: Context): Boolean =
-        grantedPermissions(context).containsAll(requiredPermissions)
+    suspend fun granted(context: Context): Boolean {
+        val required = requiredPermissions
+        if (required.isEmpty()) return false
+        return grantedPermissions(context).containsAll(required)
+    }
 
     suspend fun hasRead(context: Context): Boolean =
         grantedPermissions(context).containsAll(readPermissions)
@@ -118,15 +158,14 @@ object HealthConnectSource {
 
     suspend fun readDay(context: Context, date: LocalDate): Snapshot? = withContext(Dispatchers.IO) {
         runCatching {
-            if (status(context) != Status.Ready) return@runCatching null
-            val client = HealthConnectClient.getOrCreate(context)
+            val hc = healthClient(context) ?: return@runCatching null
             val zone = ZoneId.systemDefault()
             val start = date.atStartOfDay(zone).toInstant()
             val endOfDay = date.plusDays(1).atStartOfDay(zone).toInstant()
             val now = Instant.now()
             val end = if (endOfDay.isAfter(now)) now else endOfDay
             if (!end.isAfter(start)) return@runCatching null
-            val result = client.aggregate(
+            val result = hc.aggregate(
                 AggregateRequest(
                     metrics = setOf(
                         StepsRecord.COUNT_TOTAL,
@@ -183,12 +222,11 @@ object HealthConnectSource {
     ): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             if (millilitres <= 0) return@runCatching false
-            if (status(context) != Status.Ready) return@runCatching false
+            val hc = healthClient(context) ?: return@runCatching false
             if (!hasWrite(context)) return@runCatching false
-            val client = HealthConnectClient.getOrCreate(context)
             val instant = Instant.ofEpochMilli(at)
             val offset = ZoneId.systemDefault().rules.getOffset(instant)
-            client.insertRecords(
+            hc.insertRecords(
                 listOf(
                     HydrationRecord(
                         startTime = instant,
@@ -215,13 +253,12 @@ object HealthConnectSource {
     ): Boolean = withContext(Dispatchers.IO) {
         runCatching {
             if (endMillis <= startMillis) return@runCatching false
-            if (status(context) != Status.Ready) return@runCatching false
+            val hc = healthClient(context) ?: return@runCatching false
             if (!hasWrite(context)) return@runCatching false
-            val client = HealthConnectClient.getOrCreate(context)
             val zone = ZoneId.systemDefault()
             val start = Instant.ofEpochMilli(startMillis)
             val end = Instant.ofEpochMilli(endMillis)
-            client.insertRecords(
+            hc.insertRecords(
                 listOf(
                     ExerciseSessionRecord(
                         startTime = start,
@@ -311,6 +348,11 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
     fun requestPermissions() {
         if (status != HealthConnectSource.Status.Ready) {
             message = "Health Connect is not available on this device"
+            return
+        }
+        if (!HealthConnectSource.canRequestPermissions()) {
+            message = "This Health Connect build is too old for Chronos — update Health Connect"
+            DiagnosticsLogger.log("HealthConnect", "Permission names unavailable; not launching")
             return
         }
         runCatching { launcher.launch(HealthConnectSource.permissions) }
