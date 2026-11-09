@@ -153,6 +153,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] A sync only raises a value; a hand-typed number is never lowered
 - [x] Unit tests for the merge rule, the heart-rate bands and the JSON round-trip with heart rate
 
+## Fixed in 6.2.1 — in-app update
+
+- [x] **Bug:** a failed update check was reported as "You're on the latest version", because every exception was turned into `null`. The check now returns a result, names the cause (no connection, timeout, GitHub rate limit, HTTP error, release without an APK) and logs it
+- [x] **Bug:** the updater never checked whether Android allows Chronos to install packages, so on a device where that switch was off the installer opened and nothing happened. Settings → About now shows "Allow app installs" and opens the right system screen
+- [x] **Bug:** a proxy or Wi-Fi login page served as `200` was written to disk as an `.apk` and handed to the installer. The download is now checked for the zip header and for the size GitHub reports
+- [x] Redirects are followed by hand, so a refused hop is reported instead of silently producing a truncated file
+- [x] Unit tests for the version comparison and the APK check
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

@@ -24,12 +24,20 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
     var state: UpdateUiState by mutableStateOf(UpdateUiState.Idle)
         private set
 
+    /** Whether Android currently allows Chronos to install packages. */
+    fun canInstall(): Boolean = AppUpdater.canInstallPackages(context)
+
+    fun openInstallPermissionSettings() = AppUpdater.openInstallPermissionSettings(context)
+
     fun check(currentVersion: String) {
         if (state is UpdateUiState.Checking || state is UpdateUiState.Downloading) return
         state = UpdateUiState.Checking
         viewModelScope.launch {
-            val info = UpdateChecker.check(currentVersion)
-            state = if (info == null) UpdateUiState.UpToDate else UpdateUiState.Available(info)
+            state = when (val result = UpdateChecker.check(currentVersion)) {
+                is UpdateResult.Found -> UpdateUiState.Available(result.info)
+                UpdateResult.UpToDate -> UpdateUiState.UpToDate
+                is UpdateResult.Failed -> UpdateUiState.Failed(result.reason)
+            }
         }
     }
 
@@ -37,10 +45,18 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
         if (state is UpdateUiState.Downloading) return
         state = UpdateUiState.Downloading
         viewModelScope.launch {
-            val result = AppUpdater.downloadAndInstall(context, info)
-            state = result.fold(
+            state = AppUpdater.downloadAndInstall(context, info).fold(
                 onSuccess = { UpdateUiState.Idle },
-                onFailure = { UpdateUiState.Failed(it.message ?: "Update failed") },
+                onFailure = { error ->
+                    UpdateUiState.Failed(
+                        when (error) {
+                            is InstallPermissionRequired ->
+                                "Chronos is not allowed to install apps yet. Tap \"Allow app installs\", then update again."
+                            is DownloadFailed -> error.message ?: "Update failed"
+                            else -> error.message ?: "Update failed"
+                        },
+                    )
+                },
             )
         }
     }
