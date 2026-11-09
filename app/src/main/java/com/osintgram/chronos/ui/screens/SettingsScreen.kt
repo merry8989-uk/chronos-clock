@@ -1298,6 +1298,8 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     AlarmStore.replaceAll(emptyList())
                     com.osintgram.chronos.wellness.WellnessStore.clearAll()
                     com.osintgram.chronos.tasks.TaskStore.clearAll()
+                    com.osintgram.chronos.screentime.ScreenTimeStore.clearAll()
+                    com.osintgram.chronos.screentime.LimitService.sync(context)
                     Settings.resetAll()
                     DiagnosticsLogger.setEnabled(Settings.diagnosticsEnabled.value)
                     showResetDialog = false

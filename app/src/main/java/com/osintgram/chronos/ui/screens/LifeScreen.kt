@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.ui.screens.life.TasksSection
+import com.osintgram.chronos.ui.screens.screentime.ScreenTimeScreen
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
 import com.osintgram.chronos.ui.theme.pressable
@@ -95,6 +96,7 @@ fun LifeScreen() {
             when (target) {
                 Area.Tasks -> TasksSection()
                 Area.Wellness -> WellnessScreen()
+                Area.Screen -> ScreenTimeScreen()
             }
         }
     }
@@ -104,4 +106,5 @@ fun LifeScreen() {
 enum class Area(val label: String) {
     Tasks("Tasks"),
     Wellness("Wellness"),
+    Screen("Screen"),
 }

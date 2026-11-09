@@ -88,6 +88,9 @@ object Settings {
     val wellnessBellTone = Setting("wellness_bell_tone", "classic_bell")
     val healthConnectSync = Setting("wellness_health_connect", true)
 
+    // ---- Screen time ------------------------------------------------------
+    val screenTimeLimiter = Setting("screen_time_limiter", false)
+
     // ---- General / diagnostics -------------------------------------------
     val keepScreenOn = Setting("keep_screen_on", false)
     val confirmDelete = Setting("confirm_delete", true)
@@ -151,6 +154,7 @@ object Settings {
         wellnessBell.load(p.getBoolean(wellnessBell.key, wellnessBell.default))
         wellnessBellTone.load(p.getString(wellnessBellTone.key, wellnessBellTone.default) ?: "classic_bell")
         healthConnectSync.load(p.getBoolean(healthConnectSync.key, healthConnectSync.default))
+        screenTimeLimiter.load(p.getBoolean(screenTimeLimiter.key, screenTimeLimiter.default))
 
         keepScreenOn.load(p.getBoolean(keepScreenOn.key, keepScreenOn.default))
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
@@ -220,6 +224,7 @@ object Settings {
         wellnessBell.resetToDefault()
         wellnessBellTone.resetToDefault()
         healthConnectSync.resetToDefault()
+        screenTimeLimiter.resetToDefault()
         keepScreenOn.resetToDefault()
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
@@ -273,6 +278,7 @@ object Settings {
         wellnessBell.key to wellnessBell.value,
         wellnessBellTone.key to wellnessBellTone.value,
         healthConnectSync.key to healthConnectSync.value,
+        screenTimeLimiter.key to screenTimeLimiter.value,
         keepScreenOn.key to keepScreenOn.value,
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
@@ -330,6 +336,7 @@ object Settings {
                 wellnessBell.key -> asBool?.let { wellnessBell.set(it) }
                 wellnessBellTone.key -> wellnessBellTone.set(text)
                 healthConnectSync.key -> asBool?.let { healthConnectSync.set(it) }
+                screenTimeLimiter.key -> asBool?.let { screenTimeLimiter.set(it) }
                 keepScreenOn.key -> asBool?.let { keepScreenOn.set(it) }
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }
