@@ -45,6 +45,7 @@ object WidgetUpdater {
     const val TYPE_STOPWATCH = "stopwatch"
     const val TYPE_HOLIDAYS = "holidays"
     const val TYPE_TIMER_PRESETS = "timer_presets"
+    const val TYPE_SCREEN_TIME = "screen_time"
 
     /** Updates every widget on the home screen. */
     fun refreshAll(context: Context) {
@@ -58,6 +59,7 @@ object WidgetUpdater {
             TYPE_STOPWATCH to StopwatchWidgetProvider::class.java,
             TYPE_HOLIDAYS to HolidaysWidgetProvider::class.java,
             TYPE_TIMER_PRESETS to TimerPresetsWidgetProvider::class.java,
+            TYPE_SCREEN_TIME to ScreenTimeWidgetProvider::class.java,
         ).forEach { (type, provider) ->
             val ids = manager.getAppWidgetIds(ComponentName(context, provider))
             if (ids != null && ids.isNotEmpty()) {
@@ -75,6 +77,7 @@ object WidgetUpdater {
         TYPE_TIMER -> buildTimer(context)
         TYPE_STOPWATCH -> buildStopwatch(context)
         TYPE_HOLIDAYS -> buildHolidays(context)
+        TYPE_SCREEN_TIME -> buildScreenTime(context)
         else -> buildTimerPresets(context)
     }
 
@@ -415,6 +418,68 @@ object WidgetUpdater {
         manager.cancel(pending)
     }
 
+    /**
+     * Screen time today. UsageStatsManager is asked at most every five minutes —
+     * the minute tick rebuilds the views from the cached numbers, because
+     * querying a whole day of usage events every sixty seconds would be rude to
+     * the battery.
+     */
+    private var cachedDay: com.osintgram.chronos.screentime.DayScreenTime? = null
+    private var cachedAt = 0L
+
+    private fun buildScreenTime(context: Context): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.widget_screen_time)
+        val accent = accentColor()
+        val textColor = Settings.widgetTextColor.value
+        val resource = backgroundResource()
+        if (resource != 0) {
+            views.setInt(R.id.widget_root, "setBackgroundResource", resource)
+        } else {
+            views.setInt(R.id.widget_root, "setBackgroundColor", backgroundColor())
+        }
+        views.setTextColor(R.id.screen_label, accent)
+        views.setTextColor(R.id.screen_total, textColor)
+        views.setTextColor(R.id.screen_top, textColor)
+        views.setTextColor(R.id.screen_meta, accent)
+        views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 108))
+
+        if (!com.osintgram.chronos.screentime.UsageSource.hasAccess(context)) {
+            views.setTextViewText(R.id.screen_total, "--")
+            views.setTextViewText(R.id.screen_top, "Allow Usage access in Chronos")
+            views.setTextViewText(R.id.screen_meta, "Tap to open")
+            return views
+        }
+
+        val now = System.currentTimeMillis()
+        val day = cachedDay?.takeIf { now - cachedAt < 5 * 60_000L }
+            ?: runCatching {
+                com.osintgram.chronos.screentime.UsageSource.today(
+                    context,
+                    com.osintgram.chronos.screentime.ScreenTimeStore.notificationsFor(),
+                )
+            }.getOrNull()?.also { cachedDay = it; cachedAt = now }
+            ?: return views
+
+        views.setTextViewText(
+            R.id.screen_total,
+            com.osintgram.chronos.screentime.ScreenTimeLogic.formatDuration(day.totalForegroundMillis),
+        )
+        val top = day.mostUsed
+        views.setTextViewText(
+            R.id.screen_top,
+            if (top == null) "Nothing used yet today"
+            else "${top.label} · " + com.osintgram.chronos.screentime.ScreenTimeLogic
+                .formatDuration(top.foregroundMillis),
+        )
+        val alerts = day.apps.sumOf { it.notifications }
+        views.setTextViewText(
+            R.id.screen_meta,
+            "${day.unlockCount} unlocks · ${day.screenOnCount} screen on" +
+                if (alerts > 0) " · $alerts alerts" else "",
+        )
+        return views
+    }
+
     private fun openApp(context: Context, requestCode: Int): PendingIntent =
         PendingIntent.getActivity(
             context,
@@ -474,6 +539,7 @@ object WidgetUpdater {
             StopwatchWidgetProvider::class.java,
             HolidaysWidgetProvider::class.java,
             TimerPresetsWidgetProvider::class.java,
+            ScreenTimeWidgetProvider::class.java,
         ).any { provider ->
             manager.getAppWidgetIds(ComponentName(context, provider))?.isNotEmpty() == true
         }

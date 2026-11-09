@@ -76,6 +76,11 @@ class HolidaysWidgetProvider : BaseWidgetProvider() {
 }
 
 /** One tap starts a saved timer preset. */
+/** Screen time today: total, the most-used app, unlocks and screen-on count. */
+class ScreenTimeWidgetProvider : BaseWidgetProvider() {
+    override val type = WidgetUpdater.TYPE_SCREEN_TIME
+}
+
 class TimerPresetsWidgetProvider : BaseWidgetProvider() {
     override val type = WidgetUpdater.TYPE_TIMER_PRESETS
 }
