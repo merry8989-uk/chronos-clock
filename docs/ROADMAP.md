@@ -174,6 +174,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Tasks and projects in the backup file and in factory reset
 - [x] Unit tests for the week/month/year maths, rollups, repeats and the JSON round-trip
 
+## Fixed in 6.3.1 — update progress
+
+- [x] **Bug:** the update row said "Downloading update…" with no progress at all, because the download ran as a single blocking copy. It now reads the file in chunks and reports bytes written, and the row shows a real progress bar with a percentage and "x of y MB"
+- [x] Progress is throttled to about a hundred updates per download (1% or 256 KB), so a 14 MB APK drives a smooth bar without a state write per chunk
+- [x] A late progress update can no longer overwrite the finished or failed state
+- [x] Unit tests for the copy loop: monotonic, ends at the full size, throttled, and still reports when the total size is unknown
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

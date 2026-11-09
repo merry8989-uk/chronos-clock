@@ -33,6 +33,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -828,11 +829,55 @@ fun SettingsScreen(onBack: () -> Unit) {
                         subtitle = "Download and install without a browser",
                         onClick = { updateVm.install(state.info) },
                     )
-                    is UpdateUiState.Downloading -> SettingActionRow(
-                        title = "Downloading update…",
-                        subtitle = "The installer opens automatically",
-                        onClick = { },
-                    )
+                    is UpdateUiState.Downloading -> Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp, vertical = 14.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Downloading update…",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                text = if (state.total > 0L) "${(state.percent * 100).toInt()}%"
+                                else state.downloadedLabel,
+                                fontSize = 13.sp,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        if (state.total > 0L) {
+                            LinearProgressIndicator(
+                                progress = { state.percent },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                            )
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = if (state.total > 0L) {
+                                "${state.downloadedLabel} of ${state.totalLabel} · the installer opens automatically"
+                            } else {
+                                "Starting the download · the installer opens automatically"
+                            },
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     is UpdateUiState.Checking -> SettingActionRow(
                         title = "Checking for updates…",
                         onClick = { },
