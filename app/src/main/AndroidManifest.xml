@@ -38,6 +38,9 @@
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
     <!-- Lets the one-off import reach past Health Connect's 30-day window (84 days). -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+    <!-- Write back what the user logs: a glass of water, a finished workout. -->
+    <uses-permission android:name="android.permission.health.WRITE_HYDRATION" />
+    <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
 
     <!-- Heart rate, read from the phone's own sensor while the Today card is open.
          Not the background variant: this is not a continuous monitor. -->
@@ -61,8 +64,14 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Health Connect visibility: the provider package on Android 13 and below,
+         and the settings activity on Android 14+, where Health Connect is part of
+         the platform. Without both, getSdkStatus reports it as unavailable. -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_HEALTH_CONNECT_SETTINGS" />
+        </intent>
     </queries>
 
     <application

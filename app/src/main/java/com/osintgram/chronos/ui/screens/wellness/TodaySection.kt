@@ -41,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +67,7 @@ import com.osintgram.chronos.wellness.HealthConnectSource
 import com.osintgram.chronos.wellness.HealthConnectState
 import com.osintgram.chronos.wellness.HeartRateSensor
 import com.osintgram.chronos.wellness.rememberHeartRate
+import kotlinx.coroutines.launch
 import com.osintgram.chronos.wellness.StepCounter
 import com.osintgram.chronos.wellness.WellnessLogic
 import com.osintgram.chronos.wellness.WellnessPlans
@@ -91,6 +93,7 @@ fun TodaySection(
     val sleepGoal = Settings.sleepGoalMinutes.value
     val sensorAvailable = remember(context) { StepCounter.isAvailable(context) }
     val (healthState, healthActions) = rememberHealthConnect(enabled = Settings.healthConnectSync.value)
+    val writeScope = rememberCoroutineScope()
     val streak = WellnessStore.streak()
 
     LazyColumn(
@@ -205,6 +208,10 @@ fun TodaySection(
                                 onClick = {
                                     Haptics.tick(context)
                                     WellnessStore.addWater(amount)
+                                    // Written back to Health Connect too, when it is connected.
+                                    writeScope.launch {
+                                        HealthConnectSource.writeHydration(context, amount)
+                                    }
                                 },
                                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                             ) { Text("+${amount} ml", fontSize = 12.sp) }

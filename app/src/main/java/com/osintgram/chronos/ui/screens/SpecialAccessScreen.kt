@@ -56,8 +56,19 @@ import com.osintgram.chronos.ui.theme.pressable
 @Composable
 fun SpecialAccessScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    // Read fresh every time the screen is shown *and* every time the app comes
+    // back to the foreground: the user leaves to a system screen and returns,
+    // and without this the row kept showing the old state.
     var tick by remember { mutableIntStateOf(0) }
-    val items = SpecialAccess.items(context)
+    val items = remember(tick) { SpecialAccess.items(context) }
+    val lifecycleOwner = context as? androidx.lifecycle.LifecycleOwner
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) tick++
+        }
+        lifecycleOwner?.lifecycle?.addObserver(observer)
+        onDispose { lifecycleOwner?.lifecycle?.removeObserver(observer) }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
