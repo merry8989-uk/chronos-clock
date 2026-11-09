@@ -258,6 +258,10 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Without Usage access it says so and opens the app rather than showing zeros
 - [x] Listed in the widget guide, with a one-tap "Screen time" pin button
 
+## Fixed in 6.8.2 — widget names
+
+- [x] **Bug:** every widget showed the same name in the picker, because all nine receivers carried `android:label="@string/app_name"`. Each one now has its own label — *Chronos · Analog clock*, *Chronos · Digital clock*, *Chronos · Next alarm*, *Chronos · Alarm list*, *Chronos · Timer*, *Chronos · Stopwatch*, *Chronos · Holidays*, *Chronos · Timer presets*, *Chronos · Screen time* — and its own one-line description in the widget info file
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
