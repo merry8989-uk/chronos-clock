@@ -210,6 +210,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 
 - [x] **Bug:** "About & updates" in the ⋮ menu opened Settings at the very top, so the update row was several screens down. It now opens Settings already scrolled to the About card; the plain "Settings" entry still opens at the top
 
+## Shipped in 6.6.0 — realtime steps
+
+- [x] **Bug:** today's steps only counted from the moment the app was opened, because the first reading of the day became the baseline and everything walked before that was invisible
+- [x] The baseline is now resolved properly: a stored baseline is used; a phone that rebooted after midnight counts every step since boot; otherwise the card says plainly that the count started when Chronos was opened
+- [x] The listener runs at the sensor's UI rate while the card is on screen, and the value is flushed when the card closes so no steps are lost
+- [x] A six-hourly worker records the day's baseline even when the app is never opened, so the next day starts at zero
+- [x] With Health Connect connected, today's totals are re-read every ten seconds while the card is open — realtime, not on a button press
+- [x] Unit tests for the baseline resolution (stored / rebooted / started now) and the step delta
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

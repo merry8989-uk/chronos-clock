@@ -37,6 +37,28 @@ class WellnessLogicTest {
     }
 
     @Test
+    fun `the day baseline uses the stored value, the reboot, or now`() {
+        // A stored baseline is the answer.
+        assertEquals(5000L, WellnessLogic.resolveStepBaseline(5400, 5000, bootedSinceMidnight = false))
+        // No baseline and the phone rebooted after midnight: everything since boot is today.
+        assertEquals(0L, WellnessLogic.resolveStepBaseline(3200, null, bootedSinceMidnight = true))
+        // No baseline and the counter has been running since before midnight: start at now.
+        assertEquals(4200L, WellnessLogic.resolveStepBaseline(4200, null, bootedSinceMidnight = false))
+        // A reading below the stored baseline means the counter restarted.
+        assertEquals(0L, WellnessLogic.resolveStepBaseline(120, 9000, bootedSinceMidnight = true))
+    }
+
+    @Test
+    fun `steps today count from the resolved baseline`() {
+        val baseline = WellnessLogic.resolveStepBaseline(3200, null, bootedSinceMidnight = true)
+        assertEquals(3200, WellnessLogic.stepDelta(3200, baseline))
+        val stored = WellnessLogic.resolveStepBaseline(5400, 5000, bootedSinceMidnight = false)
+        assertEquals(400, WellnessLogic.stepDelta(5400, stored))
+        assertTrue(WellnessLogic.countedFromNow(null, bootedSinceMidnight = false))
+        assertFalse(WellnessLogic.countedFromNow(5000, bootedSinceMidnight = false))
+    }
+
+    @Test
     fun `minutes between instants floor and never go negative`() {
         val start = 1_000_000L
         assertEquals(5, WellnessLogic.minutesBetween(start, start + 5 * 60_000L + 59_000L))
