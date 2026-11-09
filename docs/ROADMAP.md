@@ -250,6 +250,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Without the grants the tab explains what is missing and opens the right system screen — no fake zeros
 - [x] Unit tests for the duration formatting, limit maths, ordering and share-of-day
 
+## Shipped in 6.8.1 — screen time widget
+
+- [x] 2×1 home-screen widget: today's screen time, the most-used app with its time, and unlock / screen-on / alert counts
+- [x] Usage is re-read at most every five minutes; the once-a-minute tick rebuilds the views from the cached numbers instead of querying a day of usage events
+- [x] Follows the widget background, text colour and accent chosen in Settings, and taps through to the app
+- [x] Without Usage access it says so and opens the app rather than showing zeros
+- [x] Listed in the widget guide, with a one-tap "Screen time" pin button
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

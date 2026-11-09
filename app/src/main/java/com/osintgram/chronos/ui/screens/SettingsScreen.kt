@@ -956,7 +956,8 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                 RowDivider()
                 SettingActionRow(
                     title = "Home-screen widgets",
-                    subtitle = "Clock, next alarm, alarm list, timer, stopwatch, holidays, presets",
+                    subtitle = "Clock, next alarm, alarm list, timer, stopwatch, holidays, " +
+                        "presets, screen time",
                     onClick = { showWidgetInfo = true },
                 )
                 RowDivider()
@@ -1099,6 +1100,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                         "Stopwatch — start, pause and reset",
                         "Holidays — the next holidays coming up",
                         "Timer presets — one tap starts a saved timer",
+                        "Screen time — today's total, the most-used app, unlocks and screen-on count",
                     ).forEach { line ->
                         Text(
                             text = "·  $line",
@@ -1143,6 +1145,17 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                             "Long-press your home screen → Widgets → Chronos"
                         }
                     }) { Text("Digital") }
+                    TextButton(onClick = {
+                        val pinned = WidgetPinner.pin(
+                            context,
+                            com.osintgram.chronos.widget.ScreenTimeWidgetProvider::class.java,
+                        )
+                        status = if (pinned) {
+                            "Confirm the prompt to place the screen time widget"
+                        } else {
+                            "Long-press your home screen → Widgets → Chronos"
+                        }
+                    }) { Text("Screen time") }
                     TextButton(onClick = { showWidgetInfo = false }) { Text("Close") }
                 }
             },
