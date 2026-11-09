@@ -26,15 +26,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material.icons.Icons
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,8 +60,12 @@ import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.pressable
+import com.osintgram.chronos.wellness.DayLog
+import com.osintgram.chronos.wellness.HealthConnectActions
 import com.osintgram.chronos.wellness.HealthConnectSource
 import com.osintgram.chronos.wellness.HealthConnectState
+import com.osintgram.chronos.wellness.HeartRateSensor
+import com.osintgram.chronos.wellness.rememberHeartRate
 import com.osintgram.chronos.wellness.StepCounter
 import com.osintgram.chronos.wellness.WellnessLogic
 import com.osintgram.chronos.wellness.WellnessPlans
@@ -81,7 +90,7 @@ fun TodaySection(
     val waterGoal = Settings.waterGoalMl.value
     val sleepGoal = Settings.sleepGoalMinutes.value
     val sensorAvailable = remember(context) { StepCounter.isAvailable(context) }
-    val (healthState, healthAction) = rememberHealthConnect(enabled = Settings.healthConnectSync.value)
+    val (healthState, healthActions) = rememberHealthConnect(enabled = Settings.healthConnectSync.value)
     val streak = WellnessStore.streak()
 
     LazyColumn(
@@ -308,8 +317,11 @@ fun TodaySection(
             }
         }
 
+        item { WellnessLabel("HEART RATE") }
+        item { HeartRateCard(day = day) }
+
         item { WellnessLabel("HEALTH CONNECT") }
-        item { HealthConnectCard(state = healthState, onAction = healthAction) }
+        item { HealthConnectCard(state = healthState, actions = healthActions) }
 
         item {
             WellnessNote(
@@ -354,9 +366,111 @@ private fun StepRing(steps: Int, goal: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/** Health Connect: connect, sync, or say plainly why it cannot be used. */
+/**
+ * Heart rate from the phone's own sensor. It is read only while the user has
+ * tapped Measure, and the sensor's zero ("no contact") readings are ignored.
+ */
 @Composable
-private fun HealthConnectCard(state: HealthConnectState, onAction: (Boolean) -> Unit) {
+private fun HeartRateCard(day: DayLog) {
+    val context = LocalContext.current
+    val hasSensor = remember(context) { HeartRateSensor.hasSensor(context) }
+    var granted by remember { mutableStateOf(HeartRateSensor.hasPermission(context)) }
+    var measuring by remember { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { allowed ->
+        granted = allowed
+        if (allowed) measuring = true
+    }
+    val live = rememberHeartRate(measuring) { reading ->
+        WellnessStore.setHeartRate(reading.bpm, reading.measuredAt)
+    }
+    // The sensor runs for 30 seconds and then stops on its own.
+    LaunchedEffect(measuring) {
+        if (measuring) {
+            kotlinx.coroutines.delay(30_000)
+            measuring = false
+        }
+    }
+    val bpm = live?.bpm ?: day.heartRateBpm
+    val measuredAt = live?.measuredAt ?: day.heartRateAt
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Favorite,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = if (bpm > 0) "$bpm bpm" else "No reading yet",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = when {
+                            !hasSensor -> "This phone has no heart-rate sensor"
+                            !granted -> "Allow the body sensor to read your pulse"
+                            measuring -> "Hold still, measuring…"
+                            bpm > 0 -> "${WellnessLogic.heartRateBand(bpm)} · ${timeLabel(measuredAt)}"
+                            else -> "Tap Measure and hold still"
+                        },
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (hasSensor) {
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    when {
+                        !granted -> Button(
+                            onClick = {
+                                Haptics.tick(context)
+                                permissionLauncher.launch(android.Manifest.permission.BODY_SENSORS)
+                            },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        ) { Text("Allow", fontSize = 12.sp) }
+                        else -> OutlinedButton(
+                            onClick = {
+                                Haptics.tick(context)
+                                measuring = !measuring
+                            },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        ) { Text(if (measuring) "Stop" else "Measure", fontSize = 12.sp) }
+                    }
+                }
+            }
+            WellnessNote(
+                "Read straight from the sensor while this card is on screen. Nothing is written " +
+                    "to Health Connect.",
+            )
+        }
+    }
+}
+
+@Composable
+private fun timeLabel(millis: Long): String {
+    if (millis <= 0L) return ""
+    val time = java.time.Instant.ofEpochMilli(millis)
+        .atZone(java.time.ZoneId.systemDefault())
+        .toLocalTime()
+    return String.format("at %02d:%02d", time.hour, time.minute)
+}
+
+/** Health Connect: connect, sync, import history, or say plainly what is missing. */
+@Composable
+private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectActions) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(18.dp),
@@ -399,18 +513,38 @@ private fun HealthConnectCard(state: HealthConnectState, onAction: (Boolean) -> 
                 }
             }
             if (state.status == HealthConnectSource.Status.Ready) {
+                if (state.granted) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = buildString {
+                            append(if (state.hasBackground) "Background sync on" else "Background sync off")
+                            append(" · ")
+                            append(if (state.hasHistory) "history read on" else "history read off")
+                        },
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (!state.granted) {
                         Button(
-                            onClick = { onAction(true) },
+                            onClick = actions.connect,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         ) { Text("Connect", fontSize = 12.sp) }
                     } else {
                         OutlinedButton(
-                            onClick = { onAction(false) },
+                            onClick = actions.sync,
+                            enabled = !state.busy,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         ) { Text("Sync now", fontSize = 12.sp) }
+                        if (state.hasHistory) {
+                            OutlinedButton(
+                                onClick = actions.importHistory,
+                                enabled = !state.busy,
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            ) { Text("Import 84 days", fontSize = 12.sp) }
+                        }
                     }
                 }
             }

@@ -177,6 +177,12 @@ object WellnessStore {
     fun setSleepMinutes(minutes: Int, date: String = WellnessLogic.todayKey()) =
         updateDay(date) { it.copy(sleepMinutes = minutes.coerceAtLeast(0)) }
 
+    /** Stores the latest heart-rate reading. Zero is ignored, never stored. */
+    fun setHeartRate(bpm: Int, measuredAt: Long = System.currentTimeMillis(), date: String = WellnessLogic.todayKey()) {
+        if (bpm <= 0) return
+        updateDay(date) { it.copy(heartRateBpm = bpm, heartRateAt = measuredAt) }
+    }
+
     fun toggleHabit(habitId: String, date: String = WellnessLogic.todayKey()) =
         updateDay(date) { day ->
             val next = if (habitId in day.habits) day.habits - habitId else day.habits + habitId

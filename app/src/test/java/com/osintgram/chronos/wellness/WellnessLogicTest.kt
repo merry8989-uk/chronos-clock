@@ -130,6 +130,43 @@ class WellnessLogicTest {
     }
 
     @Test
+    fun `a health snapshot only ever raises a day and never wipes a manual entry`() {
+        val typed = DayLog("2026-11-09", steps = 5000, waterMl = 2000, sleepMinutes = 420)
+        val merged = WellnessLogic.mergeHealthSnapshot(typed, steps = 3000, waterMl = 2500, sleepMinutes = null)
+        assertEquals(5000, merged.steps)      // lower sensor value ignored
+        assertEquals(2500, merged.waterMl)    // higher value taken
+        assertEquals(420, merged.sleepMinutes) // missing value keeps what was typed
+
+        val empty = DayLog("2026-11-09")
+        val fromSensor = WellnessLogic.mergeHealthSnapshot(empty, steps = 1200, waterMl = null, sleepMinutes = null)
+        assertEquals(1200, fromSensor.steps)
+        assertEquals(0, fromSensor.waterMl)
+    }
+
+    @Test
+    fun `heart rate bands split at the usual thresholds`() {
+        assertEquals("none", WellnessLogic.heartRateBand(0))
+        assertEquals("low", WellnessLogic.heartRateBand(45))
+        assertEquals("normal", WellnessLogic.heartRateBand(72))
+        assertEquals("elevated", WellnessLogic.heartRateBand(120))
+        assertEquals("high", WellnessLogic.heartRateBand(160))
+    }
+
+    @Test
+    fun `heart rate survives the json round trip`() {
+        val days = listOf(
+            DayLog("2026-11-09", steps = 4200, heartRateBpm = 68, heartRateAt = 1_700_003_000_000L),
+            DayLog("2026-11-08", steps = 100), // older record without a reading
+        )
+        val json = WellnessCodec.toJson(emptyList(), emptyList(), days)
+        val read = WellnessCodec.daysFromJson(JSONObject(json.toString()).optJSONArray("days"))
+        assertEquals(days, read)
+        assertEquals(68, read.first().heartRateBpm)
+        assertEquals(0, read[1].heartRateBpm)
+        assertEquals(0L, read[1].heartRateAt)
+    }
+
+    @Test
     fun `progress is clamped and safe with a zero goal`() {
         assertEquals(0f, WellnessLogic.progress(500, 0), 0.0001f)
         assertEquals(0.5f, WellnessLogic.progress(4000, 8000), 0.0001f)

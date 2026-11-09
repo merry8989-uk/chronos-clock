@@ -33,6 +33,14 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_HYDRATION" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <!-- Lets the six-hourly worker read while the app is not on screen. -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
+    <!-- Lets the one-off import reach past Health Connect's 30-day window (84 days). -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <!-- Heart rate, read from the phone's own sensor while the Today card is open.
+         Not the background variant: this is not a continuous monitor. -->
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />

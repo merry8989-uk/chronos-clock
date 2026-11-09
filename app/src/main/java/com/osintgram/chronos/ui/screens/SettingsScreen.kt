@@ -632,7 +632,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                     title = "Health Connect sync",
                     subtitle = "Read steps, water and sleep that other apps recorded",
                     checked = Settings.healthConnectSync.value,
-                    onCheckedChange = { Settings.healthConnectSync.set(it) },
+                    onCheckedChange = {
+                        Settings.healthConnectSync.set(it)
+                        com.osintgram.chronos.wellness.WellnessSync.scheduleIfEnabled(context)
+                    },
                 )
             }
 
