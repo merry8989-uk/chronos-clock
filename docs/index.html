@@ -110,6 +110,17 @@
       every future release installs as a normal update.
     </p>
   </div>
+  <div class="card">
+    <h3>If the in-app update does not install</h3>
+    <p>
+      Android only lets an app install a package when <em>that app</em> is allowed to, so
+      Chronos needs its own "install unknown apps" switch. Settings → About shows an
+      <strong>Allow app installs</strong> row whenever that switch is off — tap it, turn
+      Chronos on, then update again. The update row also says why a check or download failed
+      (no connection, GitHub rate limit, Wi-Fi-only pause, incomplete file), and every attempt
+      is written to Diagnostics → logs.
+    </p>
+  </div>
 
   <h2>Alarms</h2>
   <ul>

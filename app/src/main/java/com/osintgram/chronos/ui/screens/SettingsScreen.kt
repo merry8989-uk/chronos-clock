@@ -843,7 +843,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         onClick = { updateVm.check(BuildConfig.VERSION_NAME) },
                     )
                     is UpdateUiState.Failed -> SettingActionRow(
-                        title = "Update check failed",
+                        title = "Update failed",
                         subtitle = state.message,
                         onClick = { updateVm.check(BuildConfig.VERSION_NAME) },
                     )
@@ -851,6 +851,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                         title = "Check for updates",
                         subtitle = "Installs straight over the current app",
                         onClick = { updateVm.check(BuildConfig.VERSION_NAME) },
+                    )
+                }
+                if (!updateVm.canInstall()) {
+                    RowDivider()
+                    SettingActionRow(
+                        title = "Allow app installs",
+                        subtitle = "Android needs this before Chronos can install an update",
+                        onClick = { updateVm.openInstallPermissionSettings() },
                     )
                 }
                 RowDivider()
