@@ -199,6 +199,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Older records with no checklist still load unchanged
 - [x] Unit tests for ticking, adding, removing, the progress count and the JSON round-trip
 
+## Fixed in 6.5.1 — Health Connect crash
+
+- [x] **Bug:** opening the Wellness tab or tapping Connect could crash the app. Every Health Connect entry point now fails soft: the status check, the client creation, the permission read, the reads and both writes are all wrapped, and a failure becomes a message on the card plus a line in Diagnostics
+- [x] Permission names are built lazily and guarded — a client older than the one the app was compiled against used to throw while the object initialised, which took the whole app down on first use
+- [x] An empty permission set can no longer count as "connected"
+- [x] Connect says "This Health Connect build is too old for Chronos — update Health Connect" instead of failing silently when the permission names cannot be resolved
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
