@@ -34,6 +34,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,6 +61,7 @@ import com.osintgram.chronos.data.AlarmStore
 import com.osintgram.chronos.data.Backup
 import com.osintgram.chronos.data.HolidayStore
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.data.Tones
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import com.osintgram.chronos.diagnostics.LogExporter
 import com.osintgram.chronos.ui.components.AnalogClock
@@ -95,6 +97,11 @@ fun SettingsScreen(onBack: () -> Unit) {
     var showResetDialog by remember { mutableStateOf(false) }
     var showWidgetInfo by remember { mutableStateOf(false) }
     var showStepDialog by remember { mutableStateOf(false) }
+    var showStepGoalDialog by remember { mutableStateOf(false) }
+    var showWaterGoalDialog by remember { mutableStateOf(false) }
+    var showSleepGoalDialog by remember { mutableStateOf(false) }
+    var showMeditationDialog by remember { mutableStateOf(false) }
+    var showBellToneDialog by remember { mutableStateOf(false) }
 
     val exportBackup = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
@@ -575,6 +582,60 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
+            // ---- Wellness ------------------------------------------------------
+            SectionCard(title = "WELLNESS") {
+                SettingValueRow(
+                    title = "Step goal",
+                    subtitle = "The ring on the Today card",
+                    value = "${Settings.stepGoal.value} steps",
+                    onClick = { showStepGoalDialog = true },
+                )
+                RowDivider()
+                SettingValueRow(
+                    title = "Water goal",
+                    subtitle = "Daily target for the water card",
+                    value = com.osintgram.chronos.wellness.WellnessLogic
+                        .formatLitres(Settings.waterGoalMl.value),
+                    onClick = { showWaterGoalDialog = true },
+                )
+                RowDivider()
+                SettingValueRow(
+                    title = "Sleep goal",
+                    subtitle = "Per night, shown against what you enter",
+                    value = com.osintgram.chronos.wellness.WellnessLogic
+                        .formatMinutes(Settings.sleepGoalMinutes.value),
+                    onClick = { showSleepGoalDialog = true },
+                )
+                RowDivider()
+                SettingValueRow(
+                    title = "Default meditation length",
+                    subtitle = "What the Breathe section starts at",
+                    value = "${Settings.meditationMinutes.value} min",
+                    onClick = { showMeditationDialog = true },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Session bell",
+                    subtitle = "A tone when a breathing session completes",
+                    checked = Settings.wellnessBell.value,
+                    onCheckedChange = { Settings.wellnessBell.set(it) },
+                )
+                RowDivider()
+                SettingValueRow(
+                    title = "Bell tone",
+                    subtitle = "From the tones that ship with the app",
+                    value = Tones.byId(Settings.wellnessBellTone.value)?.title ?: "Classic Bell",
+                    onClick = { showBellToneDialog = true },
+                )
+                RowDivider()
+                SettingSwitchRow(
+                    title = "Health Connect sync",
+                    subtitle = "Read steps, water and sleep that other apps recorded",
+                    checked = Settings.healthConnectSync.value,
+                    onCheckedChange = { Settings.healthConnectSync.set(it) },
+                )
+            }
+
             // ---- Bedtime mode --------------------------------------------------
             SectionCard(title = "BEDTIME MODE") {
                 SettingSwitchRow(
@@ -1028,6 +1089,103 @@ fun SettingsScreen(onBack: () -> Unit) {
         )
     }
 
+    if (showStepGoalDialog) {
+        OptionDialog(
+            title = "Step goal",
+            options = listOf(4000, 6000, 8000, 10_000, 12_000),
+            selected = Settings.stepGoal.value,
+            label = { "$it steps" },
+            onDismiss = { showStepGoalDialog = false },
+            onPick = {
+                Settings.stepGoal.set(it)
+                showStepGoalDialog = false
+            },
+        )
+    }
+
+    if (showWaterGoalDialog) {
+        OptionDialog(
+            title = "Water goal",
+            options = listOf(1500, 2000, 2500, 3000, 3500),
+            selected = Settings.waterGoalMl.value,
+            label = { "$it ml" },
+            onDismiss = { showWaterGoalDialog = false },
+            onPick = {
+                Settings.waterGoalMl.set(it)
+                showWaterGoalDialog = false
+            },
+        )
+    }
+
+    if (showSleepGoalDialog) {
+        OptionDialog(
+            title = "Sleep goal",
+            options = listOf(360, 420, 450, 480, 540),
+            selected = Settings.sleepGoalMinutes.value,
+            label = { com.osintgram.chronos.wellness.WellnessLogic.formatMinutes(it) },
+            onDismiss = { showSleepGoalDialog = false },
+            onPick = {
+                Settings.sleepGoalMinutes.set(it)
+                showSleepGoalDialog = false
+            },
+        )
+    }
+
+    if (showMeditationDialog) {
+        OptionDialog(
+            title = "Default meditation length",
+            options = listOf(3, 5, 10, 15, 20),
+            selected = Settings.meditationMinutes.value,
+            label = { "$it minutes" },
+            onDismiss = { showMeditationDialog = false },
+            onPick = {
+                Settings.meditationMinutes.set(it)
+                showMeditationDialog = false
+            },
+        )
+    }
+
+    if (showBellToneDialog) {
+        val tones = Tones.all
+        AlertDialog(
+            onDismissRequest = { showBellToneDialog = false },
+            title = { Text("Bell tone") },
+            text = {
+                Column {
+                    tones.forEach { tone ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    Settings.wellnessBellTone.set(tone.id)
+                                    com.osintgram.chronos.wellness.WellnessSound.playBell(context)
+                                    showBellToneDialog = false
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(
+                                selected = Settings.wellnessBellTone.value == tone.id,
+                                onClick = null,
+                            )
+                            Column(modifier = Modifier.padding(start = 10.dp)) {
+                                Text(tone.title, fontSize = 15.sp)
+                                Text(
+                                    tone.category,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showBellToneDialog = false }) { Text("Close") }
+            },
+        )
+    }
+
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
@@ -1042,6 +1200,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 TextButton(onClick = {
                     AlarmStore.all().forEach { AlarmScheduler.cancel(context, it.id) }
                     AlarmStore.replaceAll(emptyList())
+                    com.osintgram.chronos.wellness.WellnessStore.clearAll()
                     Settings.resetAll()
                     DiagnosticsLogger.setEnabled(Settings.diagnosticsEnabled.value)
                     showResetDialog = false

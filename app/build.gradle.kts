@@ -12,8 +12,8 @@ android {
         applicationId = "com.osintgram.chronos"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "6.0.0"
+        versionCode = 15
+        versionName = "6.1.0"
     }
 
     // Release signing is read from environment variables so no key material
@@ -69,5 +69,12 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
 
+    // Optional Health Connect sync for steps, water and sleep.
+    implementation(libs.androidx.health.connect.client)
+
     debugImplementation(libs.androidx.ui.tooling)
+
+    // Unit tests for the wellness maths and its JSON round-trip.
+    testImplementation(libs.junit)
+    testImplementation(libs.json)
 }

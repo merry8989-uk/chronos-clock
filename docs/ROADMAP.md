@@ -131,6 +131,19 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] **Added bedtime mode:** scheduled bedtime and wake-up alarms, reminder notification, optional Do Not Disturb with permission shortcut, and a dark nightstand screen with the next alarm and a dim toggle
 - [x] Bedtime re-armed on boot, clock change and timezone change
 
+## Shipped in 6.1.0 — wellness
+
+- [x] New **Wellness** tab with five sections: Today, Workout, Breathe, Progress, Learn
+- [x] Today: steps against a goal ring, water in 250/500 ml taps, sleep in 30-minute steps, five tickable habits, one-tap workout and breathe
+- [x] Step count from the device step counter, with a per-day baseline so a reboot moves the baseline instead of the number, and ±500 manual correction when there is no sensor
+- [x] Workout: four routines with sets, reps and form cues; a session is persisted the moment it starts; log a set in one tap or add a custom exercise with sets, reps and weight; duration and volume are computed from what was logged
+- [x] Breathe: four patterns (calm 4–6, box, 4–7–8, physiological sigh) driving the circle and the cue, 3–20 minute sessions, bell from the bundled tones
+- [x] Progress: seven-day totals, day-by-day step chart, and a streak that counts only days with something logged
+- [x] Learn: eight pose references drawn in the app, plus follow-along suggestions that open a search on the service named beside them
+- [x] Optional Health Connect sync for steps, water and sleep; a sync only raises a value and never overwrites a manual entry
+- [x] Wellness goals and bell settings, wellness records in the backup file and in factory reset
+- [x] Unit tests for the step baseline, week totals, streak rule and JSON round-trip
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
@@ -176,6 +189,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [ ] **P1 M** Accessibility pass: TalkBack labels, 200% text, high-contrast theme
 - [ ] **P3 S** Per-alarm colour and icon
 - [ ] **P3 S** Haptic pattern choice
+
+## Next — wellness depth
+
+- [ ] **P2 M** Write workouts to Health Connect as an exercise session, not just read
+- [ ] **P2 M** Reminders for water, a walk and bedtime breathing
+- [ ] **P2 S** Body measurements (weight, waist) with a trend line
+- [ ] **P3 M** Guided audio meditation — needs recorded voice content, so it is not bundled today
+- [ ] **P3 S** Wellness widget: today's steps and water on the home screen
 
 ## Next — data and care
 

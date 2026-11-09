@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -70,6 +71,7 @@ import com.osintgram.chronos.ui.screens.DiagnosticsScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
 import com.osintgram.chronos.ui.screens.StopwatchScreen
 import com.osintgram.chronos.ui.screens.TimerScreen
+import com.osintgram.chronos.ui.screens.WellnessScreen
 import com.osintgram.chronos.ui.screens.WorldClockScreen
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
@@ -82,6 +84,7 @@ private val tabs = listOf(
     Tab("World", Icons.Filled.Public),
     Tab("Timer", Icons.Filled.HourglassBottom),
     Tab("Stopwatch", Icons.Filled.Timer),
+    Tab("Wellness", Icons.Filled.SelfImprovement),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -297,7 +300,8 @@ fun AppRoot() {
                         )
                         1 -> WorldClockScreen()
                         2 -> TimerScreen()
-                        else -> StopwatchScreen()
+                        3 -> StopwatchScreen()
+                        else -> WellnessScreen()
                     }
                 }
             }

@@ -29,6 +29,7 @@ class ChronosApp : Application() {
         StopwatchEngine.init(this)
         TimerPresets.init(this)
         TimerEngine.init(this)
+        com.osintgram.chronos.wellness.WellnessStore.init(this)
 
         AlarmScheduler.rescheduleAll(this)
         com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(this)

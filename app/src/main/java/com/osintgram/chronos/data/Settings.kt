@@ -79,6 +79,15 @@ object Settings {
     val bedtimeDnd = Setting("bedtime_dnd", false)
     val bedtimeNotify = Setting("bedtime_notify", true)
 
+    // ---- Wellness ---------------------------------------------------------
+    val stepGoal = Setting("wellness_step_goal", 8000)
+    val waterGoalMl = Setting("wellness_water_goal_ml", 2500)
+    val sleepGoalMinutes = Setting("wellness_sleep_goal_minutes", 450)
+    val meditationMinutes = Setting("wellness_meditation_minutes", 10)
+    val wellnessBell = Setting("wellness_bell", true)
+    val wellnessBellTone = Setting("wellness_bell_tone", "classic_bell")
+    val healthConnectSync = Setting("wellness_health_connect", true)
+
     // ---- General / diagnostics -------------------------------------------
     val keepScreenOn = Setting("keep_screen_on", false)
     val confirmDelete = Setting("confirm_delete", true)
@@ -133,6 +142,14 @@ object Settings {
         bedtimeEnd.load(p.getInt(bedtimeEnd.key, bedtimeEnd.default))
         bedtimeDnd.load(p.getBoolean(bedtimeDnd.key, bedtimeDnd.default))
         bedtimeNotify.load(p.getBoolean(bedtimeNotify.key, bedtimeNotify.default))
+
+        stepGoal.load(p.getInt(stepGoal.key, stepGoal.default))
+        waterGoalMl.load(p.getInt(waterGoalMl.key, waterGoalMl.default))
+        sleepGoalMinutes.load(p.getInt(sleepGoalMinutes.key, sleepGoalMinutes.default))
+        meditationMinutes.load(p.getInt(meditationMinutes.key, meditationMinutes.default))
+        wellnessBell.load(p.getBoolean(wellnessBell.key, wellnessBell.default))
+        wellnessBellTone.load(p.getString(wellnessBellTone.key, wellnessBellTone.default) ?: "classic_bell")
+        healthConnectSync.load(p.getBoolean(healthConnectSync.key, healthConnectSync.default))
 
         keepScreenOn.load(p.getBoolean(keepScreenOn.key, keepScreenOn.default))
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
@@ -194,6 +211,13 @@ object Settings {
         bedtimeEnd.resetToDefault()
         bedtimeDnd.resetToDefault()
         bedtimeNotify.resetToDefault()
+        stepGoal.resetToDefault()
+        waterGoalMl.resetToDefault()
+        sleepGoalMinutes.resetToDefault()
+        meditationMinutes.resetToDefault()
+        wellnessBell.resetToDefault()
+        wellnessBellTone.resetToDefault()
+        healthConnectSync.resetToDefault()
         keepScreenOn.resetToDefault()
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
@@ -239,6 +263,13 @@ object Settings {
         bedtimeEnd.key to bedtimeEnd.value,
         bedtimeDnd.key to bedtimeDnd.value,
         bedtimeNotify.key to bedtimeNotify.value,
+        stepGoal.key to stepGoal.value,
+        waterGoalMl.key to waterGoalMl.value,
+        sleepGoalMinutes.key to sleepGoalMinutes.value,
+        meditationMinutes.key to meditationMinutes.value,
+        wellnessBell.key to wellnessBell.value,
+        wellnessBellTone.key to wellnessBellTone.value,
+        healthConnectSync.key to healthConnectSync.value,
         keepScreenOn.key to keepScreenOn.value,
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
@@ -288,6 +319,13 @@ object Settings {
                 bedtimeEnd.key -> text.toIntOrNull()?.let { bedtimeEnd.set(it) }
                 bedtimeDnd.key -> asBool?.let { bedtimeDnd.set(it) }
                 bedtimeNotify.key -> asBool?.let { bedtimeNotify.set(it) }
+                stepGoal.key -> text.toIntOrNull()?.let { stepGoal.set(it.coerceIn(500, 50_000)) }
+                waterGoalMl.key -> text.toIntOrNull()?.let { waterGoalMl.set(it.coerceIn(250, 10_000)) }
+                sleepGoalMinutes.key -> text.toIntOrNull()?.let { sleepGoalMinutes.set(it.coerceIn(240, 900)) }
+                meditationMinutes.key -> text.toIntOrNull()?.let { meditationMinutes.set(it.coerceIn(1, 120)) }
+                wellnessBell.key -> asBool?.let { wellnessBell.set(it) }
+                wellnessBellTone.key -> wellnessBellTone.set(text)
+                healthConnectSync.key -> asBool?.let { healthConnectSync.set(it) }
                 keepScreenOn.key -> asBool?.let { keepScreenOn.set(it) }
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }

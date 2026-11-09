@@ -1,8 +1,8 @@
 # Chronos
 
 A full-screen Android clock: exact alarms with holiday skipping, a world clock, a
-presets-based timer and a lap stopwatch. Kotlin + Jetpack Compose, no backend, no
-account, no ads.
+presets-based timer, a lap stopwatch, and a wellness tab for workouts, steps, water,
+sleep and breathing. Kotlin + Jetpack Compose, no backend, no account, no ads.
 
 - **Package ID:** `com.osintgram.chronos` (permanent)
 - **Min SDK:** 26 · **Target SDK:** 35
@@ -38,6 +38,8 @@ app/src/main/java/com/osintgram/chronos/
 ├── alarm/                   AlarmManager scheduling, ringing service, ring screen
 ├── timer/                   Countdown engine, foreground service, presets
 ├── stopwatch/               Lap stopwatch with persisted start instant
+├── wellness/                Workout, step, water, sleep and breathing records,
+│                            step-counter baseline, optional Health Connect read
 ├── data/                    Alarm model + store, settings, holidays, backup
 ├── diagnostics/             Rolling log file, .txt/.json/.md/.zip exporter
 ├── updater/                 GitHub Releases update check and in-app install
