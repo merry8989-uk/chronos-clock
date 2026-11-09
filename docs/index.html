@@ -82,7 +82,7 @@
       breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.5.2</strong> ·
+      Current version <strong id="version">6.6.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -278,7 +278,8 @@
   </p>
   <ul>
     <li><strong>Today</strong> <span>— steps against your goal in a progress ring, water in 250 ml and 500 ml taps, sleep in 30-minute steps, and five habits you can tick off.</span></li>
-    <li><strong>Step counter</strong> <span>— reads this phone's own step sensor. The counter reports steps since boot, so the first reading of the day becomes that day's baseline; a reboot is detected and the baseline moves instead of the number going negative. No sensor, no permission, or a manual correction? −500 and +500 adjust it by hand.</span></li>
+    <li><strong>Step counter</strong> <span>— reads this phone's own step sensor, live, at the sensor's UI rate while the card is on screen. The counter reports steps since boot, so the day's baseline is resolved honestly: a stored baseline is used as-is; a phone that rebooted after midnight counts everything since boot; otherwise the card says the count started when you opened Chronos. A six-hourly worker records the day's baseline even when the app is never opened, so the next day starts at zero instead of at first launch. −500 and +500 correct it by hand.</span></li>
+    <li><strong>Realtime totals</strong> <span>— while the Today card is open and Health Connect is connected, today's steps, water and sleep are re-read every ten seconds, so the number keeps up with the phone instead of waiting for a Sync tap.</span></li>
     <li><strong>Workout</strong> <span>— four routines (Full Body Basics, Mobility &amp; Stretch, Upper Body, Walk &amp; Core) with sets, reps and form cues. A session is written the moment it starts, so switching tabs or closing the app never loses it. Log a set with one tap, add a custom exercise with sets, reps and weight, and the session records its real duration and volume.</span></li>
     <li><strong>Breathe</strong> <span>— four breathing patterns (calm 4–6, box 4-4-4-4, 4–7–8, physiological sigh) drive both the growing circle and the on-screen cue, with a 3, 5, 10, 15 or 20 minute session. The bell that closes a session is one of the bundled tones.</span></li>
     <li><strong>Progress</strong> <span>— seven-day totals for steps, workouts, workout time, meditation, water, average sleep and volume lifted, a day-by-day step chart, and a streak that only counts days with something actually logged.</span></li>

@@ -45,6 +45,30 @@ object WellnessLogic {
     fun needsRebaseline(cumulative: Long, baseline: Long?): Boolean =
         baseline == null || cumulative < baseline
 
+    /**
+     * What the day's baseline should be.
+     *
+     * The step counter reports steps since boot, so "steps today" only works if
+     * we know what it read at midnight:
+     *  - a stored baseline is the real answer;
+     *  - with no stored baseline, a phone that rebooted *after* midnight has
+     *    counted nothing before today, so its baseline is zero and every step
+     *    since boot belongs to today;
+     *  - otherwise the counter has been running since before midnight and the
+     *    only honest starting point is now — the caller says so on screen.
+     *  - a reading below the stored baseline means the counter restarted.
+     */
+    fun resolveStepBaseline(cumulative: Long, stored: Long?, bootedSinceMidnight: Boolean): Long =
+        when {
+            stored == null -> if (bootedSinceMidnight) 0L else cumulative
+            cumulative < stored -> 0L
+            else -> stored
+        }
+
+    /** True when the count had to start at "now" rather than at midnight. */
+    fun countedFromNow(stored: Long?, bootedSinceMidnight: Boolean): Boolean =
+        stored == null && !bootedSinceMidnight
+
     /** The last [count] dates ending today, oldest first. */
     fun recentDays(today: LocalDate = LocalDate.now(), count: Int = 7): List<LocalDate> {
         if (count <= 0) return emptyList()

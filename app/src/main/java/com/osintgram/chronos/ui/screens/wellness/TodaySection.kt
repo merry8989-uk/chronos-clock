@@ -86,8 +86,8 @@ fun TodaySection(
 ) {
     val context = LocalContext.current
     val day = WellnessStore.day()
-    val steps = StepCounter.rememberTodaySteps(enabled = true)
-    val shownSteps = if (steps > 0) steps else day.steps
+    val stepState = StepCounter.rememberTodaySteps(enabled = true)
+    val shownSteps = if (stepState.steps > 0) stepState.steps else day.steps
     val stepGoal = Settings.stepGoal.value
     val waterGoal = Settings.waterGoalMl.value
     val sleepGoal = Settings.sleepGoalMinutes.value
@@ -95,6 +95,17 @@ fun TodaySection(
     val (healthState, healthActions) = rememberHealthConnect(enabled = Settings.healthConnectSync.value)
     val writeScope = rememberCoroutineScope()
     val streak = WellnessStore.streak()
+
+    // Realtime: while this card is on screen, pull today's totals from Health
+    // Connect every ten seconds, so the number keeps up with the phone instead
+    // of only updating when the user taps Sync.
+    LaunchedEffect(healthState.granted) {
+        if (!healthState.granted) return@LaunchedEffect
+        while (true) {
+            HealthConnectSource.readToday(context)?.let { WellnessSync.apply(context, it) }
+            kotlinx.coroutines.delay(10_000)
+        }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -130,8 +141,10 @@ fun TodaySection(
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 text = when {
-                                    sensorAvailable && shownSteps > 0 -> "From this phone's step counter"
-                                    sensorAvailable -> "Waiting for the step counter"
+                                    healthState.granted -> "Health Connect — whole day, refreshed every 10 s"
+                                    sensorAvailable && stepState.countedFromNow ->
+                                        "Sensor — counted from when you opened Chronos today"
+                                    sensorAvailable -> "Sensor — counted from midnight"
                                     else -> "No step sensor — add steps by hand"
                                 },
                                 fontSize = 11.sp,

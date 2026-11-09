@@ -69,10 +69,13 @@ object WellnessSync {
         DiagnosticsLogger.log("WellnessSync", "Cancelled")
     }
 
-    /** Schedules when the user has the sync on, cancels when they turn it off. */
-    fun scheduleIfEnabled(context: Context) {
-        if (Settings.healthConnectSync.value) schedule(context) else cancel(context)
-    }
+    /**
+     * Always scheduled: the worker records the day's step baseline even when
+     * Health Connect sync is off, and only the Health Connect half of the work
+     * is skipped. Without this, a day's steps could only ever be counted from
+     * the moment the app was opened.
+     */
+    fun scheduleIfEnabled(context: Context) = schedule(context)
 }
 
 /**
@@ -86,8 +89,13 @@ class WellnessSyncWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        if (!Settings.healthConnectSync.value) return Result.success()
         val context = applicationContext
+
+        // The step counter reports steps since boot, so a baseline recorded
+        // near midnight is what makes tomorrow's count start at zero.
+        StepCounter.ensureDailyBaseline(context)
+
+        if (!Settings.healthConnectSync.value) return Result.success()
         if (HealthConnectSource.status(context) != HealthConnectSource.Status.Ready) {
             return Result.success()
         }
