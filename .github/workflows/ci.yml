@@ -33,11 +33,20 @@ jobs:
       # The wrapper script is not committed, and generating it configures the
       # project (downloading the plugin classpath) for no benefit here — so use
       # the Gradle 8.9 that setup-gradle already put on PATH.
+      # Maven Central redirects a few Kotlin artifacts to GitHub Releases, which
+      # intermittently answers 504. A failed download is not a failed build, so
+      # each Gradle step gets one retry before it is treated as a real failure.
       - name: Assemble debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug && exit 0
+          echo "::warning::assembleDebug failed, retrying once (flaky artifact download?)"
+          gradle --no-daemon --stacktrace assembleDebug
 
       - name: Unit tests
-        run: gradle --no-daemon --stacktrace testDebugUnitTest
+        run: |
+          gradle --no-daemon --stacktrace testDebugUnitTest && exit 0
+          echo "::warning::testDebugUnitTest failed, retrying once (flaky artifact download?)"
+          gradle --no-daemon --stacktrace testDebugUnitTest
 
       - name: Upload test report
         if: always()
