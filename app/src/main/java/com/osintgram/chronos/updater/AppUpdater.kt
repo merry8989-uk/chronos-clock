@@ -182,8 +182,8 @@ object AppUpdater {
                         written = StreamCopy.copy(input, output, total, onProgress)
                     }
                 }
-                if (expected > 0 && written != expected) {
-                    throw DownloadFailed("Download stopped early ($written of $expected bytes).")
+                if (total > 0L && written != total) {
+                    throw DownloadFailed("Download stopped early ($written of $total bytes).")
                 }
                 return written
             } finally {
