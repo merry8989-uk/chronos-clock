@@ -161,6 +161,19 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Redirects are followed by hand, so a refused hop is reported instead of silently producing a truncated file
 - [x] Unit tests for the version comparison and the APK check
 
+## Shipped in 6.3.0 — tasks, calendar and special access
+
+- [x] Life hub: one bottom-bar entry holding Tasks and Wellness, so the bar stays at five items
+- [x] Four task levels that read the same list: Today → Week (Monday–Sunday) → Month (whole weeks) → Year (twelve months), each with done/total progress
+- [x] Projects: tasks grouped by project with their own progress; deleting a project unlinks rather than deletes its tasks
+- [x] Task details: notes, date picker, all-day or 09:00/12:00/18:00, priority, project and repeat (daily/weekly/monthly); completing a repeating task creates the next occurrence
+- [x] Reminders through the same exact-alarm path as the clock, with an inexact fallback when the permission is refused
+- [x] Calendar view: month grid with tasks and phone-calendar events, day detail, and "add to phone calendar" on a task
+- [x] Calendar read/write permissions, requested in context and reported when refused
+- [x] Special access screen: every switch from Android's special-access list with its real state and a deep link
+- [x] Tasks and projects in the backup file and in factory reset
+- [x] Unit tests for the week/month/year maths, rollups, repeats and the JSON round-trip
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

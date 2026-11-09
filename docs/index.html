@@ -82,7 +82,7 @@
       breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.2.0</strong> ·
+      Current version <strong id="version">6.3.0</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -250,6 +250,23 @@
     <li><strong>Survives process death</strong> <span>— the start instant is persisted, so the count stays correct if the app is backgrounded or restarted.</span></li>
   </ul>
 
+  <h2>Life hub — tasks and wellness</h2>
+  <p class="lede">
+    One bottom-bar entry now holds two areas: <strong>Tasks</strong> and <strong>Wellness</strong>.
+    The bar stays at five items and each area keeps its own internal navigation.
+  </p>
+  <ul>
+    <li><strong>Today</strong> <span>— today's tasks with a done/total ring, anything overdue from earlier days, and one tap to add a task for today.</span></li>
+    <li><strong>Week</strong> <span>— Monday to Sunday, a card per day with its own count, arrows to move a week at a time and "back to now". A daily task lives inside its week.</span></li>
+    <li><strong>Month</strong> <span>— the weeks of the month, each with its progress and the tasks listed per day. Weeks are whole Monday-to-Sunday weeks, so nothing is clipped at a month edge.</span></li>
+    <li><strong>Year</strong> <span>— twelve months with a progress bar each; weeks roll into months, months into the year.</span></li>
+    <li><strong>Projects</strong> <span>— a project groups tasks (a move, a course, a launch), with its own progress and open-task count. Tap a project to see and add its tasks; deleting a project keeps its tasks and only unlinks them.</span></li>
+    <li><strong>Calendar</strong> <span>— a month grid where a dot marks tasks and a second dot marks phone-calendar events. Tap a day to see both. With calendar access granted, events are read from every visible calendar; the calendar icon on a task writes that task into your calendar.</span></li>
+    <li><strong>Task details</strong> <span>— title, notes, date (system date picker), all-day or 09:00 / 12:00 / 18:00, priority, project and repeat (none / daily / weekly / monthly). Completing a repeating task creates its next occurrence.</span></li>
+    <li><strong>Reminders</strong> <span>— a task with a time gets a notification at that minute through the same exact-alarm path as the clock; all-day tasks remind at 09:00. If the exact-alarm permission is refused it falls back to an inexact alarm instead of dropping the reminder.</span></li>
+    <li><strong>In your backup</strong> <span>— projects and tasks are part of the same JSON export as everything else, and factory reset clears them.</span></li>
+  </ul>
+
   <h2>Wellness — movement, health and breathing</h2>
   <p class="lede">
     One tab, five sections: Today, Workout, Breathe, Progress and Learn. Every number is
@@ -294,6 +311,25 @@
     <li>Sleep recordings, snore clips, wallpapers and recorded tones never leave the device.</li>
   </ul>
 
+  <h2>Special access</h2>
+  <p class="lede">
+    Android keeps some switches outside the normal permission dialog. <strong>⋮ → Special access</strong>
+    shows each one with its real state and opens the exact system screen that changes it.
+  </p>
+  <table>
+    <tr><th>Access</th><th>What Chronos does with it</th></tr>
+    <tr><td>Install unknown apps</td><td>Installing the update it downloads</td></tr>
+    <tr><td>Alarms and reminders</td><td>Alarms, timers and task reminders firing on the minute</td></tr>
+    <tr><td>Do Not Disturb access</td><td>Bedtime mode, only when you switch DND on</td></tr>
+    <tr><td>Battery optimisation</td><td>Alarms and the six-hourly health sync surviving Doze</td></tr>
+    <tr><td>Notifications</td><td>Alarm ringing, timer finished, task reminders</td></tr>
+    <tr><td>Usage access</td><td><em>Not used by any feature.</em> The row exists so the switch can be found and its state seen.</td></tr>
+    <tr><td>All files access</td><td><em>Not used by any feature.</em> Backups go through the system file picker, which needs no broad storage access.</td></tr>
+    <tr><td>Modify system settings</td><td><em>Not used by any feature.</em> Chronos keeps its own settings.</td></tr>
+    <tr><td>Wi-Fi control</td><td><em>Not used by any feature.</em> The update check only reads the connection type.</td></tr>
+    <tr><td>Notification access</td><td><em>Deliberately not requested.</em> It needs a service that can read every notification on the phone, and no feature here needs that.</td></tr>
+  </table>
+
   <h2>Permissions and why</h2>
   <table>
     <tr><th>Permission</th><th>Used for</th></tr>
@@ -308,6 +344,7 @@
     <tr><td>Health Connect read access (steps, hydration, sleep)</td><td>Optional. Only requested when you tap Connect, and only reads what other apps already recorded. Nothing is written to Health Connect.</td></tr>
     <tr><td>Health Connect background read</td><td>The six-hourly sync, so it can work while the app is closed. Declining it leaves the manual Sync now button working.</td></tr>
     <tr><td>Health Connect history read</td><td>The one-off 84-day import. Declining it hides the Import button; nothing else changes.</td></tr>
+    <tr><td>Calendar read / write</td><td>The Calendar view reads events from every visible calendar. Write is used only when you tap the calendar icon on a task, which creates that one event.</td></tr>
     <tr><td>Body sensors</td><td>Heart rate, read from the phone's sensor only while the Today card is open. The background body-sensor permission is deliberately not requested — this is not a continuous monitor.</td></tr>
     <tr><td>Display over other apps</td><td>The optional floating timer bubble — off by default, only used when you switch it on</td></tr>
     <tr><td>Full-screen notifications</td><td>Taking over the screen when an alarm rings on Android 14+</td></tr>

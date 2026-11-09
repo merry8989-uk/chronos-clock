@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- In-app update check + download (Rule 6). -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -41,6 +42,24 @@
     <!-- Heart rate, read from the phone's own sensor while the Today card is open.
          Not the background variant: this is not a continuous monitor. -->
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+
+    <!-- Tasks: read the phone calendar for the Calendar view, and write a task
+         into it only when the user taps the calendar icon on that task. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+
+    <!-- Special accesses. Each one is a user toggle in system settings that the
+         Special access screen reports and links to; the ones marked "not used"
+         have no feature behind them yet and are listed so the switch can be
+         found. See docs/index.html for the honest per-permission table. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
@@ -96,6 +115,11 @@
 
         <receiver
             android:name=".alarm.AlarmReceiver"
+            android:exported="false" />
+
+        <!-- Task reminders: posts the notification when a task comes due. -->
+        <receiver
+            android:name=".tasks.TaskReminderReceiver"
             android:exported="false" />
 
         <receiver

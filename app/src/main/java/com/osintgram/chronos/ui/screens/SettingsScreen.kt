@@ -1212,6 +1212,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     AlarmStore.all().forEach { AlarmScheduler.cancel(context, it.id) }
                     AlarmStore.replaceAll(emptyList())
                     com.osintgram.chronos.wellness.WellnessStore.clearAll()
+                    com.osintgram.chronos.tasks.TaskStore.clearAll()
                     Settings.resetAll()
                     DiagnosticsLogger.setEnabled(Settings.diagnosticsEnabled.value)
                     showResetDialog = false
