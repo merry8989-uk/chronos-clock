@@ -72,6 +72,7 @@ import com.osintgram.chronos.wellness.StepCounter
 import com.osintgram.chronos.wellness.WellnessLogic
 import com.osintgram.chronos.wellness.WellnessPlans
 import com.osintgram.chronos.wellness.WellnessStore
+import com.osintgram.chronos.wellness.WellnessSync
 import com.osintgram.chronos.wellness.rememberHealthConnect
 
 /**
