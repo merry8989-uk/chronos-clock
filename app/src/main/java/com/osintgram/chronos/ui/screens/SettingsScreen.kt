@@ -46,6 +46,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,11 +87,23 @@ import java.time.LocalDate
 private const val INSTAGRAM_URL = "https://instagram.com/osintgram_io"
 private const val SOURCE_URL = "https://github.com/merry8989-uk/chronos-clock"
 
+/** Section keys the caller can ask the screen to jump to. */
+const val SCROLL_ABOUT = "about"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
     val context = LocalContext.current
     val updateVm: UpdateViewModel = viewModel()
+    val scrollState = rememberScrollState()
+    var aboutOffset by remember { mutableIntStateOf(0) }
+    // "About & updates" in the ⋮ menu opens this screen at the About card
+    // instead of at the top of a long settings list.
+    LaunchedEffect(scrollTo, aboutOffset) {
+        if (scrollTo == SCROLL_ABOUT && aboutOffset > 0) {
+            scrollState.animateScrollTo(aboutOffset)
+        }
+    }
 
     var showHolidays by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
@@ -160,7 +175,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(bottom = 28.dp),
         ) {
             status?.let { message ->
@@ -815,7 +830,12 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             // ---- About ----------------------------------------------------------
-            SectionCard(title = "ABOUT") {
+            SectionCard(
+                title = "ABOUT",
+                modifier = Modifier.onGloballyPositioned { coordinates ->
+                    aboutOffset = coordinates.positionInParent().y.toInt()
+                },
+            ) {
                 SettingValueRow(
                     title = "Version",
                     value = BuildConfig.VERSION_NAME,

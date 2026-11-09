@@ -206,6 +206,10 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] An empty permission set can no longer count as "connected"
 - [x] Connect says "This Health Connect build is too old for Chronos — update Health Connect" instead of failing silently when the permission names cannot be resolved
 
+## Fixed in 6.5.2 — About & updates shortcut
+
+- [x] **Bug:** "About & updates" in the ⋮ menu opened Settings at the very top, so the update row was several screens down. It now opens Settings already scrolled to the About card; the plain "Settings" entry still opens at the top
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

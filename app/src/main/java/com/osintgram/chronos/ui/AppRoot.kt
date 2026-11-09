@@ -100,6 +100,7 @@ fun AppRoot() {
     var showClock by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
     var showSpecialAccess by remember { mutableStateOf(false) }
+    var settingsScrollTo by remember { mutableStateOf<String?>(null) }
 
     val keepScreenOn = Settings.keepScreenOn.value
     val view = LocalView.current
@@ -123,7 +124,13 @@ fun AppRoot() {
         }
         showSettings -> {
             ChronosBackground {
-                SettingsScreen(onBack = { showSettings = false })
+                SettingsScreen(
+                    onBack = {
+                        showSettings = false
+                        settingsScrollTo = null
+                    },
+                    scrollTo = settingsScrollTo,
+                )
             }
             return
         }
@@ -208,6 +215,7 @@ fun AppRoot() {
                                 text = { Text("Settings") },
                                 onClick = {
                                     menuOpen = false
+                                    settingsScrollTo = null
                                     showSettings = true
                                 },
                             )
@@ -224,6 +232,7 @@ fun AppRoot() {
                                 text = { Text("About & updates") },
                                 onClick = {
                                     menuOpen = false
+                                    settingsScrollTo = com.osintgram.chronos.ui.screens.SCROLL_ABOUT
                                     showSettings = true
                                 },
                             )
