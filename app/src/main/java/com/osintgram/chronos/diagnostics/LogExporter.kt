@@ -22,11 +22,11 @@ import java.util.zip.ZipOutputStream
  */
 object LogExporter {
 
-    enum class Format(val ext: String) {
-        TXT("txt"),
-        MD("md"),
-        JSON("json"),
-        ZIP("zip"),
+    enum class Format(val ext: String, val mime: String) {
+        TXT("txt", "text/plain"),
+        MD("md", "text/markdown"),
+        JSON("json", "application/json"),
+        ZIP("zip", "application/zip"),
     }
 
     fun export(context: Context, format: Format, appName: String, version: String): File {

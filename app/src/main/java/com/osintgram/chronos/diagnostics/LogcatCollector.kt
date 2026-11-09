@@ -24,7 +24,7 @@ object LogcatCollector {
 
     suspend fun capture(context: Context, lines: Int = MAX_LINES): Int = withContext(Dispatchers.IO) {
         runCatching {
-            val pid = Process.getMyPid()
+            val pid = Process.myPid()
             val process = ProcessBuilder(
                 "logcat",
                 "-d",
