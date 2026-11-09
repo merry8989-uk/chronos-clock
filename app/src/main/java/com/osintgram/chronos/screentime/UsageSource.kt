@@ -5,7 +5,6 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -162,8 +161,4 @@ object UsageSource {
             @Suppress("DEPRECATION")
             UsageEvents.Event.MOVE_TO_FOREGROUND
         }
-
-    /** Kept for callers that want to know whether usage stats exist at all. */
-    fun available(context: Context): Boolean =
-        context.packageManager.hasSystemFeature(PackageManager.FEATURE_ACTIVITY_RECOGNITION) || hasAccess(context)
 }
