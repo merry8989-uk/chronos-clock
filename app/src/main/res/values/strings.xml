@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Chronos</string>
+
+    <!-- Widget names, so the picker shows what each one is instead of "Chronos" nine times. -->
+    <string name="widget_clock_label">Chronos · Analog clock</string>
+    <string name="widget_clock_desc">A live analog clock with the accent-coloured second hand.</string>
+    <string name="widget_clock_digital_label">Chronos · Digital clock</string>
+    <string name="widget_clock_digital_desc">Digital time with the date, in 12 or 24 hour form.</string>
+    <string name="widget_next_alarm_label">Chronos · Next alarm</string>
+    <string name="widget_next_alarm_desc">The next alarm that will ring, with a live countdown.</string>
+    <string name="widget_alarm_list_label">Chronos · Alarm list</string>
+    <string name="widget_alarm_list_desc">Up to three alarms with working on and off switches.</string>
+    <string name="widget_timer_label">Chronos · Timer</string>
+    <string name="widget_timer_desc">Countdown with start, pause and reset.</string>
+    <string name="widget_stopwatch_label">Chronos · Stopwatch</string>
+    <string name="widget_stopwatch_desc">Stopwatch with start, pause and reset.</string>
+    <string name="widget_holidays_label">Chronos · Holidays</string>
+    <string name="widget_holidays_desc">The next three holidays coming up.</string>
+    <string name="widget_presets_label">Chronos · Timer presets</string>
+    <string name="widget_presets_desc">One tap starts a saved timer preset.</string>
+    <string name="widget_screen_time_label">Chronos · Screen time</string>
+    <string name="widget_screen_time_desc">Today's screen time, the most-used app and the unlock count.</string>
 </resources>
