@@ -30,8 +30,11 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Ensure Gradle wrapper exists
-        run: test -f gradlew || gradle wrapper --gradle-version 8.9
+      # The wrapper script is not committed, and generating it configures the
+      # project (resolving the plugin classpath) for no benefit — setup-gradle
+      # already provides Gradle 8.9 on PATH.
+      - name: Gradle version
+        run: gradle --version
 
       - name: Decode release keystore
         env:
@@ -43,13 +46,19 @@ jobs:
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > release.p12
 
+      # Maven Central redirects a few Kotlin artifacts to GitHub Releases, which
+      # intermittently answers 504 — a failed download is not a failed build, so
+      # retry once before failing the release.
       - name: Build signed release
         env:
           KEYSTORE_PATH: release.p12
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew --no-daemon assembleRelease bundleRelease
+        run: |
+          gradle --no-daemon --stacktrace assembleRelease bundleRelease && exit 0
+          echo "::warning::release build failed, retrying once (flaky artifact download?)"
+          gradle --no-daemon --stacktrace assembleRelease bundleRelease
 
       - name: Verify the APK is signed with the release key
         run: |
