@@ -57,6 +57,20 @@ class LogMaskingTest {
     }
 
     @Test
+    fun `an epoch timestamp is not a card number`() {
+        // 1794303000000 is 13 digits and appears in alarm log lines.
+        val line = "Alarm 1 scheduled for 2026-11-09 20:30 IST (1794303000000)"
+        assertEquals(line, LogMasking.mask(line))
+        assertFalse(LogMasking.isCardNumber("1794303000000"))
+    }
+
+    @Test
+    fun `a luhn valid card number is still masked`() {
+        assertTrue(LogMasking.isCardNumber("4111111111111111"))
+        assertFalse(LogMasking.mask("card 4111111111111111").contains("4111111111111111"))
+    }
+
+    @Test
     fun `masking is idempotent`() {
         val once = LogMasking.mask("token=abc123 email a@b.co")
         assertEquals(once, LogMasking.mask(once))

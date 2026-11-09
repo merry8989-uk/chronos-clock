@@ -376,6 +376,11 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
     }
 
     LaunchedEffect(status, enabled) {
+        DiagnosticsLogger.log(
+            "HealthConnect",
+            "card shown: status=$status enabled=$enabled " +
+                "canRequest=${HealthConnectSource.canRequestPermissions()}",
+        )
         if (status != HealthConnectSource.Status.Ready || !enabled) return@LaunchedEffect
         val grantedNow = HealthConnectSource.grantedPermissions(context)
         granted = grantedNow.containsAll(HealthConnectSource.requiredPermissions)

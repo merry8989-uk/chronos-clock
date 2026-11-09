@@ -82,7 +82,7 @@
       breathing. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.7.0</strong> ·
+      Current version <strong id="version">6.7.1</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -302,7 +302,7 @@
     <li><strong>Network</strong> <span>— every request the app makes is logged with the URL, the status code, the byte count and the time it took. There is no analytics SDK and no third-party traffic to log.</span></li>
     <li><strong>Breadcrumbs</strong> <span>— tab switches and the actions that matter (opening Settings, Diagnostics, the alarm editor) are recorded in order, so a crash can be tied to what you were doing.</span></li>
     <li><strong>Device snapshot</strong> <span>— Android version, phone model, ABI, battery and charging state, free memory, low-memory flag, network type and free storage, written at launch and at export time.</span></li>
-    <li><strong>Masked on the way in</strong> <span>— tokens, passwords, authorization headers, GitHub tokens, JWTs, long hex keys, email addresses, Indian phone numbers and card-like numbers are replaced with <code>[redacted]</code> before a line is written. A token that reached the file would already have leaked.</span></li>
+    <li><strong>Masked on the way in</strong> <span>— tokens, passwords, authorization headers, GitHub tokens, JWTs, long hex keys, email addresses, Indian phone numbers and card numbers are replaced with <code>[redacted]</code> before a line is written. A token that reached the file would already have leaked. Card numbers are only masked when they pass the Luhn check, so an epoch timestamp in an alarm line stays readable.</span></li>
     <li><strong>Rolling files</strong> <span>— three files of at most 2 MB, so the log can never grow past 6 MB. Each line is ISO-8601 with milliseconds and the device offset, plus a session id that changes every launch.</span></li>
     <li><strong>Export</strong> <span>— <code>.txt</code>, <code>.md</code>, <code>.json</code> or <code>.zip</code> through the system share sheet, each with a header of app version, session, device and Android version, battery, memory, network and storage.</span></li>
   </ul>

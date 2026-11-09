@@ -151,6 +151,7 @@ object StepCounter {
             if (manager == null || sensor == null) return@DisposableEffect onDispose { }
 
             var lastPersisted = -1
+            var lastLogged = -1
             val listener = object : SensorEventListener {
                 override fun onSensorChanged(event: SensorEvent) {
                     val cumulative = event.values.firstOrNull()?.toLong() ?: return
@@ -163,6 +164,17 @@ object StepCounter {
                     }
                     val delta = WellnessLogic.stepDelta(cumulative, baseline)
                     val fromNow = WellnessLogic.countedFromNow(stored, bootedToday)
+                    // The log had no step values at all, so a "steps are wrong"
+                    // report could not be checked. First reading and every 250
+                    // steps after that now say exactly what the sensor sent.
+                    if (lastLogged < 0 || delta - lastLogged >= 250) {
+                        lastLogged = delta
+                        DiagnosticsLogger.log(
+                            "StepCounter",
+                            "cumulative=$cumulative baseline=$baseline today=$delta " +
+                                "fromNow=$fromNow bootedToday=$bootedToday",
+                        )
+                    }
                     if (delta != state.steps || fromNow != state.countedFromNow) {
                         state = StepState(steps = delta, available = true, countedFromNow = fromNow)
                     }

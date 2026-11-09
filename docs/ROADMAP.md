@@ -232,6 +232,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Exports (.txt / .md / .json / .zip) carry the device and session header
 - [x] Unit tests for the masking rules
 
+## Fixed in 6.7.1 — what the first real log showed
+
+- [x] **Bug:** 96 update-check failures in 67 seconds filled a third of the log. The check is now throttled to one per two seconds, and a repeated identical failure is written once and then counted instead of repeated
+- [x] **Bug:** masking redacted epoch timestamps, so `Alarm 1 scheduled for 1794303000000` lost its only useful value. Card numbers are now masked only when they pass the Luhn check
+- [x] Alarm lines carry the ISO time next to the epoch
+- [x] Step readings are logged (first reading, then every 250 steps) — the log had no step values at all, so a "steps are wrong" report could not be checked
+- [x] The Health Connect card logs its status when shown, so "cannot connect" is visible without a tap
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

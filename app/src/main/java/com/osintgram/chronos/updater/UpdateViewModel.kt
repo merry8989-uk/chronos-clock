@@ -31,12 +31,16 @@ sealed interface UpdateUiState {
     data class Failed(val message: String) : UpdateUiState
 }
 
+private const val MIN_CHECK_GAP_MS = 2_000L
+
 class UpdateViewModel(app: Application) : AndroidViewModel(app) {
 
     private val context = app.applicationContext
 
     var state: UpdateUiState by mutableStateOf(UpdateUiState.Idle)
         private set
+
+    private var lastCheckAt = 0L
 
     /** Whether Android currently allows Chronos to install packages. */
     fun canInstall(): Boolean = AppUpdater.canInstallPackages(context)
@@ -45,6 +49,18 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
 
     fun check(currentVersion: String) {
         if (state is UpdateUiState.Checking || state is UpdateUiState.Downloading) return
+        // A failing check returns in milliseconds, so repeated taps used to fire
+        // a request each time — 96 of them in one minute in a real log. Two
+        // seconds is short enough to feel instant and long enough to stop that.
+        val now = System.currentTimeMillis()
+        if (now - lastCheckAt < MIN_CHECK_GAP_MS) {
+            com.osintgram.chronos.diagnostics.DiagnosticsLogger.debug(
+                "Updater",
+                "check skipped, ${now - lastCheckAt} ms since the last one",
+            )
+            return
+        }
+        lastCheckAt = now
         state = UpdateUiState.Checking
         viewModelScope.launch {
             state = when (val result = UpdateChecker.check(currentVersion)) {
