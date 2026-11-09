@@ -325,7 +325,13 @@ fun TaskEditorDialog(
 @Composable
 fun ProjectEditorDialog(onDismiss: () -> Unit) {
     var name by remember { mutableStateOf("") }
-    val colors = listOf(0xFF4C8DFF, 0xFF22C7A9, 0xFFFFB020, 0xFFFF6E8A, 0xFF8B7CFF)
+    val colors = listOf(
+        0xFF4C8DFF.toInt(),
+        0xFF22C7A9.toInt(),
+        0xFFFFB020.toInt(),
+        0xFFFF6E8A.toInt(),
+        0xFF8B7CFF.toInt(),
+    )
     var color by remember { mutableStateOf(colors.first()) }
     AlertDialog(
         onDismissRequest = onDismiss,
