@@ -125,6 +125,33 @@ object TaskLogic {
 
     // ---- Repeating tasks ---------------------------------------------------
 
+    // ---- Checklists --------------------------------------------------------
+
+    fun checklistProgress(task: Task): Progress =
+        Progress(task.checklist.count { it.done }, task.checklist.size)
+
+    fun toggleChecklistItem(task: Task, index: Int): Task =
+        if (index !in task.checklist.indices) task
+        else task.copy(
+            checklist = task.checklist.mapIndexed { i, item ->
+                if (i == index) item.copy(done = !item.done) else item
+            },
+        )
+
+    fun addChecklistItem(task: Task, text: String): Task {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return task
+        return task.copy(checklist = task.checklist + ChecklistItem(trimmed))
+    }
+
+    fun removeChecklistItem(task: Task, index: Int): Task =
+        if (index !in task.checklist.indices) task
+        else task.copy(checklist = task.checklist.filterIndexed { i, _ -> i != index })
+
+    /** True when every checklist line is ticked and there is at least one. */
+    fun checklistComplete(task: Task): Boolean =
+        task.checklist.isNotEmpty() && task.checklist.all { it.done }
+
     /** The next due instant for a repeating task, or null when it does not repeat. */
     fun nextOccurrence(task: Task, afterMillis: Long = task.dueAt): Long? {
         val from = dateOf(maxOf(afterMillis, task.dueAt))

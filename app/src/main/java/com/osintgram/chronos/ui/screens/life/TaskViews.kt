@@ -1,6 +1,7 @@
 package com.osintgram.chronos.ui.screens.life
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,8 @@ fun TaskRow(
 ) {
     val context = LocalContext.current
     val project = TaskStore.project(task.projectId)
+    var showChecklist by remember { mutableStateOf(false) }
+    val checklistProgress = TaskLogic.checklistProgress(task)
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(14.dp),
@@ -89,7 +92,11 @@ fun TaskRow(
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Column(Modifier.weight(1f)) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable { showChecklist = true },
+            ) {
                 Text(
                     text = task.title,
                     fontSize = 14.sp,
@@ -104,6 +111,9 @@ fun TaskRow(
                     if (task.repeat != Task.REPEAT_NONE) add(task.repeat)
                     project?.let { add(it.name) }
                     if (task.calendarEventId != null) add("in calendar")
+                    if (!checklistProgress.isEmpty) {
+                        add("${checklistProgress.done}/${checklistProgress.total} steps")
+                    }
                 }
                 if (bits.isNotEmpty()) {
                     Text(
@@ -144,6 +154,103 @@ fun TaskRow(
             }
         }
     }
+
+    if (showChecklist) {
+        ChecklistDialog(taskId = task.id, onDismiss = { showChecklist = false })
+    }
+}
+
+/**
+ * The checklist inside one task: tick a step, add one, delete one. The task is
+ * re-read from the store on every change, so a tick shows immediately.
+ */
+@Composable
+fun ChecklistDialog(taskId: Long, onDismiss: () -> Unit) {
+    val task = TaskStore.task(taskId) ?: return
+    var text by remember { mutableStateOf("") }
+    val progress = TaskLogic.checklistProgress(task)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = task.title,
+                fontSize = 16.sp,
+                maxLines = 2,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (task.checklist.isEmpty()) {
+                    Text(
+                        text = "No steps yet — add the first one below.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                task.checklist.forEachIndexed { index, item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { TaskStore.toggleChecklistItem(taskId, index) }) {
+                            Icon(
+                                if (item.done) Icons.Filled.CheckCircle
+                                else Icons.Filled.RadioButtonUnchecked,
+                                contentDescription = if (item.done) "Untick ${item.text}" else "Tick ${item.text}",
+                                tint = if (item.done) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Text(
+                            text = item.text,
+                            fontSize = 14.sp,
+                            color = if (item.done) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurface,
+                            textDecoration = if (item.done) {
+                                androidx.compose.ui.text.style.TextDecoration.LineThrough
+                            } else {
+                                null
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = { TaskStore.removeChecklistItem(taskId, index) }) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = "Remove ${item.text}",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { text = it.take(120) },
+                        label = { Text("Add a step") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    TextButton(
+                        enabled = text.isNotBlank(),
+                        onClick = {
+                            TaskStore.addChecklistItem(taskId, text)
+                            text = ""
+                        },
+                    ) { Text("Add") }
+                }
+                if (!progress.isEmpty) {
+                    Text(
+                        text = "${progress.done} of ${progress.total} steps done",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
+    )
 }
 
 internal fun timeOf(task: Task): String {
@@ -193,6 +300,8 @@ fun TaskEditorDialog(
     var projectId by remember { mutableStateOf<Long?>(null) }
     var timeMinutes by remember { mutableLongStateOf(-1L) } // -1 = all day
     var showPicker by remember { mutableStateOf(false) }
+    var checklistDraft by remember { mutableStateOf(listOf<String>()) }
+    var checklistText by remember { mutableStateOf("") }
     val projects = TaskStore.allProjects()
 
     if (showPicker) {
@@ -289,6 +398,41 @@ fun TaskEditorDialog(
                         }
                     }
                 }
+                Text(
+                    "Checklist (optional)",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                checklistDraft.forEachIndexed { index, item ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "• $item",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = {
+                            checklistDraft = checklistDraft.filterIndexed { i, _ -> i != index }
+                        }) { Text("Remove", fontSize = 11.sp) }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = checklistText,
+                        onValueChange = { checklistText = it.take(120) },
+                        label = { Text("Add a step") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    TextButton(
+                        enabled = checklistText.isNotBlank(),
+                        onClick = {
+                            checklistDraft = checklistDraft + checklistText.trim()
+                            checklistText = ""
+                        },
+                    ) { Text("Add") }
+                }
             }
         },
         confirmButton = {
@@ -311,6 +455,7 @@ fun TaskEditorDialog(
                         projectId = projectId,
                         repeat = repeat,
                     )
+                    checklistDraft.forEach { step -> TaskStore.addChecklistItem(task.id, step) }
                     TaskReminders.schedule(context, task)
                     Haptics.success(context)
                     onDismiss()

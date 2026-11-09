@@ -66,7 +66,17 @@ object TaskCodec {
                     .put("projectId", task.projectId ?: JSONObject.NULL)
                     .put("repeat", task.repeat)
                     .put("createdAt", task.createdAt)
-                    .put("calendarEventId", task.calendarEventId ?: JSONObject.NULL),
+                    .put("calendarEventId", task.calendarEventId ?: JSONObject.NULL)
+                    .put(
+                        "checklist",
+                        JSONArray().also { array ->
+                            task.checklist.forEach { item ->
+                                array.put(
+                                    JSONObject().put("text", item.text).put("done", item.done),
+                                )
+                            }
+                        },
+                    ),
             )
         }
         return array
@@ -95,8 +105,21 @@ object TaskCodec {
                     repeat = if (repeat in Task.REPEATS) repeat else Task.REPEAT_NONE,
                     createdAt = o.optLong("createdAt", 0L),
                     calendarEventId = if (o.isNull("calendarEventId")) null else o.optLong("calendarEventId", 0L),
+                    checklist = readChecklist(o.optJSONArray("checklist")),
                 ),
             )
+        }
+        return out
+    }
+
+    private fun readChecklist(array: JSONArray?): List<ChecklistItem> {
+        if (array == null) return emptyList()
+        val out = mutableListOf<ChecklistItem>()
+        for (i in 0 until array.length()) {
+            val o = array.optJSONObject(i) ?: continue
+            val text = o.optString("text")
+            if (text.isBlank()) continue
+            out.add(ChecklistItem(text = text, done = o.optBoolean("done", false)))
         }
         return out
     }

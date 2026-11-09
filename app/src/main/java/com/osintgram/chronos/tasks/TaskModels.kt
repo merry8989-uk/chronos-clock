@@ -10,9 +10,16 @@ data class Project(
     val createdAt: Long = 0L,
 )
 
+/** One line inside a task's checklist. */
+data class ChecklistItem(
+    val text: String,
+    val done: Boolean = false,
+)
+
 /**
  * One task. A task always has a due instant; when [allDay] is true only the
- * calendar date matters and the time is ignored by every view.
+ * calendar date matters and the time is ignored by every view. A task can also
+ * carry a checklist — the small steps that make it up.
  */
 data class Task(
     val id: Long,
@@ -30,6 +37,8 @@ data class Task(
     val createdAt: Long = 0L,
     /** Set when the task was also written to the phone calendar. */
     val calendarEventId: Long? = null,
+    /** Sub-items, ticked off one by one. */
+    val checklist: List<ChecklistItem> = emptyList(),
 ) {
     companion object {
         const val REPEAT_NONE = "none"
