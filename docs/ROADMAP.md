@@ -190,6 +190,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] "Connected" now means read and write are both granted, and the card says which one is missing
 - [x] **Bug:** the Special access rows kept showing the old state after the user changed a switch in system settings — the refresh counter was never read, so nothing recomposed. Rows now refresh when the app returns to the foreground
 
+## Shipped in 6.5.0 — checklists in tasks
+
+- [x] A task can carry a checklist: add a step, tick it (struck through), remove it
+- [x] The task row shows "2/4 steps" when a checklist exists; tapping the task opens it
+- [x] Steps can be added while creating a task, or later from the task itself
+- [x] Checklists are stored with the task, so they survive backup, restore and factory reset
+- [x] Older records with no checklist still load unchanged
+- [x] Unit tests for ticking, adding, removing, the progress count and the JSON round-trip
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

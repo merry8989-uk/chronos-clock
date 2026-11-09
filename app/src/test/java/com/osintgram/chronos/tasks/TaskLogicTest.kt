@@ -123,6 +123,48 @@ class TaskLogicTest {
     }
 
     @Test
+    fun `checklist items tick, add and remove without touching the task`() {
+        val task = task(1, "Pack", monday).copy(
+            checklist = listOf(ChecklistItem("Passport"), ChecklistItem("Charger", done = true)),
+        )
+        assertEquals(1, TaskLogic.checklistProgress(task).done)
+        assertEquals(2, TaskLogic.checklistProgress(task).total)
+
+        val ticked = TaskLogic.toggleChecklistItem(task, 0)
+        assertTrue(ticked.checklist[0].done)
+        assertTrue(TaskLogic.checklistComplete(ticked))
+        assertEquals("Pack", ticked.title)
+
+        val added = TaskLogic.addChecklistItem(task, "  Tickets  ")
+        assertEquals(3, added.checklist.size)
+        assertEquals("Tickets", added.checklist.last().text)
+        assertEquals(2, TaskLogic.addChecklistItem(task, "   ").checklist.size) // blank ignored
+
+        val removed = TaskLogic.removeChecklistItem(task, 1)
+        assertEquals(listOf("Passport"), removed.checklist.map { it.text })
+        assertEquals(task, TaskLogic.toggleChecklistItem(task, 9)) // out of range is a no-op
+    }
+
+    @Test
+    fun `a checklist survives the json round trip and old records still load`() {
+        val withSteps = task(1, "Pack", monday).copy(
+            checklist = listOf(ChecklistItem("Passport", done = true), ChecklistItem("Charger")),
+        )
+        val json = TaskCodec.toJson(emptyList(), listOf(withSteps))
+        val parsed = TaskCodec.tasksFromJson(JSONObject(json.toString()).optJSONArray("tasks"))
+        assertEquals(withSteps, parsed.first())
+        assertEquals(2, parsed.first().checklist.size)
+
+        // A task written by 6.4.0 has no checklist key at all.
+        val legacy = org.json.JSONArray().put(
+            JSONObject().put("id", 9).put("title", "Old task").put("dueAt", millisAt(monday)),
+        )
+        val loaded = TaskCodec.tasksFromJson(legacy)
+        assertEquals(1, loaded.size)
+        assertTrue(loaded.first().checklist.isEmpty())
+    }
+
+    @Test
     fun `projects and tasks survive a json round trip`() {
         val projects = listOf(Project(id = 10, name = "Move house", color = 0xFF22C7A9.toInt(), dueAt = 1_800_000_000_000L))
         val tasks = listOf(

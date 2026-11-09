@@ -118,6 +118,22 @@ object TaskStore {
         persistTasks()
     }
 
+    fun addChecklistItem(taskId: Long, text: String) =
+        update(taskId) { TaskLogic.addChecklistItem(it, text) }
+
+    fun toggleChecklistItem(taskId: Long, index: Int) =
+        update(taskId) { TaskLogic.toggleChecklistItem(it, index) }
+
+    fun removeChecklistItem(taskId: Long, index: Int) =
+        update(taskId) { TaskLogic.removeChecklistItem(it, index) }
+
+    private fun update(taskId: Long, block: (Task) -> Task) {
+        val index = tasks.indexOfFirst { it.id == taskId }
+        if (index < 0) return
+        tasks[index] = block(tasks[index])
+        persistTasks()
+    }
+
     fun deleteTask(taskId: Long) {
         tasks.removeAll { it.id == taskId }
         persistTasks()
