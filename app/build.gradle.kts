@@ -12,8 +12,8 @@ android {
         applicationId = "com.osintgram.chronos"
         minSdk = 26
         targetSdk = 35
-        versionCode = 25
-        versionName = "6.7.0"
+        versionCode = 26
+        versionName = "6.7.1"
     }
 
     // Release signing is read from environment variables so no key material

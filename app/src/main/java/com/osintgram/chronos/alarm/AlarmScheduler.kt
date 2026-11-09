@@ -61,7 +61,13 @@ object AlarmScheduler {
                     "Exact alarms not permitted — alarm ${alarm.id} scheduled inexactly",
                 )
             }
-            DiagnosticsLogger.log("AlarmScheduler", "Alarm ${alarm.id} scheduled for $trigger")
+            val iso = java.time.Instant.ofEpochMilli(trigger)
+                .atZone(java.time.ZoneId.systemDefault())
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm z"))
+            DiagnosticsLogger.log(
+                "AlarmScheduler",
+                "Alarm ${alarm.id} scheduled for $iso ($trigger)",
+            )
         } catch (e: SecurityException) {
             manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, operation)
             DiagnosticsLogger.log("AlarmScheduler", "Fell back to inexact alarm: ${e.message}")
