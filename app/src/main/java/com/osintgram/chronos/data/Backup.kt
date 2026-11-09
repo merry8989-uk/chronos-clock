@@ -38,6 +38,7 @@ object Backup {
         }
         root.put("timerPresets", presets)
         root.put("wellness", com.osintgram.chronos.wellness.WellnessStore.asJson())
+        root.put("tasks", com.osintgram.chronos.tasks.TaskStore.asJson())
 
 
         val dir = File(context.filesDir, "backups").apply { mkdirs() }
@@ -92,10 +93,15 @@ object Backup {
 
             val wellness = root.optJSONObject("wellness")
                 ?.let { com.osintgram.chronos.wellness.WellnessStore.importJson(it) }
+            val tasks = root.optJSONObject("tasks")
+                ?.let { com.osintgram.chronos.tasks.TaskStore.importJson(it) }
 
+            val extra = buildString {
+                if (wellness != null) append(", wellness: $wellness")
+                if (tasks != null) append(", tasks: $tasks")
+            }
             DiagnosticsLogger.log("Backup", "Restored ${alarms.length()} alarm(s) from backup")
-            "${alarms.length()} alarm(s) and all settings restored" +
-                if (wellness != null) ", wellness: $wellness" else ""
+            "${alarms.length()} alarm(s) and all settings restored$extra"
         }.getOrElse {
             DiagnosticsLogger.log("Backup", "Restore failed: ${it.message}")
             null

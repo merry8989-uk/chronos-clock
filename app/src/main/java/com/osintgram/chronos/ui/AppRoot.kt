@@ -25,7 +25,7 @@ import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -71,7 +71,8 @@ import com.osintgram.chronos.ui.screens.DiagnosticsScreen
 import com.osintgram.chronos.ui.screens.SettingsScreen
 import com.osintgram.chronos.ui.screens.StopwatchScreen
 import com.osintgram.chronos.ui.screens.TimerScreen
-import com.osintgram.chronos.ui.screens.WellnessScreen
+import com.osintgram.chronos.ui.screens.LifeScreen
+import com.osintgram.chronos.ui.screens.SpecialAccessScreen
 import com.osintgram.chronos.ui.screens.WorldClockScreen
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
@@ -84,7 +85,7 @@ private val tabs = listOf(
     Tab("World", Icons.Filled.Public),
     Tab("Timer", Icons.Filled.HourglassBottom),
     Tab("Stopwatch", Icons.Filled.Timer),
-    Tab("Wellness", Icons.Filled.SelfImprovement),
+    Tab("Life", Icons.Filled.Checklist),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +99,7 @@ fun AppRoot() {
     var menuOpen by remember { mutableStateOf(false) }
     var showClock by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
+    var showSpecialAccess by remember { mutableStateOf(false) }
 
     val keepScreenOn = Settings.keepScreenOn.value
     val view = LocalView.current
@@ -107,6 +109,12 @@ fun AppRoot() {
     }
 
     when {
+        showSpecialAccess -> {
+            ChronosBackground {
+                SpecialAccessScreen(onBack = { showSpecialAccess = false })
+            }
+            return
+        }
         showDiagnostics -> {
             ChronosBackground {
                 DiagnosticsScreen(onBack = { showDiagnostics = false })
@@ -234,6 +242,13 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
+                                text = { Text("Special access") },
+                                onClick = {
+                                    menuOpen = false
+                                    showSpecialAccess = true
+                                },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Diagnostics & logs") },
                                 onClick = {
                                     menuOpen = false
@@ -301,7 +316,7 @@ fun AppRoot() {
                         1 -> WorldClockScreen()
                         2 -> TimerScreen()
                         3 -> StopwatchScreen()
-                        else -> WellnessScreen()
+                        else -> LifeScreen()
                     }
                 }
             }
