@@ -6,7 +6,6 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import androidx.core.content.FileProvider
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
@@ -53,7 +52,8 @@ object AppUpdater {
     fun openInstallPermissionSettings(context: Context): Boolean = runCatching {
         context.startActivity(
             Intent(
-                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                // Fully qualified: the app has its own data.Settings class.
+                android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                 Uri.parse("package:${context.packageName}"),
             ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
