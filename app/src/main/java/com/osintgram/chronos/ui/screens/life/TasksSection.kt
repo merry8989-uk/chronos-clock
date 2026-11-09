@@ -308,7 +308,8 @@ private fun MonthView(tasks: List<Task>) {
     var anchor by remember { mutableStateOf(LocalDate.now()) }
     val month = YearMonth.from(anchor)
     val weeks = TaskLogic.weekBuckets(tasks, TaskLogic.weeksOfMonth(month))
-    val monthTasks = weeks.flatMap { it.allTasks }.distinctBy { it.id }
+    // Only this month's tasks count, even though the weeks are shown whole.
+    val monthTasks = TaskLogic.tasksBetween(tasks, month.atDay(1), month.atEndOfMonth())
     val progress = TaskLogic.progress(monthTasks)
 
     LazyColumn(

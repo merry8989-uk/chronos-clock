@@ -64,12 +64,26 @@ data class WeekBucket(
     val end: java.time.LocalDate get() = start.plusDays(6)
 }
 
-/** One month of the year view. */
+/**
+ * One month of the year view. The weeks are whole Monday-to-Sunday weeks so the
+ * grid lays out without gaps, but the tasks and the progress count only what
+ * actually falls inside this month — a task on 2 December must not appear in
+ * November's bar just because it shares a week with 30 November.
+ */
 data class MonthBucket(
     val month: java.time.YearMonth,
     val weeks: List<WeekBucket>,
 ) {
-    val allTasks: List<Task> get() = weeks.flatMap { it.allTasks }
+    val allTasks: List<Task>
+        get() {
+            val zone = java.time.ZoneId.systemDefault()
+            val start = month.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            return weeks.flatMap { it.allTasks }
+                .filter { it.dueAt in start..end }
+                .distinctBy { it.id }
+        }
+
     val progress: Progress get() = Progress(allTasks.count { it.done }, allTasks.size)
 }
 
