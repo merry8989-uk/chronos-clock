@@ -59,6 +59,40 @@ class UpdateCheckerTest {
     }
 
     @Test
+    fun `download progress is monotonic, ends at the full size and is throttled`() {
+        val payload = ByteArray(4 * 1024 * 1024) { (it % 251).toByte() } // 4 MB
+        val updates = mutableListOf<Pair<Long, Long>>()
+        val out = java.io.ByteArrayOutputStream()
+        val written = StreamCopy.copy(
+            input = java.io.ByteArrayInputStream(payload),
+            output = out,
+            total = payload.size.toLong(),
+        ) { done, total -> updates.add(done to total) }
+
+        assertEquals(payload.size.toLong(), written)
+        assertEquals(payload.size, out.size())
+        assertEquals(0L, updates.first().first)                       // starts at zero
+        assertEquals(payload.size.toLong(), updates.last().first)     // ends at the full size
+        assertTrue(updates.all { it.second == payload.size.toLong() })
+        assertTrue(updates.size <= 105)                               // throttled, not per chunk
+        assertTrue(updates.zipWithNext().all { (a, b) -> b.first >= a.first }) // never goes back
+    }
+
+    @Test
+    fun `progress still reports when the total is unknown`() {
+        val payload = ByteArray(1024 * 1024)
+        val updates = mutableListOf<Long>()
+        StreamCopy.copy(
+            input = java.io.ByteArrayInputStream(payload),
+            output = java.io.ByteArrayOutputStream(),
+            total = 0L,
+        ) { done, _ -> updates.add(done) }
+        assertEquals(0L, updates.first())
+        assertEquals(payload.size.toLong(), updates.last())
+        assertTrue(updates.size >= 2)
+    }
+
+    @Test
     fun `a missing or empty file is rejected`() {
         val missing = File(System.getProperty("java.io.tmpdir"), "chronos-missing-${System.nanoTime()}.apk")
         assertFalse(ApkFile.looksLikeApk(missing))

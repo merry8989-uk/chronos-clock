@@ -74,7 +74,16 @@ object AppUpdater {
         return wifi
     }
 
-    suspend fun downloadAndInstall(context: Context, info: UpdateInfo): Result<Unit> =
+    /**
+     * Downloads and installs. [onProgress] is called with (bytes written, total
+     * bytes) as the file arrives, throttled so it is cheap enough to drive a
+     * progress bar; total is 0 when neither GitHub nor the response says.
+     */
+    suspend fun downloadAndInstall(
+        context: Context,
+        info: UpdateInfo,
+        onProgress: (Long, Long) -> Unit = { _, _ -> },
+    ): Result<Unit> =
         withContext(Dispatchers.IO) {
             val apk = File(context.cacheDir, "update-${info.latestVersion}.apk")
             try {
@@ -87,7 +96,7 @@ object AppUpdater {
                 }
 
                 if (apk.exists()) apk.delete()
-                val written = download(info.downloadUrl, apk)
+                val written = download(info.downloadUrl, apk, info.sizeBytes, onProgress)
                 DiagnosticsLogger.log("Updater", "Downloaded ${apk.name}: $written bytes")
 
                 if (!ApkFile.looksLikeApk(apk)) {
@@ -130,7 +139,12 @@ object AppUpdater {
      * 302 to a signed URL on another host, and a proxy that refuses that hop
      * has to surface as a real error.
      */
-    private fun download(url: String, target: File): Long {
+    private fun download(
+        url: String,
+        target: File,
+        knownSize: Long,
+        onProgress: (Long, Long) -> Unit,
+    ): Long {
         var current = url
         repeat(MAX_REDIRECTS) {
             val conn = (URL(current).openConnection() as HttpURLConnection).apply {
@@ -156,11 +170,16 @@ object AppUpdater {
                 if (code != HttpURLConnection.HTTP_OK) {
                     throw DownloadFailed("Download failed (HTTP $code).")
                 }
-                val expected = conn.contentLengthLong
+                val declared = conn.contentLengthLong
+                val total = when {
+                    declared > 0 -> declared
+                    knownSize > 0 -> knownSize
+                    else -> 0L
+                }
                 var written = 0L
                 conn.inputStream.use { input ->
                     target.outputStream().use { output ->
-                        written = input.copyTo(output)
+                        written = StreamCopy.copy(input, output, total, onProgress)
                     }
                 }
                 if (expected > 0 && written != expected) {

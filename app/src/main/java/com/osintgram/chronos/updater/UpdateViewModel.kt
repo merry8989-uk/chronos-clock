@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 sealed interface UpdateUiState {
@@ -13,7 +14,20 @@ sealed interface UpdateUiState {
     data object Checking : UpdateUiState
     data object UpToDate : UpdateUiState
     data class Available(val info: UpdateInfo) : UpdateUiState
-    data object Downloading : UpdateUiState
+    /** Download progress, so the screen can show a real bar instead of a static row. */
+    data class Downloading(
+        val downloaded: Long = 0L,
+        val total: Long = 0L,
+    ) : UpdateUiState {
+        val percent: Float
+            get() = if (total > 0L) (downloaded.toFloat() / total).coerceIn(0f, 1f) else 0f
+
+        val downloadedLabel: String get() = megabytes(downloaded)
+        val totalLabel: String get() = megabytes(total)
+
+        private fun megabytes(bytes: Long): String =
+            String.format("%.1f MB", bytes / (1024.0 * 1024.0))
+    }
     data class Failed(val message: String) : UpdateUiState
 }
 
@@ -43,9 +57,16 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
 
     fun install(info: UpdateInfo) {
         if (state is UpdateUiState.Downloading) return
-        state = UpdateUiState.Downloading
+        state = UpdateUiState.Downloading(0L, info.sizeBytes)
         viewModelScope.launch {
-            state = AppUpdater.downloadAndInstall(context, info).fold(
+            state = AppUpdater.downloadAndInstall(context, info) { done, total ->
+                // Called from the IO thread; the state write belongs on main.
+                viewModelScope.launch(Dispatchers.Main.immediate) {
+                    if (state is UpdateUiState.Downloading) {
+                        state = UpdateUiState.Downloading(done, total)
+                    }
+                }
+            }.fold(
                 onSuccess = { UpdateUiState.Idle },
                 onFailure = { error ->
                     UpdateUiState.Failed(
