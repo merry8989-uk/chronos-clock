@@ -21,6 +21,8 @@ class BootReceiver : BroadcastReceiver() {
             -> {
                 DiagnosticsLogger.log("BootReceiver", "Re-arming alarms after ${intent.action}")
                 AlarmScheduler.rescheduleAll(context)
+        com.osintgram.chronos.keepalive.KeepAliveService.sync(context)
+        DiagnosticsLogger.log("BootReceiver", "boot: background service synced to the setting")
                 com.osintgram.chronos.bedtime.BedtimeScheduler.reschedule(context)
                 // Touch the store so a fresh install also seeds defaults.
                 AlarmStore.all()

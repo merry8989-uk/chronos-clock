@@ -268,6 +268,16 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] **The Health Connect connect flow left no trace.** The log showed `card shown: status=Ready` and nothing else, so "cannot connect" could not be answered. The tap, the requested permission count, the system's result, and what is still missing are all logged now
 - [x] The card also logs the granted / background / history state after it is read
 
+## Shipped in 6.9.0 — the permission controller workaround, real steps, always-on
+
+- [x] **Health Connect on this phone cannot open its permission screen** — the system component "Permission controller" crashes, which took Chronos with it. The card now catches that, says so plainly, and offers **Open Health Connect** so the permissions can be granted by hand in Health Connect → App permissions → Chronos
+- [x] Every step of the connect attempt is logged: the tap, how many permissions were asked for, what the system returned, what is still missing
+- [x] **Step sensor fallback:** phones without `TYPE_STEP_COUNTER` now use `TYPE_STEP_DETECTOR` and add up the events; the card also names which sensor it is using, and logs it
+- [x] Steps show immediately on opening the card (one read, then the live listener), and the log says which path produced the number
+- [x] **Background service:** Settings → Keep running in background starts a low-priority foreground service so steps, health sync and limits keep working when the app is closed; it writes a heartbeat (uptime, steps, Health Connect state, limits, battery, network, memory) every fifteen minutes
+- [x] The battery-optimisation row now requests the exemption for Chronos directly
+- [x] The service is restarted on boot when the setting is on
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

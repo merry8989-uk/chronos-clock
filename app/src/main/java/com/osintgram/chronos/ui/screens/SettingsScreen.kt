@@ -786,6 +786,21 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
             // ---- Diagnostics ---------------------------------------------------
             SectionCard(title = "DIAGNOSTICS") {
                 SettingSwitchRow(
+                    title = "Keep running in background",
+                    subtitle = "A low-priority notification stays; steps and sync keep working " +
+                        "when the app is closed. Exclude Chronos from battery optimisation too",
+                    checked = Settings.keepAlive.value,
+                    onCheckedChange = {
+                        Settings.keepAlive.set(it)
+                        com.osintgram.chronos.keepalive.KeepAliveService.sync(context)
+                        com.osintgram.chronos.diagnostics.DiagnosticsLogger.log(
+                            "Alive",
+                            "background service setting = $it",
+                        )
+                    },
+                )
+                RowDivider()
+                SettingSwitchRow(
                     title = "Collect logs",
                     subtitle = "On by default so problems can be diagnosed without reproducing them",
                     checked = Settings.diagnosticsEnabled.value,

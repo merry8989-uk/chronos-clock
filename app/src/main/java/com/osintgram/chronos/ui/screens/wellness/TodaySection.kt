@@ -549,6 +549,11 @@ private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectA
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (!state.granted) {
+                        OutlinedButton(
+                            onClick = { actions.openSettings() },
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        ) { Text("Open Health Connect", fontSize = 12.sp) }
+                        Spacer(Modifier.width(8.dp))
                         Button(
                             onClick = actions.connect,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
