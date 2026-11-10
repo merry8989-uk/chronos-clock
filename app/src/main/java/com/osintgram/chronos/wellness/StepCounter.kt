@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -141,6 +142,37 @@ object StepCounter {
             )
         }
 
+        // A phone lying still sends no step events at all, so the card used to
+        // sit at zero until the user walked. One read on open fills it in now.
+        var liveSeen by remember { mutableStateOf(false) }
+        LaunchedEffect(available) {
+            if (!available) return@LaunchedEffect
+            val cumulative = readCumulativeOnce(context, timeoutMs = 2_000)
+            if (cumulative == null) {
+                DiagnosticsLogger.log("StepCounter", "no reading within 2 s of opening the card")
+                return@LaunchedEffect
+            }
+            if (liveSeen) return@LaunchedEffect
+            val today = WellnessLogic.todayKey()
+            val bootedToday = bootedSinceMidnight()
+            val stored = WellnessStore.stepBaseline(today)
+            val baseline = WellnessLogic.resolveStepBaseline(cumulative, stored, bootedToday)
+            if (stored == null || cumulative < stored) {
+                WellnessStore.setStepBaseline(baseline, today)
+            }
+            val delta = WellnessLogic.stepDelta(cumulative, baseline)
+            state = StepState(
+                steps = delta,
+                available = true,
+                countedFromNow = WellnessLogic.countedFromNow(stored, bootedToday),
+            )
+            if (WellnessStore.day(today).steps != delta) WellnessStore.setSteps(delta, today)
+            DiagnosticsLogger.log(
+                "StepCounter",
+                "opened: cumulative=$cumulative baseline=$baseline today=$delta",
+            )
+        }
+
         DisposableEffect(available) {
             if (!available) {
                 state = state.copy(available = false)
@@ -155,6 +187,7 @@ object StepCounter {
             val listener = object : SensorEventListener {
                 override fun onSensorChanged(event: SensorEvent) {
                     val cumulative = event.values.firstOrNull()?.toLong() ?: return
+                    liveSeen = true
                     val today = WellnessLogic.todayKey()
                     val bootedToday = bootedSinceMidnight()
                     val stored = WellnessStore.stepBaseline(today)

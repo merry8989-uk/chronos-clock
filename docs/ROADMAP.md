@@ -262,6 +262,12 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 
 - [x] **Bug:** every widget showed the same name in the picker, because all nine receivers carried `android:label="@string/app_name"`. Each one now has its own label — *Chronos · Analog clock*, *Chronos · Digital clock*, *Chronos · Next alarm*, *Chronos · Alarm list*, *Chronos · Timer*, *Chronos · Stopwatch*, *Chronos · Holidays*, *Chronos · Timer presets*, *Chronos · Screen time* — and its own one-line description in the widget info file
 
+## Fixed in 6.8.3 — what the second log showed
+
+- [x] **Steps sat at zero until the user walked.** A step counter sends no events while the phone is still, so the card only filled in after the first step. Opening the card now does one 2-second sensor read and shows today's count immediately (logged as `opened: cumulative=… baseline=… today=…`)
+- [x] **The Health Connect connect flow left no trace.** The log showed `card shown: status=Ready` and nothing else, so "cannot connect" could not be answered. The tap, the requested permission count, the system's result, and what is still missing are all logged now
+- [x] The card also logs the granted / background / history state after it is read
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
