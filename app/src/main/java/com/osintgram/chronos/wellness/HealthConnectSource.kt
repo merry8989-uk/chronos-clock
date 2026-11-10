@@ -332,6 +332,18 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
         granted = result.containsAll(HealthConnectSource.requiredPermissions)
         hasBackground = result.contains(HealthConnectSource.backgroundPermission)
         hasHistory = result.contains(HealthConnectSource.historyPermission)
+        DiagnosticsLogger.log(
+            "HealthConnect",
+            "permission result: ${result.size} granted, required met=$granted " +
+                "background=$hasBackground history=$hasHistory",
+        )
+        if (!granted) {
+            val missing = HealthConnectSource.requiredPermissions - result
+            DiagnosticsLogger.log(
+                "HealthConnect",
+                "still missing: ${missing.joinToString(",") { it.substringAfterLast('.') }}",
+            )
+        }
         message = when {
             granted && hasBackground -> "Connected: read and write, background sync on"
             granted -> "Connected: read and write"
@@ -355,6 +367,11 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
             DiagnosticsLogger.log("HealthConnect", "Permission names unavailable; not launching")
             return
         }
+        DiagnosticsLogger.log(
+            "HealthConnect",
+            "connect tapped: requesting ${HealthConnectSource.permissions.size} permission(s) " +
+                "(required ${HealthConnectSource.requiredPermissions.size})",
+        )
         runCatching { launcher.launch(HealthConnectSource.permissions) }
             .onSuccess { return }
             .onFailure { first ->
