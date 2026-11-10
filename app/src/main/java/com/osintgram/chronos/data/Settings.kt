@@ -96,6 +96,8 @@ object Settings {
     val confirmDelete = Setting("confirm_delete", true)
     val diagnosticsEnabled = Setting("diagnostics_enabled", true)
     val logcatCapture = Setting("logcat_capture", true)
+    /** Keeps a foreground service alive so steps and sync keep running when closed. */
+    val keepAlive = Setting("keep_alive", false)
     val updateWifiOnly = Setting("update_wifi_only", true)
 
     // ---- Widget style -----------------------------------------------------
@@ -160,6 +162,7 @@ object Settings {
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
         diagnosticsEnabled.load(p.getBoolean(diagnosticsEnabled.key, diagnosticsEnabled.default))
         logcatCapture.load(p.getBoolean(logcatCapture.key, logcatCapture.default))
+        keepAlive.load(p.getBoolean(keepAlive.key, keepAlive.default))
         updateWifiOnly.load(p.getBoolean(updateWifiOnly.key, updateWifiOnly.default))
         widgetBgStyle.load(p.getString(widgetBgStyle.key, widgetBgStyle.default) ?: "half")
         widgetBgColor.load(p.getInt(widgetBgColor.key, widgetBgColor.default))
@@ -229,6 +232,7 @@ object Settings {
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
         logcatCapture.resetToDefault()
+        keepAlive.resetToDefault()
         updateWifiOnly.resetToDefault()
         widgetBgStyle.resetToDefault()
         widgetBgColor.resetToDefault()
@@ -283,6 +287,7 @@ object Settings {
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
         logcatCapture.key to logcatCapture.value,
+        keepAlive.key to keepAlive.value,
         updateWifiOnly.key to updateWifiOnly.value,
         widgetBgStyle.key to widgetBgStyle.value,
         widgetBgColor.key to widgetBgColor.value,
@@ -341,6 +346,7 @@ object Settings {
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }
                 logcatCapture.key -> asBool?.let { logcatCapture.set(it) }
+                keepAlive.key -> asBool?.let { keepAlive.set(it) }
                 updateWifiOnly.key -> asBool?.let { updateWifiOnly.set(it) }
                 widgetBgStyle.key -> widgetBgStyle.set(text)
                 widgetBgColor.key -> text.toIntOrNull()?.let { widgetBgColor.set(it) }

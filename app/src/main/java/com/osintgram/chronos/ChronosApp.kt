@@ -41,6 +41,7 @@ class ChronosApp : Application() {
         com.osintgram.chronos.tasks.TaskStore.init(this)
         com.osintgram.chronos.screentime.ScreenTimeStore.init(this)
         com.osintgram.chronos.screentime.LimitService.sync(this)
+        com.osintgram.chronos.keepalive.KeepAliveService.sync(this)
         com.osintgram.chronos.tasks.TaskReminders.ensureChannel(this)
         com.osintgram.chronos.tasks.TaskReminders.rescheduleAll(this)
 

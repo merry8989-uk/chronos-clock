@@ -306,6 +306,8 @@ data class HealthConnectActions(
     val connect: () -> Unit,
     val sync: () -> Unit,
     val importHistory: () -> Unit,
+    /** Opens Health Connect itself, where permissions can be granted by hand. */
+    val openSettings: () -> Unit,
 )
 
 /**
@@ -364,7 +366,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
         }
         if (!HealthConnectSource.canRequestPermissions()) {
             message = "This Health Connect build is too old for Chronos — update Health Connect"
-            DiagnosticsLogger.log("HealthConnect", "Permission names unavailable; not launching")
+            DiagnosticsLogger.log("HealthConnect", "permission names unavailable; not launching")
             return
         }
         DiagnosticsLogger.log(
@@ -372,24 +374,28 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
             "connect tapped: requesting ${HealthConnectSource.permissions.size} permission(s) " +
                 "(required ${HealthConnectSource.requiredPermissions.size})",
         )
-        runCatching { launcher.launch(HealthConnectSource.permissions) }
-            .onSuccess { return }
-            .onFailure { first ->
+        try {
+            launcher.launch(HealthConnectSource.permissions)
+        } catch (first: Throwable) {
+            DiagnosticsLogger.log(
+                "HealthConnect",
+                "full request rejected (${first.javaClass.simpleName}: ${first.message}); " +
+                    "retrying with the required set",
+            )
+            try {
+                launcher.launch(HealthConnectSource.requiredPermissions)
+                message = "This Health Connect build has no background/history access; " +
+                    "asked for read and write only"
+            } catch (second: Throwable) {
                 DiagnosticsLogger.log(
                     "HealthConnect",
-                    "Full permission request rejected (${first.message}); retrying with the required set",
+                    "permission launch failed (${second.javaClass.simpleName}: ${second.message}); " +
+                        "the system permission screen is not opening",
                 )
-                runCatching { launcher.launch(HealthConnectSource.requiredPermissions) }
-                    .onSuccess {
-                        message = "This Health Connect build has no background/history access; " +
-                            "asked for read and write only"
-                    }
-                    .onFailure { second ->
-                        message = "The Health Connect permission screen could not open: " +
-                            (second.message ?: second.javaClass.simpleName)
-                        DiagnosticsLogger.log("HealthConnect", "Permission launch failed: ${second.message}")
-                    }
+                message = "The system permission screen is not opening on this phone. " +
+                    "Open Health Connect settings and allow Chronos there instead."
             }
+        }
     }
 
     LaunchedEffect(status, enabled) {
@@ -431,6 +437,15 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
                     message = "Synced just now"
                 }
                 busy = false
+            }
+        },
+        openSettings = {
+            DiagnosticsLogger.log("HealthConnect", "opening Health Connect settings by hand")
+            val opened = HealthConnectSource.openSettings(context)
+            message = if (opened) {
+                "In Health Connect: App permissions → Chronos → allow read and write"
+            } else {
+                "Health Connect settings could not be opened on this device"
             }
         },
         importHistory = {

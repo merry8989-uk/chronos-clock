@@ -147,6 +147,16 @@
             </intent-filter>
         </service>
 
+        <!-- Keeps Chronos counting and syncing while it is not on screen. -->
+        <service
+            android:name=".keepalive.KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Step counting, health sync and app time limits" />
+        </service>
+
         <!-- Screen time: watches the foreground app and shows the limit blocker. -->
         <service
             android:name=".screentime.LimitService"
