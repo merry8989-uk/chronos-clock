@@ -52,12 +52,12 @@ data class Alarm(
         return repeatDays.sorted().joinToString(", ") { dayShort(it) }
     }
 
-    fun timeText(use24Hour: Boolean): String =
-        if (use24Hour) String.format("%02d:%02d", hour, minute)
-        else {
-            val h = if (hour % 12 == 0) 12 else hour % 12
-            String.format("%02d:%02d", h, minute)
-        }
+    fun timeText(use24Hour: Boolean): String = java.time.LocalTime.of(
+        hour.coerceIn(0, 23),
+        minute.coerceIn(0, 59),
+    ).format(
+        java.time.format.DateTimeFormatter.ofPattern(if (use24Hour) "HH:mm" else "hh:mm"),
+    )
 
     fun meridiem(use24Hour: Boolean): String = when {
         use24Hour -> ""
@@ -85,15 +85,10 @@ data class Alarm(
 
     companion object {
 
-        fun dayShort(iso: Int): String = when (iso) {
-            1 -> "Mon"
-            2 -> "Tue"
-            3 -> "Wed"
-            4 -> "Thu"
-            5 -> "Fri"
-            6 -> "Sat"
-            else -> "Sun"
-        }
+        fun dayShort(iso: Int): String = runCatching {
+            DayOfWeek.of(iso.coerceIn(1, 7))
+                .getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH)
+        }.getOrDefault("")
 
         fun fromJson(o: JSONObject): Alarm {
             val days = mutableSetOf<Int>()

@@ -278,6 +278,17 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] The battery-optimisation row now requests the exemption for Chronos directly
 - [x] The service is restarted on boot when the setting is on
 
+## Cleaned up in 6.9.1 — stdlib instead of hand-rolled code
+
+- [x] Four copies of "today as an ISO date" (wellness, tasks, screen time, the wellness store) and two copies of the "1 h 20 m" formatter became one `common/Dates` helper
+- [x] `formatSteps` hand-rolled digit grouping → `String.format("%,d")`
+- [x] `Alarm.dayShort`'s nine-line `when` → `DayOfWeek.getDisplayName(SHORT, ENGLISH)`
+- [x] `Alarm.timeText` manual 12/24 hour maths → `LocalTime` + `DateTimeFormatter`
+- [x] The task grid's `listOf("M","T","W","T","F","S","S")` → `DayOfWeek` narrow names
+- [x] `LogExporter`'s `SimpleDateFormat`/`Date` → `java.time`, matching the rest of the app
+- [x] `StepCounter.readCumulativeOnce` polled the sensor every 50 ms → `suspendCancellableCoroutine`, one registration and one resume
+- [x] Unit tests for the shared date helper
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

@@ -10,17 +10,17 @@ import java.time.format.DateTimeFormatter
  */
 object WellnessLogic {
 
-    val ISO_DATE: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    val ISO_DATE: DateTimeFormatter get() = com.osintgram.chronos.common.Dates.ISO
 
     /** Step counter values are cumulative since boot, so a day needs a baseline. */
     const val DEFAULT_STEP_GOAL = 8000
     const val DEFAULT_WATER_GOAL_ML = 2500
     const val DEFAULT_SLEEP_GOAL_MINUTES = 450
 
-    fun todayKey(today: LocalDate = LocalDate.now()): String = today.format(ISO_DATE)
+    fun todayKey(today: LocalDate = LocalDate.now()): String =
+        com.osintgram.chronos.common.Dates.key(today)
 
-    fun parseDate(key: String): LocalDate? =
-        runCatching { LocalDate.parse(key, ISO_DATE) }.getOrNull()
+    fun parseDate(key: String): LocalDate? = com.osintgram.chronos.common.Dates.parse(key)
 
     /** Whole minutes between two instants, floored, never negative. */
     fun minutesBetween(startMillis: Long, endMillis: Long): Int {
@@ -161,28 +161,13 @@ object WellnessLogic {
     }
 
     /** Minutes as "1 h 20 m" / "45 m", the way the cards read. */
-    fun formatMinutes(total: Int): String {
-        if (total <= 0) return "0 m"
-        val hours = total / 60
-        val minutes = total % 60
-        return when {
-            hours == 0 -> "$minutes m"
-            minutes == 0 -> "$hours h"
-            else -> "$hours h $minutes m"
-        }
-    }
+    fun formatMinutes(total: Int): String =
+        com.osintgram.chronos.common.Dates.hoursMinutes(total.toLong())
 
     /** Water in millilitres as litres with one decimal: 1750 → "1.8 L". */
     fun formatLitres(ml: Int): String = String.format("%.1f L", ml / 1000.0)
 
     /** Steps as a grouped number: 8240 → "8,240". */
-    fun formatSteps(steps: Int): String {
-        val s = steps.coerceAtLeast(0).toString()
-        val out = StringBuilder()
-        s.forEachIndexed { index, c ->
-            if (index > 0 && (s.length - index) % 3 == 0) out.append(',')
-            out.append(c)
-        }
-        return out.toString()
-    }
+    fun formatSteps(steps: Int): String =
+        String.format(java.util.Locale.US, "%,d", steps.coerceAtLeast(0))
 }

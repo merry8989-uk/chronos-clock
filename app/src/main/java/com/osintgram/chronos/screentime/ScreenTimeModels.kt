@@ -27,20 +27,12 @@ data class DayScreenTime(
 /** The maths behind the screen, kept free of Android so it can be unit-tested. */
 object ScreenTimeLogic {
 
-    val ISO_DATE: java.time.format.DateTimeFormatter = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
+    val ISO_DATE: java.time.format.DateTimeFormatter
+        get() = com.osintgram.chronos.common.Dates.ISO
 
     /** "1 h 24 m", "7 m", "0 m" — the way the cards read. */
-    fun formatDuration(millis: Long): String {
-        if (millis <= 0L) return "0 m"
-        val totalMinutes = millis / 60_000L
-        val hours = totalMinutes / 60
-        val minutes = totalMinutes % 60
-        return when {
-            hours == 0L -> "$minutes m"
-            minutes == 0L -> "$hours h"
-            else -> "$hours h $minutes m"
-        }
-    }
+    fun formatDuration(millis: Long): String =
+        com.osintgram.chronos.common.Dates.hoursMinutes(millis / 60_000L)
 
     /** True when today's use of an app is at or past its limit. */
     fun limitReached(usedMillis: Long, limitMinutes: Int): Boolean =

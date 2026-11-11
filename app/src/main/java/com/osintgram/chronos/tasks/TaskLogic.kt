@@ -29,9 +29,9 @@ object TaskLogic {
     fun endOfDay(date: LocalDate): Long =
         date.plusDays(1).atStartOfDay(zone()).toInstant().toEpochMilli() - 1
 
-    fun dateKey(date: LocalDate): String = date.format(ISO_DATE)
+    fun dateKey(date: LocalDate): String = com.osintgram.chronos.common.Dates.key(date)
 
-    fun parseDate(key: String): LocalDate? = runCatching { LocalDate.parse(key, ISO_DATE) }.getOrNull()
+    fun parseDate(key: String): LocalDate? = com.osintgram.chronos.common.Dates.parse(key)
 
     fun weekStart(date: LocalDate): LocalDate =
         date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
