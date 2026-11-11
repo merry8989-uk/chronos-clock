@@ -38,6 +38,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -273,6 +277,10 @@ private fun ColorTilesMission(spec: MissionSpec, onSolved: () -> Unit) {
                             .size(74.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(if (index == oddIndex) odd else base)
+                            .semantics {
+                                contentDescription = "Tile ${index + 1}"
+                                role = Role.Button
+                            }
                             .clickable {
                                 if (index == oddIndex) {
                                     done += 1

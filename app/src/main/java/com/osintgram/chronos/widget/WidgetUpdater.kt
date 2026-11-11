@@ -30,10 +30,11 @@ import java.util.concurrent.TimeUnit
 /**
  * Builds every Chronos home-screen widget.
  *
- * Where the platform can animate by itself it does: [android.widget.AnalogClock]
- * redraws its own hour and minute hands, and [android.widget.Chronometer] counts
- * on its own, so the clock, timer and stopwatch widgets move without any
- * background work. The text widgets are refreshed by a once-a-minute alarm.
+ * Where the platform can animate by itself it does: [android.widget.Chronometer]
+ * counts on its own, so the timer and stopwatch widgets move without any
+ * background work. The analog clock is a bitmap drawn by ClockFaceRenderer and
+ * redrawn on the minute, and every text widget is refreshed by the same
+ * once-a-minute alarm.
  */
 object WidgetUpdater {
 

@@ -1,8 +1,10 @@
 # Chronos
 
-A full-screen Android clock: exact alarms with holiday skipping, a world clock, a
-presets-based timer, a lap stopwatch, and a wellness tab for workouts, steps, water,
-sleep and breathing. Kotlin + Jetpack Compose, no backend, no account, no ads.
+A full-screen Android clock: exact alarms with wake-up missions and holiday skipping, a
+world clock, a presets-based timer, a lap stopwatch, nine home-screen widgets, and a Life hub
+that holds Tasks (Today / Week / Month / Year, projects, checklists), Wellness (steps, water,
+sleep, heart rate, breathing, optional Health Connect) and Screen (usage, launches,
+notification counts, per-app limits). Kotlin + Jetpack Compose, no backend, no account, no ads.
 
 - **Package ID:** `com.osintgram.chronos` (permanent)
 - **Min SDK:** 26 · **Target SDK:** 35
@@ -38,12 +40,20 @@ app/src/main/java/com/osintgram/chronos/
 ├── alarm/                   AlarmManager scheduling, ringing service, ring screen
 ├── timer/                   Countdown engine, foreground service, presets
 ├── stopwatch/               Lap stopwatch with persisted start instant
+├── bedtime/                 Bedtime and wake-up alarms, nightstand screen
+├── tasks/                   Task store, four levels, projects, checklists, reminders
 ├── wellness/                Workout, step, water, sleep and breathing records,
-│                            step-counter baseline, optional Health Connect read
+│                            step-counter baseline, optional Health Connect read/write
+├── screentime/              Usage-database reader, notification counting, app limits
+├── keepalive/               Optional foreground service that keeps Chronos running
+├── widget/                  The nine home-screen widgets and their updater
+├── permissions/             Special-access states and deep links
+├── common/                  Shared date helpers
 ├── data/                    Alarm model + store, settings, holidays, backup
 ├── diagnostics/             Rolling log file, .txt/.json/.md/.zip exporter
 ├── updater/                 GitHub Releases update check and in-app install
-└── ui/                      Compose screens, components and theme
+└── ui/                      Compose screens (Life hub: Tasks, Wellness, Screen),
+                             components and theme
 ```
 
 ## Update the public page

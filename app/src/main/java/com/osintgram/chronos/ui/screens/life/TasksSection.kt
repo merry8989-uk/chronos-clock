@@ -41,6 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -669,7 +672,8 @@ private fun MonthGrid(
                                     },
                                     RoundedCornerShape(9.dp),
                                 )
-                                .pressable { if (inMonth) onSelect(day) },
+                                .pressable { if (inMonth) onSelect(day) }
+                                .semantics { role = Role.Button },
                             contentAlignment = Alignment.Center,
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {

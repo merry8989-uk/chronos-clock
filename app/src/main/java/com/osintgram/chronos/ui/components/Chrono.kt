@@ -52,6 +52,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -119,7 +125,12 @@ fun AnimatedSwitch(
                     alpha = 1f,
                 ),
             )
-            .pressable(enabled = enabled, scale = 0.94f) { onCheckedChange(!checked) },
+            .pressable(enabled = enabled, scale = 0.94f) { onCheckedChange(!checked) }
+            // Without this the toggle reads as an unlabelled clickable box.
+            .semantics {
+                role = Role.Switch
+                toggleableState = ToggleableState(checked)
+            },
         contentAlignment = Alignment.CenterStart,
     ) {
         Box(
@@ -171,7 +182,11 @@ fun <T> SegmentedControl(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .pressable(scale = 0.96f) { onSelect(value) },
+                        .pressable(scale = 0.96f) { onSelect(value) }
+                        .semantics {
+                            role = Role.RadioButton
+                            this.selected = value == selected
+                        },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

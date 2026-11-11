@@ -54,6 +54,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -210,12 +215,16 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     Text("Accent colour", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        AccentOptions.forEach { (key, _, color) ->
+                        AccentOptions.forEach { (key, name, color) ->
                             Box(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .background(color, CircleShape)
-                                    .pressable(scale = 0.88f) { Settings.accent.set(key) },
+                                    .pressable(scale = 0.88f) { Settings.accent.set(key) }
+                                    .semantics {
+                                        contentDescription = "Accent colour $name"
+                                        role = Role.RadioButton
+                                    },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (Settings.accent.value == key) {
@@ -365,10 +374,11 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                         )
                         Spacer(Modifier.height(6.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            WidgetPalette.forEach { (_, argb) ->
+                            WidgetPalette.forEach { (name, argb) ->
                                 ColourDot(
                                     argb = argb,
                                     selected = Settings.widgetBgColor.value == argb,
+                                    label = "Background colour $name",
                                     onClick = {
                                         Settings.widgetBgColor.set(argb)
                                         refreshWidgets(context)
@@ -385,10 +395,11 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     )
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        TextPalette.forEach { (_, argb) ->
+                        TextPalette.forEach { (name, argb) ->
                             ColourDot(
                                 argb = argb,
                                 selected = Settings.widgetTextColor.value == argb,
+                                label = "Text colour $name",
                                 onClick = {
                                     Settings.widgetTextColor.set(argb)
                                     refreshWidgets(context)
@@ -1285,6 +1296,10 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                                     com.osintgram.chronos.wellness.WellnessSound.playBell(context)
                                     showBellToneDialog = false
                                 }
+                                .semantics {
+                                    role = Role.RadioButton
+                                    this.selected = Settings.wellnessBellTone.value == tone.id
+                                }
                                 .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -1554,13 +1569,17 @@ private fun refreshWidgets(context: android.content.Context) {
 }
 
 @Composable
-private fun ColourDot(argb: Int, selected: Boolean, onClick: () -> Unit) {
+private fun ColourDot(argb: Int, selected: Boolean, label: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(30.dp)
             .clip(CircleShape)
             .background(Color(argb))
-            .pressable(scale = 0.85f, onClick = onClick),
+            .pressable(scale = 0.85f, onClick = onClick)
+            .semantics {
+                contentDescription = label
+                role = Role.RadioButton
+            },
         contentAlignment = Alignment.Center,
     ) {
         if (selected) {
