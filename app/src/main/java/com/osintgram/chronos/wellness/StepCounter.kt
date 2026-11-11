@@ -21,11 +21,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.coroutines.resume
 
 /** What the Today card needs to show about today's steps. */
 data class StepState(
@@ -104,23 +105,27 @@ object StepCounter {
             val sensor = manager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
                 ?: return@withContext null
 
-            var value: Long? = null
-            val listener = object : SensorEventListener {
-                override fun onSensorChanged(event: SensorEvent) {
-                    if (value == null) value = event.values.firstOrNull()?.toLong()
-                }
+            // Suspend until the sensor answers, instead of polling it every
+            // 50 ms: one registration, one resume, no wake-ups in between.
+            withTimeoutOrNull(timeoutMs) {
+                suspendCancellableCoroutine { continuation ->
+                    val listener = object : SensorEventListener {
+                        override fun onSensorChanged(event: SensorEvent) {
+                            val value = event.values.firstOrNull()?.toLong() ?: return
+                            if (continuation.isActive) {
+                                runCatching { manager.unregisterListener(this) }
+                                continuation.resume(value)
+                            }
+                        }
 
-                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-            }
-            manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
-            try {
-                withTimeoutOrNull(timeoutMs) {
-                    while (value == null) delay(50)
+                        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+                    }
+                    manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
+                    continuation.invokeOnCancellation {
+                        runCatching { manager.unregisterListener(listener) }
+                    }
                 }
-            } finally {
-                runCatching { manager.unregisterListener(listener) }
             }
-            value
         }
 
     /**

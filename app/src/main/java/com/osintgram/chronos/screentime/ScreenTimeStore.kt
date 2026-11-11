@@ -87,7 +87,7 @@ object ScreenTimeStore {
 
     // ---- Helpers -----------------------------------------------------------
 
-    fun todayKey(): String = LocalDate.now().format(ScreenTimeLogic.ISO_DATE)
+    fun todayKey(): String = com.osintgram.chronos.common.Dates.key()
 
     private fun readLimits(): Map<String, Int> = runCatching {
         val raw = prefs?.getString(KEY_LIMITS, null) ?: return emptyMap()

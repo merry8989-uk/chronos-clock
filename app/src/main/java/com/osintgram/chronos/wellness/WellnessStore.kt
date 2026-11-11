@@ -241,10 +241,7 @@ object WellnessStore {
     // ---- Internals ---------------------------------------------------------
 
     private fun dateKeyOf(millis: Long): String =
-        java.time.Instant.ofEpochMilli(millis)
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDate()
-            .format(WellnessLogic.ISO_DATE)
+        com.osintgram.chronos.common.Dates.keyOf(millis)
 
     private fun nextId(): Long = System.currentTimeMillis()
 

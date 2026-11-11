@@ -631,7 +631,12 @@ private fun MonthGrid(
     ) {
         Column(Modifier.padding(10.dp)) {
             Row(Modifier.fillMaxWidth()) {
-                listOf("M", "T", "W", "T", "F", "S", "S").forEach { label ->
+                (1..7).map {
+                    java.time.DayOfWeek.of(it).getDisplayName(
+                        java.time.format.TextStyle.NARROW,
+                        java.util.Locale.ENGLISH,
+                    )
+                }.forEach { label ->
                     Text(
                         text = label,
                         fontSize = 10.sp,

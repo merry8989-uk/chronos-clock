@@ -6,8 +6,6 @@ import androidx.core.content.FileProvider
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -22,6 +20,9 @@ import java.util.zip.ZipOutputStream
  */
 object LogExporter {
 
+    private val STAMP: java.time.format.DateTimeFormatter =
+        java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss", Locale.US)
+
     enum class Format(val ext: String, val mime: String) {
         TXT("txt", "text/plain"),
         MD("md", "text/markdown"),
@@ -31,7 +32,7 @@ object LogExporter {
 
     fun export(context: Context, format: Format, appName: String, version: String): File {
         val raw = DiagnosticsLogger.readAll()
-        val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+        val stamp = java.time.LocalDateTime.now().format(STAMP)
         val dir = File(context.cacheDir, "exports").apply { mkdirs() }
         val out = File(dir, "logs-$stamp.${format.ext}")
         val meta = meta(context, appName, version, stamp, raw)
