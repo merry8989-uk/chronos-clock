@@ -547,8 +547,25 @@ private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectA
                     )
                 }
                 Spacer(Modifier.height(8.dp))
+                if (state.needsManualGrant) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { actions.updateHealthConnect() },
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        ) { Text("Update Health Connect", fontSize = 12.sp) }
+                        OutlinedButton(
+                            onClick = { actions.openSettings() },
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        ) { Text("Open Health Connect", fontSize = 12.sp) }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    OutlinedButton(
+                        onClick = actions.connect,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    ) { Text("Try Connect again", fontSize = 11.sp) }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!state.granted) {
+                    if (!state.granted && !state.needsManualGrant) {
                         OutlinedButton(
                             onClick = { actions.openSettings() },
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
@@ -558,12 +575,18 @@ private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectA
                             onClick = actions.connect,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         ) { Text("Connect", fontSize = 12.sp) }
-                    } else {
+                    } else if (state.granted) {
                         OutlinedButton(
                             onClick = actions.sync,
                             enabled = !state.busy,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         ) { Text("Sync now", fontSize = 12.sp) }
+                        if (!state.hasBackground || !state.hasHistory) {
+                            OutlinedButton(
+                                onClick = actions.requestExtras,
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                            ) { Text("Background access", fontSize = 12.sp) }
+                        }
                         if (state.hasHistory) {
                             OutlinedButton(
                                 onClick = actions.importHistory,

@@ -289,6 +289,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] `StepCounter.readCumulativeOnce` polled the sensor every 50 ms → `suspendCancellableCoroutine`, one registration and one resume
 - [x] Unit tests for the shared date helper
 
+## Shipped in 6.9.2 — permission audit and a Health Connect that explains itself
+
+- [x] Permission audit against every feature: the manifest was already complete for alarms, timers, calendar, sensors, usage, overlay and the two services; the one real gap was **`QUERY_ALL_PACKAGES`**, without which Screen time could only show `com.whatsapp` instead of WhatsApp
+- [x] **Connect asks for fewer permissions first** — only the required read+write set. The optional background/history pair moved to its own "Background access" button, so a fragile system screen has less to fall over
+- [x] The card now checks whether the Health Connect permission screen can even be resolved on this phone. When it cannot, it says so and offers **Update Health Connect** (Play listing) and **Open Health Connect** instead of looking dead
+- [x] Every one of those paths is logged
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

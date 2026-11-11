@@ -278,6 +278,34 @@ object HealthConnectSource {
     }
 
     /** Opens Health Connect's own settings screen. */
+    /**
+     * Whether the Health Connect permission screen exists on this phone.
+     *
+     * On some devices the system component that renders it ("Permission
+     * controller") is missing or crashing, and tapping Connect then does nothing
+     * or closes the app. Resolving the intent first lets the card say that
+     * plainly instead of looking dead.
+     */
+    fun permissionUiAvailable(context: Context): Boolean = runCatching {
+        val contract = PermissionController.createRequestPermissionResultContract()
+        val intent = contract.createIntent(context, requiredPermissions)
+        context.packageManager.resolveActivity(intent, 0) != null
+    }.onFailure {
+        DiagnosticsLogger.log("HealthConnect", "could not resolve permission UI: ${it.message}")
+    }.getOrDefault(true)
+
+    /** Opens the Play listing for a package, falling back to the web page. */
+    fun openPlayListing(context: Context, packageName: String): Boolean {
+        val market = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$packageName"))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val web = Intent(
+            Intent.ACTION_VIEW,
+            android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName"),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return runCatching { context.startActivity(market) }.isSuccess ||
+            runCatching { context.startActivity(web) }.isSuccess
+    }
+
     fun openSettings(context: Context): Boolean = runCatching {
         val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -299,6 +327,8 @@ data class HealthConnectState(
     val message: String,
     val busy: Boolean,
     val importedDays: Int?,
+    /** True when the phone's permission screen is missing, so the manual path is the only one. */
+    val needsManualGrant: Boolean = false,
 )
 
 /** What the Today card can ask Health Connect to do. */
@@ -308,6 +338,10 @@ data class HealthConnectActions(
     val importHistory: () -> Unit,
     /** Opens Health Connect itself, where permissions can be granted by hand. */
     val openSettings: () -> Unit,
+    /** Opens the Health Connect listing in Play, for a phone with a broken module. */
+    val updateHealthConnect: () -> Unit,
+    /** Asks for the optional background and history permissions on their own. */
+    val requestExtras: () -> Unit,
 )
 
 /**
@@ -327,6 +361,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var importedDays by remember { mutableIntStateOf(-1) }
+    var needsManualGrant by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -339,6 +374,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
             "permission result: ${result.size} granted, required met=$granted " +
                 "background=$hasBackground history=$hasHistory",
         )
+        if (granted) needsManualGrant = false
         if (!granted) {
             val missing = HealthConnectSource.requiredPermissions - result
             DiagnosticsLogger.log(
@@ -369,13 +405,25 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
             DiagnosticsLogger.log("HealthConnect", "permission names unavailable; not launching")
             return
         }
+        if (!HealthConnectSource.permissionUiAvailable(context)) {
+            needsManualGrant = true
+            message = "This phone's Health Connect permission screen is missing or broken. " +
+                "Update Health Connect from Play, or allow Chronos inside Health Connect → " +
+                "App permissions."
+            DiagnosticsLogger.log(
+                "HealthConnect",
+                "permission UI not resolvable; offering the manual path",
+            )
+            return
+        }
         DiagnosticsLogger.log(
             "HealthConnect",
-            "connect tapped: requesting ${HealthConnectSource.permissions.size} permission(s) " +
-                "(required ${HealthConnectSource.requiredPermissions.size})",
+            "connect tapped: requesting ${HealthConnectSource.requiredPermissions.size} permission(s)",
         )
+        // Only the required read+write set on the first tap: fewer permissions
+        // means fewer chances for a fragile system screen to fall over.
         try {
-            launcher.launch(HealthConnectSource.permissions)
+            launcher.launch(HealthConnectSource.requiredPermissions)
         } catch (first: Throwable) {
             DiagnosticsLogger.log(
                 "HealthConnect",
@@ -422,6 +470,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
         message = message,
         busy = busy,
         importedDays = importedDays.takeIf { it >= 0 },
+        needsManualGrant = needsManualGrant,
     )
 
     val actions = HealthConnectActions(
@@ -437,6 +486,27 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
                     message = "Synced just now"
                 }
                 busy = false
+            }
+        },
+        updateHealthConnect = {
+            DiagnosticsLogger.log("HealthConnect", "opening the Health Connect Play listing")
+            val opened = HealthConnectSource.openPlayListing(context, "com.google.android.apps.healthdata")
+            message = if (opened) {
+                "Update Health Connect, then come back and tap Connect"
+            } else {
+                "No Play Store on this device — open Health Connect settings instead"
+            }
+        },
+        requestExtras = {
+            DiagnosticsLogger.log("HealthConnect", "asking for background and history on their own")
+            try {
+                launcher.launch(HealthConnectSource.requiredPermissions + HealthConnectSource.optionalPermissions)
+            } catch (error: Throwable) {
+                DiagnosticsLogger.log(
+                    "HealthConnect",
+                    "extra permission launch failed (${error.javaClass.simpleName}: ${error.message})",
+                )
+                message = "Background and history access cannot be requested on this phone"
             }
         },
         openSettings = {
