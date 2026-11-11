@@ -155,130 +155,53 @@ object StepCounter {
         val context = LocalContext.current
         val kind = remember(context, enabled) { if (enabled) sensorKind(context) else SENSOR_NONE }
         val permission = remember(context, enabled) { hasPermission(context) }
-        val usable = remember(kind, permission) { kind != SENSOR_NONE && permission }
-
-        var state by remember {
-            mutableStateOf(
-                StepState(
-                    steps = WellnessStore.day().steps,
-                    available = usable,
-                    sensor = kind,
-                    permissionGranted = permission,
-                ),
-            )
-        }
+        val usable = kind != SENSOR_NONE && permission
 
         LaunchedEffect(usable, kind) {
             DiagnosticsLogger.log(
                 "StepCounter",
                 "card opened: sensor=$kind permission=$permission usable=$usable " +
-                    "storedToday=${WellnessStore.day().steps}",
+                    "storedToday=${WellnessStore.day().steps} trackerRunning=${StepTracker.running}",
             )
             if (!usable) return@LaunchedEffect
-            if (kind != SENSOR_COUNTER) {
-                // The detector has no absolute value; the stored count is the day.
-                state = state.copy(
-                    steps = WellnessStore.day().steps,
-                    available = true,
-                    sensor = kind,
-                    permissionGranted = true,
-                )
-                return@LaunchedEffect
-            }
-            val cumulative = readCumulativeOnce(context, timeoutMs = 5_000)
-            if (cumulative == null) {
-                DiagnosticsLogger.log("StepCounter", "counter gave no reading within 5 s")
-                return@LaunchedEffect
-            }
-            val today = WellnessLogic.todayKey()
-            val bootedToday = bootedSinceMidnight()
-            val stored = WellnessStore.stepBaseline(today)
-            val baseline = WellnessLogic.resolveStepBaseline(cumulative, stored, bootedToday)
-            if (stored == null || cumulative < stored) {
-                WellnessStore.setStepBaseline(baseline, today)
-            }
-            val delta = WellnessLogic.stepDelta(cumulative, baseline)
-            state = StepState(
-                steps = delta,
-                available = true,
-                countedFromNow = WellnessLogic.countedFromNow(stored, bootedToday),
-                sensor = kind,
-                permissionGranted = true,
-            )
-            if (WellnessStore.day(today).steps != delta) WellnessStore.setSteps(delta, today)
-            DiagnosticsLogger.log(
-                "StepCounter",
-                "one-shot: cumulative=$cumulative baseline=$baseline today=$delta",
-            )
-        }
-
-        DisposableEffect(usable, kind) {
-            if (!usable) return@DisposableEffect onDispose { }
-            val manager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-                ?: return@DisposableEffect onDispose { }
-            val sensorType = if (kind == SENSOR_COUNTER) Sensor.TYPE_STEP_COUNTER else Sensor.TYPE_STEP_DETECTOR
-            val sensor = manager.getDefaultSensor(sensorType)
-                ?: return@DisposableEffect onDispose { }
-
-            var lastPersisted = -1
-            var lastLogged = -1
-            var sessionSteps = 0
-
-            val listener = object : SensorEventListener {
-                override fun onSensorChanged(event: SensorEvent) {
+            // Fill the number in before the first step arrives — a still phone
+            // sends no events at all. The tracker keeps it live after that.
+            if (kind == SENSOR_COUNTER && !StepTracker.running) {
+                val cumulative = readCumulativeOnce(context, timeoutMs = 5_000)
+                if (cumulative == null) {
+                    DiagnosticsLogger.log("StepCounter", "counter gave no reading within 5 s")
+                } else {
                     val today = WellnessLogic.todayKey()
-                    val delta: Int
-                    if (kind == SENSOR_COUNTER) {
-                        val cumulative = event.values.firstOrNull()?.toLong() ?: return
-                        val bootedToday = bootedSinceMidnight()
-                        val stored = WellnessStore.stepBaseline(today)
-                        val baseline = WellnessLogic.resolveStepBaseline(cumulative, stored, bootedToday)
-                        if (stored == null || cumulative < stored) {
-                            WellnessStore.setStepBaseline(baseline, today)
-                        }
-                        delta = WellnessLogic.stepDelta(cumulative, baseline)
-                        if (lastLogged < 0 || delta - lastLogged >= 250) {
-                            lastLogged = delta
-                            DiagnosticsLogger.log(
-                                "StepCounter",
-                                "counter cumulative=$cumulative baseline=$baseline today=$delta",
-                            )
-                        }
-                    } else {
-                        // Detector: one event per step, added to what the day holds.
-                        sessionSteps += event.values.firstOrNull()?.toInt()?.coerceAtLeast(1) ?: 1
-                        delta = WellnessStore.day(today).steps + 1
-                        if (sessionSteps % 100 == 0) {
-                            DiagnosticsLogger.log(
-                                "StepCounter",
-                                "detector session=$sessionSteps today=$delta",
-                            )
-                        }
+                    val bootedToday = bootedSinceMidnight()
+                    val stored = WellnessStore.stepBaseline(today)
+                    val baseline = WellnessLogic.resolveStepBaseline(cumulative, stored, bootedToday)
+                    if (stored == null || cumulative < stored) {
+                        WellnessStore.setStepBaseline(baseline, today)
                     }
-                    state = state.copy(steps = delta, available = true, sensor = kind, permissionGranted = true)
-                    if (delta != lastPersisted && (lastPersisted < 0 || delta - lastPersisted >= 5)) {
-                        lastPersisted = delta
-                        if (WellnessStore.day(today).steps != delta) WellnessStore.setSteps(delta, today)
-                    }
+                    val delta = WellnessLogic.stepDelta(cumulative, baseline)
+                    if (WellnessStore.day(today).steps != delta) WellnessStore.setSteps(delta, today)
+                    DiagnosticsLogger.log(
+                        "StepCounter",
+                        "one-shot: cumulative=$cumulative baseline=$baseline today=$delta",
+                    )
                 }
-
-                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
             }
+            StepTracker.start(context)
+        }
 
-            val registered = runCatching {
-                manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
-            }.getOrDefault(false)
-            DiagnosticsLogger.log(
-                "StepCounter",
-                if (registered) "listening on $kind" else "listener registration failed on $kind",
-            )
-
+        DisposableEffect(usable) {
             onDispose {
-                runCatching { manager.unregisterListener(listener) }
-                if (state.steps > 0) WellnessStore.setSteps(state.steps)
-                DiagnosticsLogger.log("StepCounter", "stopped listening, today=${state.steps}")
+                // The background service owns the sensor when it is running.
+                if (!com.osintgram.chronos.data.Settings.keepAlive.value) StepTracker.stop()
             }
         }
-        return state
+
+        return StepState(
+            steps = if (StepTracker.running) StepTracker.steps else WellnessStore.day().steps,
+            available = usable,
+            countedFromNow = StepTracker.countedFromNow,
+            sensor = kind,
+            permissionGranted = permission,
+        )
     }
 }
