@@ -94,6 +94,26 @@ class WellnessSyncWorker(
         // The step counter reports steps since boot, so a baseline recorded
         // near midnight is what makes tomorrow's count start at zero.
         StepCounter.ensureDailyBaseline(context)
+        // A counter can be sampled at any time; the detector cannot, so this is
+        // counter-only. With the background service on, the live tracker is the
+        // source of truth and this is skipped.
+        if (!StepTracker.running && StepCounter.sensorKind(context) == StepCounter.SENSOR_COUNTER) {
+            StepCounter.readCumulativeOnce(context)?.let { cumulative ->
+                val today = WellnessLogic.todayKey()
+                val bootedToday = StepCounter.bootedSinceMidnight()
+                val stored = WellnessStore.stepBaseline(today)
+                val baseline = WellnessLogic.resolveStepBaseline(cumulative, stored, bootedToday)
+                if (stored == null || cumulative < stored) {
+                    WellnessStore.setStepBaseline(baseline, today)
+                }
+                val delta = WellnessLogic.stepDelta(cumulative, baseline)
+                if (WellnessStore.day(today).steps != delta) WellnessStore.setSteps(delta, today)
+                DiagnosticsLogger.log(
+                    "StepCounter",
+                    "worker snapshot cumulative=$cumulative baseline=$baseline today=$delta",
+                )
+            }
+        }
 
         if (!Settings.healthConnectSync.value) return Result.success()
         if (HealthConnectSource.status(context) != HealthConnectSource.Status.Ready) {

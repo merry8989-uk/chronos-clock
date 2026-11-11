@@ -50,6 +50,10 @@ class KeepAliveService : Service() {
         super.onCreate()
         ensureChannel()
         startForegroundCompat()
+        // The whole point of running in the background: the step sensor keeps
+        // reporting while the app is closed. One shared listener, so the Today
+        // card and this service can never double-count.
+        com.osintgram.chronos.wellness.StepTracker.start(this)
         job = scope.launch {
             DiagnosticsLogger.log(
                 "Alive",
@@ -75,6 +79,7 @@ class KeepAliveService : Service() {
     override fun onDestroy() {
         job?.cancel()
         scope.cancel()
+        com.osintgram.chronos.wellness.StepTracker.stop()
         DiagnosticsLogger.log("Alive", "service stopped")
         super.onDestroy()
     }
@@ -92,6 +97,8 @@ class KeepAliveService : Service() {
         DiagnosticsLogger.log(
             "Alive",
             "heartbeat up=${SystemClock.elapsedRealtime() / 60_000}m steps=$steps " +
+                "sensor=${com.osintgram.chronos.wellness.StepTracker.sensor} " +
+                "tracking=${com.osintgram.chronos.wellness.StepTracker.running} " +
                 "hc=${hc.status(this)} limits=$limits " +
                 "battery=${snapshot.batteryPercent}% net=${snapshot.network} " +
                 "mem=${snapshot.memoryAvailableMb}MB",

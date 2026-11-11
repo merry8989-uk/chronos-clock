@@ -296,6 +296,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] The card now checks whether the Health Connect permission screen can even be resolved on this phone. When it cannot, it says so and offers **Update Health Connect** (Play listing) and **Open Health Connect** instead of looking dead
 - [x] Every one of those paths is logged
 
+## Shipped in 6.10.0 — steps that keep counting
+
+- [x] **Bug:** steps were only counted while the Today card was on screen, because that card owned the sensor. The sensor now has one owner, `StepTracker`, shared by the card and the background service — so walking with the app closed counts, and two listeners can never double-count a detector event
+- [x] With **Keep running in background** on, the service holds the sensor and the card only observes it; with it off, the card starts and stops the tracker as before
+- [x] The six-hourly worker also snapshots the counter, for phones where the service is off
+- [x] Every path logs: `card opened: sensor=… permission=… trackerRunning=…`, `listening on counter (shared tracker)`, `worker snapshot …`, `stopped (shared tracker)`
+- [x] 32 new unit tests from a parallel agent: alarm scheduling (`nextTriggerMillis`, repeat days, holiday skip, the 401-day null case), `timeText`/`meridiem`/`repeatSummary`/`dayShort`, and damaged-record handling in both JSON codecs
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
