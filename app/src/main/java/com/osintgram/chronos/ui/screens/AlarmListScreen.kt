@@ -362,7 +362,10 @@ private fun AlarmCard(
             // pointerInput has no semantics, so TalkBack could not activate the card.
             .semantics {
                 role = Role.Button
-                this.onClick(label = "Edit alarm") { onClick() }
+                this.onClick(label = "Edit alarm") {
+                    onClick()
+                    true
+                }
             },
     ) {
         Row(
