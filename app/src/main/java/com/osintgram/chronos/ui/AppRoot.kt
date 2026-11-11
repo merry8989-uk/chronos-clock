@@ -55,6 +55,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.BuildConfig
@@ -163,7 +167,11 @@ fun AppRoot() {
                                 AnalogClock(
                                     modifier = Modifier
                                         .size(38.dp)
-                                        .pressable(scale = 0.9f) { showClock = true },
+                                        .pressable(scale = 0.9f) { showClock = true }
+                                        .semantics {
+                                            contentDescription = "Open live clock"
+                                            role = Role.Button
+                                        },
                                     showSecondHand = Settings.clockSecondHand.value,
                                     smoothSweep = Settings.clockSmooth.value,
                                     rimColor = MaterialTheme.colorScheme.primary,
@@ -176,7 +184,8 @@ fun AppRoot() {
                                 DigitalClockLabel(
                                     modifier = Modifier
                                         .padding(end = 8.dp)
-                                        .pressable(scale = 0.94f) { showClock = true },
+                                        .pressable(scale = 0.94f) { showClock = true }
+                                        .semantics { role = Role.Button },
                                     color = MaterialTheme.colorScheme.onBackground,
                                 )
                             }
@@ -207,7 +216,7 @@ fun AppRoot() {
                             Haptics.tick(context)
                             menuOpen = true
                         }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "More")
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
                         }
                         DropdownMenu(
                             expanded = menuOpen,

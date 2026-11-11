@@ -36,7 +36,7 @@ import com.osintgram.chronos.ui.theme.Motion
 import com.osintgram.chronos.ui.theme.pressable
 
 /**
- * The Life hub: tasks and wellness behind one bottom-bar entry, so the bar
+ * The Life hub: tasks, wellness and screen time behind one bottom-bar entry, so the bar
  * stays at five items while both areas keep their own internal navigation.
  */
 @Composable
@@ -102,7 +102,7 @@ fun LifeScreen() {
     }
 }
 
-/** The two halves of the Life hub. */
+/** The three areas of the Life hub. */
 enum class Area(val label: String) {
     Tasks("Tasks"),
     Wellness("Wellness"),

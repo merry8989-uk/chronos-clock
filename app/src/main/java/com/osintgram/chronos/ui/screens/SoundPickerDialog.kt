@@ -295,7 +295,7 @@ fun SoundPickerDialog(
                                     IconButton(onClick = { play(uri) }) {
                                         Icon(
                                             Icons.Filled.PlayArrow,
-                                            contentDescription = "Preview",
+                                            contentDescription = "Preview recording",
                                         )
                                     }
                                     TextButton(onClick = { selected = uri }) { Text("Use") }

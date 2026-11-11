@@ -304,6 +304,12 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Every path logs: `card opened: sensor=… permission=… trackerRunning=…`, `listening on counter (shared tracker)`, `worker snapshot …`, `stopped (shared tracker)`
 - [x] 32 new unit tests from a parallel agent: alarm scheduling (`nextTriggerMillis`, repeat days, holiday skip, the 401-day null case), `timeText`/`meridiem`/`repeatSummary`/`dayShort`, and damaged-record handling in both JSON codecs
 
+## Shipped in 6.10.1 — accessibility, docs and a smaller log
+
+- [x] Accessibility from a parallel agent: the custom switch announces its role and on/off state, segmented controls announce selection, the alarm card is reachable by TalkBack at all (it was `pointerInput` only), colour-only swatches and mission tiles have descriptions, and several icon descriptions were made specific
+- [x] Docs from a parallel agent: every stale claim corrected against the code (removed sleep tracking, nine widgets with their real names, three Life areas, the screen-time widget, what the background worker really does), plus a "Known device issues" section for the Health Connect permission-controller crash
+- [x] Two comments that lied about the code (the Life hub's "two halves", the widget doc crediting `AnalogClock`) corrected
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
@@ -345,14 +351,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 ## Next — personalisation and accessibility
 
 - [ ] **P1 M** Hindi and regional languages with the Android 13 per-app language picker
-- [ ] **P1 S** Any audio file as an alarm tone, with preview
+- [x] **Done** Any audio file as an alarm tone, with preview
 - [ ] **P1 M** Accessibility pass: TalkBack labels, 200% text, high-contrast theme
 - [ ] **P3 S** Per-alarm colour and icon
 - [ ] **P3 S** Haptic pattern choice
 
 ## Next — wellness depth
 
-- [ ] **P2 M** Write workouts to Health Connect as an exercise session, not just read
+- [x] **Done** Write workouts to Health Connect as an exercise session, not just read
 - [ ] **P3 S** Heart-rate trend across the imported history (needs per-reading storage, not one value a day)
 - [ ] **P2 M** Reminders for water, a walk and bedtime breathing
 - [ ] **P2 S** Body measurements (weight, waist) with a trend line
@@ -372,7 +378,7 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [ ] CI green, `apksigner` reports the release certificate
 - [ ] update installs over the previous version without uninstalling
 - [ ] an alarm rings on a real device with the screen locked
-- [ ] `docs/index.html` lists every new feature in the same release
-- [ ] no placeholder, stub or sample data in the shipped build
+- [x] `docs/index.html` lists every new feature in the same release
+- [x] no placeholder, stub or sample data in the shipped build
 
 Feature requests: [@osintgram_io](https://instagram.com/osintgram_io)

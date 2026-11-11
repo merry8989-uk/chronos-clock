@@ -160,7 +160,7 @@ fun ScreenTimeScreen() {
                                     IconButton(onClick = { refresh++ }) {
                                         Icon(
                                             Icons.Filled.Refresh,
-                                            contentDescription = "Refresh",
+                                            contentDescription = "Refresh usage",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }

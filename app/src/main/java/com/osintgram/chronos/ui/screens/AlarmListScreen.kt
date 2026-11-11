@@ -39,6 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -354,6 +358,11 @@ private fun AlarmCard(
                     onTap = { onClick() },
                     onLongPress = { onLongClick() },
                 )
+            }
+            // pointerInput has no semantics, so TalkBack could not activate the card.
+            .semantics {
+                role = Role.Button
+                this.onClick(label = "Edit alarm") { onClick() }
             },
     ) {
         Row(

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chronos — mission alarms, sleep tracking, world clock, timer and stopwatch</title>
-<meta name="description" content="Chronos is a full-screen Android clock: exact alarms with holiday skipping and volume ramp, a world clock, presets-based timer and a stopwatch with laps." />
+<title>Chronos — mission alarms, world clock, timer, stopwatch, tasks and screen time</title>
+<meta name="description" content="Chronos is a full-screen Android clock: exact alarms with wake-up missions and holiday skipping, a world clock, presets-based timer, a stopwatch with laps, nine home-screen widgets, and a Life hub with tasks, wellness and screen time." />
 <style>
   :root {
     --bg: #0b0e14;
@@ -78,11 +78,11 @@
     <p class="lede">
       A clock that actually wakes you: exact alarms, wake-up missions you have to finish
       before the alarm stops, your own photo behind the ring screen — plus a world clock,
-      timer, lap stopwatch and a wellness tab for workouts, steps, water, sleep and
-      breathing. No ads, no account, no cloud.
+      timer, lap stopwatch, nine home-screen widgets, and a Life hub holding tasks, wellness
+      and screen time. No ads, no account, no cloud.
     </p>
     <p class="meta">
-      Current version <strong id="version">6.9.2</strong> ·
+      Current version <strong id="version">6.10.1</strong> ·
       Package <strong>com.osintgram.chronos</strong> ·
       Requires Android 8.0 (API 26) or newer
     </p>
@@ -200,7 +200,7 @@
     <li><strong>Custom controls</strong> <span>— spring toggles, a sliding segmented control for theme and sound categories, and press-scale feedback with light haptics on every tappable card (honours the Haptic feedback setting).</span></li>
     <li><strong>Ring screen</strong> <span>— the clock pulses, a mission progress bar fills as you complete challenges, and each mission cross-fades into the next.</span></li>
     <li><strong>World clock</strong> <span>— cities carry a day or night tint, and a long-press reorders or removes them.</span></li>
-    <li><strong>Sleep report</strong> <span>— the noise graph and live level meter animate in rather than appearing as static bars.</span></li>
+    <li><strong>Area switchers</strong> <span>— moving between Tasks, Wellness and Screen, and between the five wellness sections, cross-fades the content instead of swapping it.</span></li>
     <li><strong>Tabular figures</strong> <span>— clock digits are monospaced, so a running timer never makes the layout jump.</span></li>
   </ul>
 
@@ -208,11 +208,14 @@
   <h2>Home-screen widgets — nine of them, each with its own name</h2>
   <p class="hint">
     Settings → About → Home-screen widgets offers one-tap pin prompts. You can also long-press an
-    empty spot on the home screen → Widgets → Chronos, where each widget is listed under its own
-    name — <em>Chronos · Analog clock</em>, <em>Chronos · Next alarm</em>, <em>Chronos · Screen
-    time</em> — with a one-line description of what it shows. The clock, timer and
-    stopwatch widgets animate themselves using the platform's own AnalogClock and Chronometer,
-    so they keep ticking with the app closed and no background service running.
+    empty spot on the home screen → Widgets → Chronos, where each of the nine is listed under its
+    own name — <em>Chronos: Analog clock</em>, <em>Chronos: Digital clock</em>, <em>Chronos: Next
+    alarm</em>, <em>Chronos: Alarm list</em>, <em>Chronos: Timer</em>, <em>Chronos: Stopwatch</em>,
+    <em>Chronos: Holidays</em>, <em>Chronos: Timer presets</em>, <em>Chronos: Screen time</em> —
+    with a one-line description of what it shows. The timer and stopwatch widgets count by
+    themselves with the platform's own Chronometer and the digital clock is a TextClock, so they
+    keep running with the app closed and no background service running; the analog face is drawn
+    by Chronos and its hour and minute hands are redrawn once a minute.
   </p>
   <ul>
     <li><strong>Clock (1×1 and up)</strong> <span>— an analog face drawn by Chronos itself, so it matches the app icon: brand rim, 60 minute ticks, hour and minute hands in your chosen colour, on your chosen background. The hands advance every minute.</span></li>
@@ -223,6 +226,7 @@
     <li><strong>Stopwatch (2×1)</strong> <span>— a self-counting stopwatch with Start/Pause and Reset.</span></li>
     <li><strong>Holidays (2×2)</strong> <span>— the next three holidays from the built-in Indian list plus your own dates.</span></li>
     <li><strong>Timer presets (4×1)</strong> <span>— four of your saved presets; one tap starts that timer.</span></li>
+    <li><strong>Screen time (2×1)</strong> <span>— today's total, the most-used app with its time, and the unlock / screen-on / alert counts. Usage is re-read at most every five minutes so the once-a-minute refresh stays cheap, the widget follows the background, text colour and accent from Settings, and without Usage access it says so and opens the app instead of showing zeros.</span></li>
   </ul>
 
   <h2>World clock</h2>
@@ -254,10 +258,11 @@
     <li><strong>Survives process death</strong> <span>— the start instant is persisted, so the count stays correct if the app is backgrounded or restarted.</span></li>
   </ul>
 
-  <h2>Life hub — tasks and wellness</h2>
+  <h2>Life hub — tasks, wellness and screen time</h2>
   <p class="lede">
-    One bottom-bar entry now holds two areas: <strong>Tasks</strong> and <strong>Wellness</strong>.
-    The bar stays at five items and each area keeps its own internal navigation.
+    One bottom-bar entry holds three areas: <strong>Tasks</strong>, <strong>Wellness</strong> and
+    <strong>Screen</strong> (screen time, described further down). The bar stays at five items and
+    each area keeps its own internal navigation.
   </p>
   <ul>
     <li><strong>Today</strong> <span>— today's tasks with a done/total ring, anything overdue from earlier days, and one tap to add a task for today.</span></li>
@@ -280,7 +285,7 @@
   </p>
   <ul>
     <li><strong>Today</strong> <span>— steps against your goal in a progress ring, water in 250 ml and 500 ml taps, sleep in 30-minute steps, and five habits you can tick off.</span></li>
-    <li><strong>Step counter</strong> <span>— reads this phone's own step sensor, live, at the sensor's UI rate while the card is on screen. The counter reports steps since boot, so the day's baseline is resolved honestly: a stored baseline is used as-is; a phone that rebooted after midnight counts everything since boot; otherwise the card says the count started when you opened Chronos. A six-hourly worker records the day's baseline even when the app is never opened, so the next day starts at zero instead of at first launch. −500 and +500 correct it by hand.</span></li>
+    <li><strong>Step counter</strong> <span>— reads this phone's own step sensor, live, at the sensor's UI rate while the card is on screen. The counter reports steps since boot, so the day's baseline is resolved honestly: a stored baseline is used as-is; a phone that rebooted after midnight counts everything since boot; otherwise the card says the count started when you opened Chronos. A six-hourly worker records the day's baseline even when the app is never opened, so the next day starts at zero instead of at first launch. A phone that only exposes the step-detector sensor counts one step per event instead of reading a running total, and the card names which sensor produced the number. −500 and +500 correct it by hand.</span></li>
     <li><strong>Realtime totals</strong> <span>— while the Today card is open and Health Connect is connected, today's steps, water and sleep are re-read every ten seconds, so the number keeps up with the phone instead of waiting for a Sync tap.</span></li>
     <li><strong>Workout</strong> <span>— four routines (Full Body Basics, Mobility &amp; Stretch, Upper Body, Walk &amp; Core) with sets, reps and form cues. A session is written the moment it starts, so switching tabs or closing the app never loses it. Log a set with one tap, add a custom exercise with sets, reps and weight, and the session records its real duration and volume.</span></li>
     <li><strong>Breathe</strong> <span>— four breathing patterns (calm 4–6, box 4-4-4-4, 4–7–8, physiological sigh) drive both the growing circle and the on-screen cue, with a 3, 5, 10, 15 or 20 minute session. The bell that closes a session is one of the bundled tones.</span></li>
@@ -288,7 +293,7 @@
     <li><strong>Learn</strong> <span>— eight yoga pose references drawn in the app and described in words, plus follow-along suggestions that open a search on the service named beside them. No stock photo, video or audio file is bundled or passed off as content the app owns.</span></li>
     <li><strong>Heart rate</strong> <span>— reads this phone's own heart-rate sensor while the card is on screen, with the band (low / normal / elevated / high) and the time of the last reading. The sensor runs for 30 seconds after you tap Measure and then stops. The body-sensor permission is asked for when you tap Allow, never at launch, and the reading is not written to Health Connect.</span></li>
     <li><strong>Health Connect, optional</strong> <span>— connect once and Chronos reads the steps, water and sleep other apps recorded, and writes back the water you log and the workouts you finish. A sync only raises a number, never overwrites a manual entry, and the tab works exactly the same without it. Connecting asks for read and write together; if your Health Connect build does not know the optional background/history permissions, the app retries with read and write only instead of failing.</span></li>
-    <li><strong>Background sync</strong> <span>— with the background read granted, a WorkManager job runs every six hours (only when the battery is not low) and folds today's numbers in while the app is closed. Turn the sync off in Settings and the job is cancelled, not left running.</span></li>
+    <li><strong>Background sync</strong> <span>— with the background read granted, a WorkManager job runs every six hours (only when the battery is not low) and folds today's numbers in while the app is closed. The job stays scheduled whether or not the Health Connect sync is on, because it also records the day's step baseline; with the sync switched off it records the baseline and skips the Health Connect read.</span></li>
     <li><strong>History import</strong> <span>— one tap imports the last 84 days of steps, water and sleep, which needs Health Connect's history permission because it reaches past the default 30-day window. Days you typed by hand are never lowered.</span></li>
     <li><strong>In your backup</strong> <span>— workouts, meditation sessions and daily health records are part of the same JSON export as your alarms and settings, and factory reset clears them.</span></li>
   </ul>
@@ -299,7 +304,7 @@
     first. Everything stays on the phone until you export it.
   </p>
   <ul>
-    <li><strong>Six kinds of entries</strong> <span>— app and activity lifecycle, alarms and timers, wellness and Health Connect, tasks and reminders, the updater, and crashes with their full stack trace.</span></li>
+    <li><strong>One log for the whole app</strong> <span>— app and activity lifecycle, alarms and timers, wellness and Health Connect, tasks and reminders, screen time and the limit watcher, the background service's fifteen-minute heartbeat, the updater, and crashes with their full stack trace.</span></li>
     <li><strong>Platform buffer</strong> <span>— <code>logcat -d</code> is pulled in for this app's own process (Android does not let an app read other apps' logs), for the framework messages the app's own logger never saw. There is a switch for it and a "Capture now" action.</span></li>
     <li><strong>Network</strong> <span>— every request the app makes is logged with the URL, the status code, the byte count and the time it took. There is no analytics SDK and no third-party traffic to log.</span></li>
     <li><strong>Breadcrumbs</strong> <span>— tab switches and the actions that matter (opening Settings, Diagnostics, the alarm editor) are recorded in order, so a crash can be tied to what you were doing.</span></li>
@@ -322,22 +327,56 @@
     <li><strong>Limits</strong> <span>— set a daily limit (15 to 120 minutes) on any app. With the watcher on, a full-screen blocker appears when that app passes its limit, offering "Go home" or "5 more minutes".</span></li>
     <li><strong>What it needs</strong> <span>— <em>Usage access</em> for the numbers, <em>Notification access</em> for the counts, and <em>draw over other apps</em> for the blocker. Each row says which one is missing and opens the right screen; without them the tab shows an explanation, never fake zeros.</span></li>
     <li><strong>Honest limits</strong> <span>— the watcher polls every few seconds, so an app can be used briefly before the blocker appears; and an OEM that kills background services can stop it. The screen says both.</span></li>
-    <li><strong>Background service</strong> <span>— Settings → Keep running in background starts a low-priority foreground service, so step counting, the Health Connect sync and the limit watcher keep working when Chronos is closed. It writes a heartbeat into the log every fifteen minutes, which is how the log shows what happened while the app was not open. Costs one permanent notification; exclude Chronos from battery optimisation as well.</span></li>
+    <li><strong>Background service</strong> <span>— Settings → Diagnostics → Keep running in background starts a low-priority foreground service, so step counting, the Health Connect sync and the limit watcher keep working when Chronos is closed. It writes a heartbeat into the log every fifteen minutes, which is how the log shows what happened while the app was not open. Costs one permanent notification; exclude Chronos from battery optimisation as well.</span></li>
     <li><strong>Home-screen widget</strong> <span>— today's screen time, the most-used app with its time, and the unlock / screen-on / alert counts, on a 2×1 widget. Usage is re-read at most every five minutes so the minute refresh stays cheap, and it follows the widget background, text colour and accent from Settings.</span></li>
   </ul>
+
+  <h2>Known device issues</h2>
+  <div class="card">
+    <h3>"Permission controller" crashes when Health Connect asks for permissions</h3>
+    <p>
+      On some phones the Android system component that draws Health Connect's permission screen —
+      <strong>Permission controller</strong> — crashes when Chronos asks for read and write access,
+      and the app closes with it. Chronos resolves that screen before it asks: when the screen
+      cannot be opened, the Health Connect card says it is missing or broken and offers
+      <strong>Update Health Connect</strong> (the Play listing) and <strong>Open Health
+      Connect</strong> instead of a Connect button that looks dead.
+    </p>
+  </div>
+  <div class="card">
+    <h3>The fix</h3>
+    <p>
+      Update Health Connect from the Play Store first, then try Connect again. If the permission
+      screen still does not open, grant the access by hand: open <strong>Health Connect → App
+      permissions → Chronos</strong> and allow read and write there. The card's <strong>Open Health
+      Connect</strong> button goes straight to that screen, and the next time the Today card is
+      shown the app re-reads what is actually granted.
+    </p>
+  </div>
+  <div class="card">
+    <h3>Chronos keeps working without Health Connect</h3>
+    <p>
+      Health Connect is optional. Steps come from the phone's own step sensor, and water, sleep and
+      habits are entered by hand, so the Wellness tab works with Health Connect never connected —
+      only the sync of what other apps recorded is unavailable. Every step of a connect attempt is
+      written to Diagnostics → logs, so a failure can be read instead of guessed at.
+    </p>
+  </div>
 
   <h2>Settings — every option is wired up</h2>
   <table>
     <tr><th>Section</th><th>Options</th></tr>
     <tr><td>Appearance</td><td>Theme (system / light / dark), six accent colours, text size, 24-hour time, pure-black dark mode, world clock seconds</td></tr>
+    <tr><td>Logo &amp; clock</td><td>Live preview, logo style (analog clock or digital), second hand on/off, smooth sweep</td></tr>
+    <tr><td>Widget style</td><td>Live preview, background (none / half / white / blue / custom colour), text colour palette, time format (12h, 12h + seconds, 24h, 24h + seconds), text size 12–48sp</td></tr>
     <tr><td>Alarms</td><td>Default snooze, snooze limit, vibrate new alarms, gradual volume on new alarms, show countdown, full-screen alarm, alarm volume, holiday skipping master switch, holiday date manager, exact-alarm permission status</td></tr>
     <tr><td>Timer</td><td>Running sounds, end-of-timer sound, end-of-timer vibration, keep screen on, adjust step for − and +, floating bubble (with its permission shortcut)</td></tr>
     <tr><td>Stopwatch</td><td>Running sounds, haptic feedback</td></tr>
     <tr><td>Bedtime mode</td><td>On/off, bedtime time, wake-up time, reminder notification, Do Not Disturb (with its permission shortcut), open the bedtime screen</td></tr>
-    <tr><td>Wellness</td><td>Step goal, water goal, sleep goal, default meditation length, session bell on/off and its tone, Health Connect sync on/off (schedules or cancels the background job)</td></tr>
+    <tr><td>Wellness</td><td>Step goal, water goal, sleep goal, default meditation length, session bell on/off and its tone, Health Connect sync on/off (off keeps the six-hourly job for the step baseline and skips the Health Connect read)</td></tr>
     <tr><td>General</td><td>Keep screen on, confirm before deleting</td></tr>
     <tr><td>Backup &amp; data</td><td>Export everything to a JSON file, restore from one, reset everything to defaults</td></tr>
-    <tr><td>Diagnostics</td><td>Log collection (on by default), platform-log capture switch and "Capture now", log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
+    <tr><td>Diagnostics</td><td>Keep running in background, log collection (on by default), platform-log capture switch and "Capture now", log size and line count, share, export as .txt / .json / .md / .zip, clear</td></tr>
     <tr><td>About</td><td>Version, check for updates and install in-app, Wi-Fi-only updates, home-screen widget guide, source code link</td></tr>
   </table>
 
@@ -363,11 +402,11 @@
     <tr><td>Battery optimisation</td><td>Alarms and the six-hourly health sync surviving Doze</td></tr>
     <tr><td>Notifications</td><td>Alarm ringing, timer finished, task reminders</td></tr>
     <tr><td>Usage access</td><td>Screen time: app usage time, launch counts, screen-on and unlock counts, and the limit watcher's view of the foreground app</td></tr>
-    <tr><td>Query all packages</td><td>Screen time lists other apps by their real name; Android 11+ hides other packages without it, and the list would show <code>com.whatsapp</code> instead of WhatsApp</td></tr>
     <tr><td>All files access</td><td><em>Not used by any feature.</em> Backups go through the system file picker, which needs no broad storage access.</td></tr>
     <tr><td>Modify system settings</td><td><em>Not used by any feature.</em> Chronos keeps its own settings.</td></tr>
     <tr><td>Wi-Fi control</td><td><em>Not used by any feature.</em> The update check only reads the connection type.</td></tr>
     <tr><td>Notification access</td><td>Screen time: counts how many notifications each app posted. The listener never stores a title, text or sender</td></tr>
+    <tr><td>Turn screen on</td><td>Granted at install: the alarm ring screen waking the display</td></tr>
   </table>
 
   <h2>Permissions and why</h2>
@@ -391,6 +430,8 @@
     <tr><td>Full-screen notifications</td><td>Taking over the screen when an alarm rings on Android 14+</td></tr>
     <tr><td>Network state / Wi-Fi state</td><td>Holding an update download until you are on Wi-Fi, if that option is on</td></tr>
     <tr><td>Internet / install packages</td><td>Checking for and installing app updates from inside the app</td></tr>
+    <tr><td>Query all packages</td><td>Screen time lists other apps by their real name and icon. Android 11+ hides other packages without it, so the list would show <code>com.whatsapp</code> instead of WhatsApp</td></tr>
+    <tr><td>Foreground service (special use)</td><td>The two background services: <em>Keep running in background</em> and the screen-time limit watcher, each with its own low-priority notification</td></tr>
   </table>
 
   <h2>What is not in this release</h2>
@@ -401,7 +442,7 @@
       home screen — the live three-hand clock is the in-app logo, the Settings preview, the ring
       screen, and the clock widgets you can pin to the home screen. The icon carries the same clock-face design with the hands at 10:10:30 so the
       mark reads as a clock. A home-screen <em>widget</em> can be live, and that is the honest way
-      to get a ticking clock outside the app; it is on the roadmap rather than half-built.
+      to get a ticking clock outside the app — the nine widgets above are exactly that.
     </p>
   </div>
   <div class="card">
@@ -409,8 +450,8 @@
       Honest scope, so nothing looks bigger than it is. There is no camera-based mission yet —
       QR/barcode, take-a-photo, push-ups, squats and jumping jacks need a camera pipeline that is
       not in this build, so they are absent rather than faked. Sleep tracking was removed in 6.0.0 — the snore recorder and its reports are gone, and bedtime
-      mode replaced it. Still to come: home-screen widgets, multiple simultaneous timers, and translated
-      languages. These are tracked as the next features rather than half-built placeholders.
+      mode replaced it. Still to come: multiple simultaneous timers and translated languages.
+      These are tracked as the next features rather than half-built placeholders.
     </p>
   </div>
 
