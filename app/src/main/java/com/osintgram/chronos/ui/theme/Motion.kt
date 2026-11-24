@@ -32,6 +32,19 @@ object Motion {
     const val MEDIUM = 260
     const val SLOW = 420
 
+    /**
+     * True when the user asked the app to calm down (Settings → Reduce motion).
+     *
+     * Android's own "remove animations" developer setting is not readable from
+     * an app, so the app offers its own switch. When it is on, [duration] returns
+     * zero: transitions still happen, they just stop taking time, which is what
+     * a person who turned animations off expects.
+     */
+    fun reduced(): Boolean = com.osintgram.chronos.data.Settings.reduceMotion.value
+
+    /** A duration that honours the reduce-motion switch. */
+    fun duration(ms: Int): Int = if (reduced()) 0 else ms
+
     val easeOut: Easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
     val easeInOut: Easing = CubicBezierEasing(0.65f, 0f, 0.35f, 1f)
 
