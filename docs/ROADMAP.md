@@ -351,6 +351,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] `WellnessLogic.bmi`, `bmiLabel` and `sleepScore` are pure and covered by six new tests; the score falls back to duration alone when the source has no stage detail, instead of punishing the night for data the phone never had
 - [x] Wellness bar simplified: Today, Sleep, Activity, Body, Mind, Progress — Today becomes a dashboard of four tiles and one quick-add row
 
+## Shipped in 6.14.0 — a design system, not a colour picker
+
+- [x] **Eight named looks** instead of loose accent colours: Chronos Midnight, Obsidian (AMOLED), Aurora, Ocean, Forest, Sunset, Lavender, Minimal. A look fixes its accent *and* its surface tints together, so a choice cannot produce an unreadable app
+- [x] Semantic tokens added: `StatusColors` (success, warning, info with their foregrounds), `Radii` (8/12/16/24 dp) and a `ChronosType` scale with **tabular numerals** for anything numeric
+- [x] Light / Dark / Follow system / AMOLED all still work, and the old accent picker stays as the "custom" path
+- [x] Settings has a Look picker showing each preset's name, character and accent dot, with the selection announced to a screen reader
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

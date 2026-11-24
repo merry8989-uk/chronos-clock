@@ -38,6 +38,8 @@ object Settings {
     // ---- Appearance -------------------------------------------------------
     val themeMode = Setting("theme_mode", "system")        // system | light | dark
     val accent = Setting("accent", "blue")                 // blue | violet | teal | amber | rose | green
+    /** Named look: midnight | obsidian | aurora | ocean | forest | sunset | lavender | minimal | custom. */
+    val themePreset = Setting("theme_preset", "midnight")
     val use24Hour = Setting("use_24_hour", false)
     val amoledBlack = Setting("amoled_black", true)
     val showSeconds = Setting("show_seconds", true)
@@ -113,6 +115,7 @@ object Settings {
 
         themeMode.load(p.getString(themeMode.key, themeMode.default) ?: "system")
         accent.load(p.getString(accent.key, accent.default) ?: "blue")
+        themePreset.load(p.getString(themePreset.key, themePreset.default) ?: "midnight")
         use24Hour.load(p.getBoolean(use24Hour.key, use24Hour.default))
         amoledBlack.load(p.getBoolean(amoledBlack.key, amoledBlack.default))
         showSeconds.load(p.getBoolean(showSeconds.key, showSeconds.default))
@@ -190,6 +193,7 @@ object Settings {
     fun resetAll() {
         themeMode.resetToDefault()
         accent.resetToDefault()
+        themePreset.resetToDefault()
         use24Hour.resetToDefault()
         amoledBlack.resetToDefault()
         showSeconds.resetToDefault()
@@ -245,6 +249,7 @@ object Settings {
     fun snapshot(): Map<String, Any> = mapOf(
         themeMode.key to themeMode.value,
         accent.key to accent.value,
+        themePreset.key to themePreset.value,
         use24Hour.key to use24Hour.value,
         amoledBlack.key to amoledBlack.value,
         showSeconds.key to showSeconds.value,
