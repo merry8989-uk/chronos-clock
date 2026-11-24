@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import com.osintgram.chronos.ui.theme.StatusColors
 import com.osintgram.chronos.ui.theme.Spacing
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -244,8 +245,6 @@ fun Pill(
     }
 }
 
-/** Empty-state placeholder used by every list. */
-@Composable
 /**
  * The state a screen shows while it is reading something. A spinner alone says
  * nothing about what is being waited for, so it takes a line of text.
@@ -281,7 +280,7 @@ fun ErrorState(title: String, detail: String, onRetry: (() -> Unit)? = null, mod
             modifier = Modifier.padding(Spacing.lg),
         ) {
             androidx.compose.material3.Icon(
-                imageVector = androidx.compose.material.icons.Icons.Filled.Warning,
+                imageVector = androidx.compose.material.icons.Icons.Filled.ErrorOutline,
                 contentDescription = null,
                 tint = StatusColors.warning,
                 modifier = Modifier.size(26.dp),
@@ -311,6 +310,8 @@ fun ErrorState(title: String, detail: String, onRetry: (() -> Unit)? = null, mod
     }
 }
 
+/** Empty-state placeholder used by every list. */
+@Composable
 fun EmptyState(title: String, subtitle: String, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
