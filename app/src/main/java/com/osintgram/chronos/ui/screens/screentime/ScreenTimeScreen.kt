@@ -277,7 +277,7 @@ fun ScreenTimeScreen() {
                     if (day.topApps.isEmpty()) {
                         item { WellnessNote("Nothing recorded yet today.") }
                     } else {
-                        items(day.topApps, key = { it.packageName }) { app ->
+                        items(day.topApps, key = { "top:${it.packageName}" }) { app ->
                             UsageCard(app, day.totalForegroundMillis, limits[app.packageName])
                         }
                     }
@@ -288,7 +288,7 @@ fun ScreenTimeScreen() {
                     if (day.apps.isEmpty()) {
                         item { WellnessNote("No app usage recorded yet today.") }
                     } else {
-                        items(day.apps, key = { it.packageName }) { app ->
+                        items(day.apps, key = { "app:${it.packageName}" }) { app ->
                             UsageCard(app, day.totalForegroundMillis, limits[app.packageName])
                         }
                     }
@@ -327,7 +327,7 @@ fun ScreenTimeScreen() {
                         if (counted.isEmpty()) {
                             item { WellnessNote("No notifications counted yet today.") }
                         } else {
-                            items(counted, key = { it.packageName }) { app ->
+                            items(counted, key = { "alert:${it.packageName}" }) { app ->
                                 Surface(
                                     color = MaterialTheme.colorScheme.surface,
                                     shape = RoundedCornerShape(14.dp),
@@ -411,7 +411,7 @@ fun ScreenTimeScreen() {
                     if (limits.isEmpty()) {
                         item { WellnessNote("No limits yet. Tap an app below to set one.") }
                     } else {
-                        items(limits.entries.toList(), key = { it.key }) { entry ->
+                        items(limits.entries.toList(), key = { "limit:${it.key}" }) { entry ->
                             val app = day.apps.firstOrNull { it.packageName == entry.key }
                             Surface(
                                 color = MaterialTheme.colorScheme.surface,
@@ -448,7 +448,12 @@ fun ScreenTimeScreen() {
                         }
                     }
                     item { WellnessLabel("SET A LIMIT") }
-                    items(day.apps.take(12), key = { it.packageName }) { app ->
+                    // Apps that already have a limit are listed above; keeping them
+                    // here would put the same package in the list twice.
+                    items(
+                        day.apps.filter { !limits.containsKey(it.packageName) }.take(12),
+                        key = { "app:${it.packageName}" },
+                    ) { app ->
                         Surface(
                             color = MaterialTheme.colorScheme.surface,
                             shape = RoundedCornerShape(14.dp),

@@ -366,6 +366,14 @@ object HealthConnectSource {
         DiagnosticsLogger.log("HealthConnect", "could not resolve permission UI: ${it.message}")
     }.getOrDefault(true)
 
+    /** Whether Health Connect's own settings screen exists on this phone. */
+    fun settingsUiAvailable(context: Context): Boolean = runCatching {
+        val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+        context.packageManager.resolveActivity(intent, 0) != null
+    }.onFailure {
+        DiagnosticsLogger.log("HealthConnect", "could not resolve settings UI: ${it.message}")
+    }.getOrDefault(false)
+
     /** Opens the Play listing for a package, falling back to the web page. */
     fun openPlayListing(context: Context, packageName: String): Boolean {
         val market = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$packageName"))
@@ -401,6 +409,8 @@ data class HealthConnectState(
     val importedDays: Int?,
     /** True when the phone's permission screen is missing, so the manual path is the only one. */
     val needsManualGrant: Boolean = false,
+    /** False when Health Connect's own settings screen is missing too. */
+    val settingsAvailable: Boolean = true,
 )
 
 /** What the Today card can ask Health Connect to do. */
@@ -434,6 +444,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
     var busy by remember { mutableStateOf(false) }
     var importedDays by remember { mutableIntStateOf(-1) }
     var needsManualGrant by remember { mutableStateOf(false) }
+    val settingsAvailable = remember(context) { HealthConnectSource.settingsUiAvailable(context) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -479,12 +490,18 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
         }
         if (!HealthConnectSource.permissionUiAvailable(context)) {
             needsManualGrant = true
-            message = "This phone's Health Connect permission screen is missing or broken. " +
-                "Update Health Connect from Play, or allow Chronos inside Health Connect → " +
-                "App permissions."
+            message = if (settingsAvailable) {
+                "This phone's Health Connect permission screen is missing or broken. " +
+                    "Update Health Connect from Play, or allow Chronos inside Health Connect → " +
+                    "App permissions."
+            } else {
+                "Health Connect has no permission screen and no settings app on this phone. " +
+                    "Install or update Health Connect from Play, then tap Connect again."
+            }
             DiagnosticsLogger.log(
                 "HealthConnect",
-                "permission UI not resolvable; offering the manual path",
+                "permission UI not resolvable (settings available=$settingsAvailable); " +
+                    "offering the manual path",
             )
             return
         }
@@ -543,6 +560,7 @@ fun rememberHealthConnect(enabled: Boolean = true): Pair<HealthConnectState, Hea
         busy = busy,
         importedDays = importedDays.takeIf { it >= 0 },
         needsManualGrant = needsManualGrant,
+        settingsAvailable = settingsAvailable,
     )
 
     val actions = HealthConnectActions(
