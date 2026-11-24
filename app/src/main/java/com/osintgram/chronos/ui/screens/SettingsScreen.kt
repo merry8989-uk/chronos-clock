@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -211,6 +212,68 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                         selected = Settings.themeMode.value,
                         onSelect = { Settings.themeMode.set(it) },
                     )
+                    Spacer(Modifier.height(16.dp))
+                    Text("Look", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Each look fixes its accent and its surfaces together, so the " +
+                            "result always stays readable.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        com.osintgram.chronos.ui.theme.ChronosPresets.chunked(2).forEach { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                row.forEach { preset ->
+                                    val selected = Settings.themePreset.value == preset.id
+                                    Surface(
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                        } else {
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .pressable(scale = 0.97f) {
+                                                Settings.themePreset.set(preset.id)
+                                            }
+                                            .semantics {
+                                                contentDescription = "Look ${preset.name}, " +
+                                                    if (selected) "selected" else "not selected"
+                                            },
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Box(
+                                                Modifier
+                                                    .size(14.dp)
+                                                    .background(preset.accent, CircleShape),
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = preset.name,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                )
+                                                Text(
+                                                    text = preset.character,
+                                                    fontSize = 10.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                if (row.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
                     Text("Accent colour", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(10.dp))

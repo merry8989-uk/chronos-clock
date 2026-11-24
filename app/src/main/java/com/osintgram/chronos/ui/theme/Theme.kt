@@ -59,13 +59,30 @@ fun ChronosTheme(content: @Composable () -> Unit) {
         "dark" -> true
         else -> isSystemInDarkTheme()
     }
-    val accent = accentColor(Settings.accent.value)
+    // The preset decides the accent and the surface tints together, so a look
+    // cannot be assembled into something unreadable. The legacy accent setting
+    // still wins when the user picked a colour before presets existed.
+    val preset = presetFor(Settings.themePreset.value)
+    val accent = if (Settings.themePreset.value == "custom") {
+        accentColor(Settings.accent.value)
+    } else {
+        preset.accent
+    }
     val base = if (dark) DarkColors else LightColors
+    val amoled = dark && Settings.amoledBlack.value
     val scheme = base.copy(
         primary = accent,
         onPrimary = if (dark) Color(0xFF07101C) else Color.White,
-        background = if (dark && Settings.amoledBlack.value) Color.Black else base.background,
-        surface = if (dark && Settings.amoledBlack.value) Color(0xFF101319) else base.surface,
+        background = when {
+            amoled -> Color.Black
+            dark -> preset.darkBackground
+            else -> preset.lightBackground
+        },
+        surface = when {
+            amoled -> Color(0xFF101319)
+            dark -> preset.darkSurface
+            else -> preset.lightSurface
+        },
     )
 
     val density = LocalDensity.current
