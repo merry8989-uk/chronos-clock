@@ -132,7 +132,7 @@ object WidgetTheme {
      * otherwise the app's ink for that background, otherwise pure black or
      * white — one of which always reads.
      */
-    fun inkOn(surface: Int): Int = readableOn(surface, listOf(userInk(), darkInk, lightInk))
+    fun inkOn(surface: Int): Int = readableOn(listOf(surface), listOf(userInk(), darkInk, lightInk))
 
     /**
      * Caption text: the app's muted token where it reads, otherwise the quietest

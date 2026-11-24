@@ -528,16 +528,16 @@ private fun QuickAddRow(
             QuickAddLine("water") {
                 QuickAddButton("+250 ml", primary = true) { onAddWater(250) }
                 QuickAddButton("+500 ml", primary = true) { onAddWater(500) }
-                QuickAddButton("−250 ml", onRemoveWater)
+                QuickAddButton("−250 ml", onClick = onRemoveWater)
             }
             Spacer(Modifier.height(Spacing.xs))
             QuickAddLine("steps") {
                 QuickAddButton("+500", primary = true, onClick = onAddSteps)
-                QuickAddButton("−500", onRemoveSteps)
+                QuickAddButton("−500", onClick = onRemoveSteps)
             }
             Spacer(Modifier.height(Spacing.xs))
             QuickAddLine("sleep") {
-                QuickAddButton("−30 min", onRemoveSleep)
+                QuickAddButton("−30 min", onClick = onRemoveSleep)
                 QuickAddButton("+30 min", primary = true, onClick = onAddSleep)
             }
         }
