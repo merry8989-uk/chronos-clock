@@ -29,6 +29,14 @@ data class ChronosPreset(
     val amoledFriendly: Boolean = false,
 )
 
+/**
+ * Material You is not a fixed palette: it takes the colours from the phone's
+ * wallpaper. It is offered as a look, and it only exists from Android 12 up —
+ * on older phones the fixed colours below are used rather than pretending the
+ * system palette is available.
+ */
+const val MATERIAL_YOU_ID = "material_you"
+
 val ChronosPresets: List<ChronosPreset> = listOf(
     ChronosPreset(
         id = "midnight", name = "Chronos Midnight", character = "Premium, focused",
@@ -72,6 +80,13 @@ val ChronosPresets: List<ChronosPreset> = listOf(
         accent = Color(0xFF8B7CFF),
         darkBackground = Color(0xFF0D0B14), darkSurface = Color(0xFF1A1726),
         lightBackground = Color(0xFFF6F4FD), lightSurface = Color.White,
+    ),
+    ChronosPreset(
+        id = MATERIAL_YOU_ID, name = "Material You", character = "Follows your wallpaper",
+        // Only used below Android 12; on 12+ the system palette replaces these.
+        accent = Color(0xFF7C9CFF),
+        darkBackground = Color(0xFF0B0E14), darkSurface = Color(0xFF171B23),
+        lightBackground = Color(0xFFF5F6F8), lightSurface = Color.White,
     ),
     ChronosPreset(
         id = "minimal", name = "Minimal", character = "Neutral and restrained",

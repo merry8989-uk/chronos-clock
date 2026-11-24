@@ -1,6 +1,9 @@
 package com.osintgram.chronos.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -8,6 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import com.osintgram.chronos.data.Settings
@@ -70,20 +74,29 @@ fun ChronosTheme(content: @Composable () -> Unit) {
     }
     val base = if (dark) DarkColors else LightColors
     val amoled = dark && Settings.amoledBlack.value
-    val scheme = base.copy(
-        primary = accent,
-        onPrimary = if (dark) Color(0xFF07101C) else Color.White,
-        background = when {
-            amoled -> Color.Black
-            dark -> preset.darkBackground
-            else -> preset.lightBackground
-        },
-        surface = when {
-            amoled -> Color(0xFF101319)
-            dark -> preset.darkSurface
-            else -> preset.lightSurface
-        },
-    )
+    // Material You: the phone's own wallpaper palette, Android 12 and up. The
+    // text scale still applies, so it goes through the same path as a preset.
+    val context = LocalContext.current
+    val systemPalette = Settings.themePreset.value == MATERIAL_YOU_ID &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val scheme = if (systemPalette) {
+        if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else {
+        base.copy(
+            primary = accent,
+            onPrimary = if (dark) Color(0xFF07101C) else Color.White,
+            background = when {
+                amoled -> Color.Black
+                dark -> preset.darkBackground
+                else -> preset.lightBackground
+            },
+            surface = when {
+                amoled -> Color(0xFF101319)
+                dark -> preset.darkSurface
+                else -> preset.lightSurface
+            },
+        )
+    }
 
     val density = LocalDensity.current
     val scale = Settings.textScale.value.coerceIn(0.8f, 1.4f)
@@ -93,10 +106,19 @@ fun ChronosTheme(content: @Composable () -> Unit) {
             fontScale = density.fontScale * scale,
         ),
     ) {
-        MaterialTheme(
-            colorScheme = scheme,
-            typography = Typography(),
-            content = content,
-        )
+        ThemeBody(scheme, content)
     }
+}
+
+/**
+ * Applies a colour scheme with the user's text scale, so the dynamic palette
+ * and the fixed presets go through exactly the same path.
+ */
+@Composable
+private fun ThemeBody(scheme: androidx.compose.material3.ColorScheme, content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = scheme,
+        typography = Typography(),
+        content = content,
+    )
 }
