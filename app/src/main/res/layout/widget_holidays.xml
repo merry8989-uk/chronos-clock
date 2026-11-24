@@ -5,33 +5,33 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/widget_pad">
 
     <TextView
         android:id="@+id/hol_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="HOLIDAYS"
-        android:textColor="#4C8DFF"
+        android:text="@string/widget_header_holidays"
+        android:textColor="@color/widget_accent"
         android:textSize="9sp"
         android:letterSpacing="0.15"
         android:textStyle="bold"
-        android:layout_marginBottom="4dp" />
+        android:layout_marginBottom="@dimen/widget_gap" />
 
     <LinearLayout
         android:id="@+id/hol1_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:paddingTop="@dimen/widget_gap"
+        android:paddingBottom="@dimen/widget_gap">
 
         <TextView
             android:id="@+id/hol1"
-            android:layout_width="60dp"
+            android:layout_width="@dimen/widget_date_column"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="#4C8DFF"
+            android:textColor="@color/widget_accent"
             android:textStyle="bold" />
 
         <TextView
@@ -42,22 +42,23 @@
             android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="#EDEFF3" />
+            android:textColor="@color/widget_ink" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/hol2_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:paddingTop="@dimen/widget_gap"
+        android:paddingBottom="@dimen/widget_gap">
 
         <TextView
             android:id="@+id/hol2"
-            android:layout_width="60dp"
+            android:layout_width="@dimen/widget_date_column"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="#4C8DFF"
+            android:textColor="@color/widget_accent"
             android:textStyle="bold" />
 
         <TextView
@@ -68,22 +69,23 @@
             android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="#EDEFF3" />
+            android:textColor="@color/widget_ink" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/hol3_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:paddingTop="@dimen/widget_gap"
+        android:paddingBottom="@dimen/widget_gap">
 
         <TextView
             android:id="@+id/hol3"
-            android:layout_width="60dp"
+            android:layout_width="@dimen/widget_date_column"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="#4C8DFF"
+            android:textColor="@color/widget_accent"
             android:textStyle="bold" />
 
         <TextView
@@ -94,6 +96,6 @@
             android:textSize="12sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="#EDEFF3" />
+            android:textColor="@color/widget_ink" />
     </LinearLayout>
 </LinearLayout>

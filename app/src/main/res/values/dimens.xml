@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- One spacing scale for every widget: 12 / 8 / 4 / 2. A widget layout uses
+         these and nothing else, so the nine widgets line up with each other. -->
+    <dimen name="widget_pad">12dp</dimen>
+    <dimen name="widget_pad_small">8dp</dimen>
+    <dimen name="widget_gap">4dp</dimen>
+    <dimen name="widget_gap_tiny">2dp</dimen>
+
+    <!-- One corner radius for every widget. A RemoteViews layout cannot carry a
+         corner radius, so the radius lives in the widget background and button
+         shapes; these values are the single source those shapes should read. -->
+    <dimen name="widget_corner_radius">16dp</dimen>
+    <dimen name="widget_corner_radius_small">12dp</dimen>
+
+    <!-- Fixed sizes that used to be per-file literals. -->
+    <dimen name="widget_button_height">34dp</dimen>
+    <dimen name="widget_toggle_size">22dp</dimen>
+    <dimen name="widget_date_column">60dp</dimen>
+</resources>

@@ -2,11 +2,15 @@ package com.osintgram.chronos.ui.screens.screentime
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,9 +21,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.screentime.ScreenTimeLogic
 import com.osintgram.chronos.screentime.WeekUsage
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+
+// ---- Local sizes -----------------------------------------------------------
+// Padding, gaps, radii and type sizes come from Spacing, Radii and ChronosType.
+// The two heights below are plot areas, which those scales do not carry: the
+// hourly chart is the taller of the two because it carries 24 bars.
+
+private val HourlyPlotHeight = 104.dp
+private val WeekPlotHeight = 64.dp
 
 /**
  * Today hour by hour, one bar per hour, the hour we are in picked out.
@@ -29,6 +43,9 @@ import com.osintgram.chronos.screentime.WeekUsage
  * library so the tab stays dependency-free and matches the rest of the app's
  * surfaces, and so an empty hour can be drawn as a faint stub that reads as
  * "nothing here" instead of as a missing bar.
+ *
+ * The current hour is marked twice over — a wash behind its column and the word
+ * "now" under it — so the mark does not depend on telling two shades apart.
  *
  * The caller passes the 24 buckets from [ScreenTimeLogic.hourlyBuckets]; the
  * scaling to the tallest bar is done in [ScreenTimeLogic.barFractions] so the
@@ -45,17 +62,21 @@ internal fun HourlyUsageChart(
     val quietColour = MaterialTheme.colorScheme.primary.copy(alpha = 0.26f)
     val emptyColour = MaterialTheme.colorScheme.surfaceVariant
     val nowWash = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+    val labelColour = MaterialTheme.colorScheme.onSurfaceVariant
+    val slots = maxOf(fractions.size, 1)
 
     Column(modifier = modifier) {
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(104.dp),
+                .height(HourlyPlotHeight),
         ) {
-            val slots = maxOf(fractions.size, 1)
             val slotWidth = size.width / slots
             val barWidth = slotWidth * 0.60f
-            val barRadius = CornerRadius(barWidth * 0.45f, barWidth * 0.45f)
+            // The design system's smallest radius, clamped to half the bar so a
+            // narrow bar cannot come out as a lozenge.
+            val radius = minOf(Radii.sm.toPx(), barWidth / 2f)
+            val barRadius = CornerRadius(radius, radius)
             val usableHeight = size.height * 0.90f
             val stub = 2.dp.toPx()
 
@@ -91,7 +112,26 @@ internal fun HourlyUsageChart(
                 )
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Spacing.xs))
+        // The word under the hour we are in, laid out on the same slots as the
+        // bars above it, so it sits under the right column at any width.
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val slotWidth = maxWidth / slots
+            if (currentHour in 0 until slots) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = slotWidth * currentHour)
+                        .width(slotWidth),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "now",
+                        style = ChronosType.label,
+                        color = barColour,
+                    )
+                }
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -99,8 +139,8 @@ internal fun HourlyUsageChart(
             listOf("12a", "6a", "12p", "6p").forEach { label ->
                 Text(
                     text = label,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = ChronosType.label,
+                    color = labelColour,
                 )
             }
         }
@@ -128,7 +168,7 @@ internal fun WeekTrendChart(
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         week.days.forEachIndexed { index, day ->
             val fraction = fractions.getOrElse(index) { 0f }
@@ -139,10 +179,12 @@ internal fun WeekTrendChart(
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp),
+                        .height(WeekPlotHeight),
                 ) {
                     val stub = 2.dp.toPx()
                     val barWidth = size.width * 0.62f
+                    // Same radius as the hourly bars, clamped to half the bar.
+                    val radius = minOf(Radii.sm.toPx(), barWidth / 2f)
                     val barHeight = if (fraction <= 0f) {
                         stub
                     } else {
@@ -159,14 +201,15 @@ internal fun WeekTrendChart(
                             size.height - barHeight,
                         ),
                         size = Size(barWidth, barHeight),
-                        cornerRadius = CornerRadius(barWidth * 0.45f, barWidth * 0.45f),
+                        cornerRadius = CornerRadius(radius, radius),
                     )
                 }
-                Spacer(Modifier.height(5.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 Text(
                     text = day.letter,
-                    fontSize = 11.sp,
-                    fontWeight = if (day.isToday) FontWeight.Bold else FontWeight.Normal,
+                    style = ChronosType.label.copy(
+                        fontWeight = if (day.isToday) FontWeight.Bold else FontWeight.Normal,
+                    ),
                     color = if (day.isToday) barColour else labelColour,
                 )
             }

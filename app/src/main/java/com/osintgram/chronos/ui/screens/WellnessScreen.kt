@@ -5,7 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -26,13 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.screens.wellness.ActivitySection
 import com.osintgram.chronos.ui.screens.wellness.BodySection
 import com.osintgram.chronos.ui.screens.wellness.LearnSection
@@ -41,9 +40,11 @@ import com.osintgram.chronos.ui.screens.wellness.ProgressSection
 import com.osintgram.chronos.ui.screens.wellness.SleepSection
 import com.osintgram.chronos.ui.screens.wellness.TodaySection
 import com.osintgram.chronos.ui.screens.wellness.WorkoutSection
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
-import com.osintgram.chronos.ui.theme.pressable
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import androidx.compose.ui.platform.LocalContext
 
 /**
@@ -64,6 +65,12 @@ enum class WellnessSection(val label: String, val hidden: Boolean = false) {
 
 /** The six entries the bar shows, in reading order. */
 private val barSections: List<WellnessSection> = WellnessSection.entries.filterNot { it.hidden }
+
+/**
+ * No step of the type scale carries letter spacing, so the tracking the small
+ * upper-case labels use is declared once here instead of at each call site.
+ */
+private val LABEL_TRACKING = 1.sp
 
 /**
  * The Wellness tab. One bottom-bar entry holds the sections behind a segmented
@@ -88,9 +95,9 @@ fun WellnessScreen() {
                     Haptics.tick(context)
                     current = WellnessSection.Today.name
                 },
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.xs),
             ) {
-                Text("Back to Today", fontSize = 12.sp)
+                Text("Back to Today", style = ChronosType.label)
             }
         }
         AnimatedContent(
@@ -125,40 +132,26 @@ fun WellnessScreen() {
     }
 }
 
+/**
+ * The section bar. It is the same [Pill] control as the Life area switcher —
+ * filled and SemiBold when selected — and it scrolls sideways, because six
+ * labels do not fit across a phone without being squeezed.
+ */
 @Composable
 private fun WellnessSectionBar(selected: WellnessSection, onSelect: (WellnessSection) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
         barSections.forEach { entry ->
-            val active = entry == selected
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(
-                        if (active) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
-                    )
-                    .pressable(scale = 0.94f) { onSelect(entry) }
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = entry.label,
-                    fontSize = 12.sp,
-                    fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (active) MaterialTheme.colorScheme.onPrimary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                )
-            }
+            Pill(
+                text = entry.label,
+                selected = entry == selected,
+                onClick = { onSelect(entry) },
+            )
         }
     }
 }
@@ -174,14 +167,13 @@ internal fun MetricBlock(
     Column(modifier = modifier) {
         Text(
             text = value,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
+            style = ChronosType.headline,
             color = if (accent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(Spacing.xs))
         Text(
             text = label,
-            fontSize = 12.sp,
+            style = ChronosType.label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -192,11 +184,10 @@ internal fun MetricBlock(
 internal fun WellnessLabel(text: String) {
     Text(
         text = text,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 1.sp,
+        style = ChronosType.label,
+        letterSpacing = LABEL_TRACKING,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp, top = 14.dp),
+        modifier = Modifier.padding(start = Spacing.xs, bottom = Spacing.xs, top = Spacing.md),
     )
 }
 
@@ -205,10 +196,11 @@ internal fun WellnessLabel(text: String) {
 internal fun WellnessNote(text: String) {
     Text(
         text = text,
-        fontSize = 12.sp,
-        lineHeight = 17.sp,
+        // The label step carries the size; a note is quiet, so it is not set in
+        // the label's medium weight.
+        style = ChronosType.label.copy(fontWeight = FontWeight.Normal),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 6.dp),
+        modifier = Modifier.padding(top = Spacing.xs),
     )
 }
 
@@ -220,22 +212,22 @@ internal fun MetricRow(
     rightValue: String,
     rightLabel: String,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        androidx.compose.material3.Surface(
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Surface(
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(Radii.lg),
             modifier = Modifier.weight(1f),
         ) {
-            Box(Modifier.padding(14.dp)) {
+            Box(Modifier.padding(Spacing.md)) {
                 MetricBlock(leftValue, leftLabel)
             }
         }
-        androidx.compose.material3.Surface(
+        Surface(
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(Radii.lg),
             modifier = Modifier.weight(1f),
         ) {
-            Box(Modifier.padding(14.dp)) {
+            Box(Modifier.padding(Spacing.md)) {
                 MetricBlock(rightValue, rightLabel)
             }
         }
@@ -244,4 +236,4 @@ internal fun MetricRow(
 
 /** Fixed-width spacer used between inline chips. */
 @Composable
-internal fun ChipSpacer() = Spacer(Modifier.width(8.dp))
+internal fun ChipSpacer() = Spacer(Modifier.width(Spacing.sm))

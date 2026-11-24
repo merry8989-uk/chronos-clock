@@ -55,12 +55,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.ui.components.EmptyState
 import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.ProgressLine
 import com.osintgram.chronos.ui.components.RingStat
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
 import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.ui.theme.heroSurfaceBrush
 import com.osintgram.chronos.ui.theme.pressable
@@ -81,6 +84,18 @@ import kotlin.math.roundToInt
 
 /** Where the Quick add card sits in the list below, for the water tile's jump. */
 private const val QUICK_ADD_INDEX = 2
+
+/**
+ * No step of the type scale carries letter spacing, so the tracking the small
+ * upper-case labels use is declared once here instead of at each call site.
+ */
+private val LABEL_TRACKING = 1.sp
+
+/**
+ * The scale has no semibold body step, and a tile figure has to stay small
+ * enough for four of them to sit side by side: body size at semibold.
+ */
+private val TileValueType = ChronosType.body.copy(fontWeight = FontWeight.SemiBold)
 
 /**
  * Today: a dashboard, not a form.
@@ -139,8 +154,13 @@ fun TodaySection(
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         item {
             // The dashboard row. Water has no section of its own, so its tile
@@ -167,7 +187,7 @@ fun TodaySection(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(Radii.lg))
                     .background(MaterialTheme.colorScheme.surface)
                     .background(heroSurfaceBrush()),
             ) {
@@ -185,15 +205,14 @@ fun TodaySection(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = WellnessLogic.formatSteps(shownSteps),
-                                    fontSize = 26.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    style = ChronosType.numeric,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                 )
-                                Spacer(Modifier.height(2.dp))
+                                Spacer(Modifier.height(Spacing.xs))
                                 Text(
                                     text = "of ${WellnessLogic.formatSteps(stepGoal)}",
-                                    fontSize = 11.sp,
+                                    style = ChronosType.label,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -202,9 +221,8 @@ fun TodaySection(
                         Column(Modifier.weight(1f)) {
                             Text(
                                 text = "STEPS TODAY",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.2.sp,
+                                style = ChronosType.label,
+                                letterSpacing = LABEL_TRACKING,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(Modifier.height(Spacing.sm))
@@ -216,16 +234,14 @@ fun TodaySection(
                                     sensorAvailable -> "Sensor — counted from midnight"
                                     else -> "No step sensor — add steps by hand"
                                 },
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp,
+                                style = ChronosType.label,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             if (streak > 0) {
                                 Spacer(Modifier.height(Spacing.sm))
                                 Text(
                                     text = "$streak day streak",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    style = ChronosType.label,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
@@ -238,7 +254,9 @@ fun TodaySection(
         item {
             // One place for every correction on this screen — water, steps and
             // sleep, each in both directions — with the handlers the cards used
-            // to own, so no number needs hunting for its own minus button.
+            // to own, so no number needs hunting for its own minus button. This
+            // is the one action Today offers, so it carries the strongest wash
+            // on the screen and its "add" buttons are the filled ones.
             QuickAddRow(
                 onAddWater = { amount ->
                     Haptics.tick(context)
@@ -271,9 +289,25 @@ fun TodaySection(
             )
         }
 
+        // Nothing logged yet is a real state, not a zero: say what to do about
+        // it. It sits after the Quick add row, so the row keeps its index and
+        // the water tile still scrolls to the right place.
+        if (day.isEmpty && shownSteps <= 0) {
+            item {
+                EmptyState(
+                    title = "Nothing logged yet today",
+                    subtitle = "Use Quick add above to log water, steps or sleep — or connect " +
+                        "Health Connect to have the phone fill this in for you.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.lg),
+                )
+            }
+        }
+
         item { WellnessLabel("HABITS TODAY") }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(WellnessPlans.habits, key = { it.id }) { habit ->
                     Pill(
                         text = if (habit.id in day.habits) "${habit.title} ✓" else habit.title,
@@ -301,18 +335,18 @@ fun TodaySection(
         }
 
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Button(
                     onClick = {
                         Haptics.tick(context)
                         onOpenWorkout()
                     },
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
                 ) {
                     Icon(Icons.Filled.FitnessCenter, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Log a workout", fontSize = 12.sp, maxLines = 1)
+                    Spacer(Modifier.width(Spacing.xs))
+                    Text("Log a workout", style = ChronosType.label, maxLines = 1)
                 }
                 OutlinedButton(
                     onClick = {
@@ -320,9 +354,9 @@ fun TodaySection(
                         onOpenProgress()
                     },
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
                 ) {
-                    Text("How this is counted", fontSize = 12.sp, maxLines = 1)
+                    Text("How this is counted", style = ChronosType.label, maxLines = 1)
                 }
             }
         }
@@ -352,7 +386,7 @@ private fun MetricTiles(
     onHeart: () -> Unit,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         verticalAlignment = Alignment.Top,
     ) {
         MetricTile(
@@ -409,9 +443,9 @@ private fun MetricTile(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radii.md),
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(Radii.md))
             .semantics {
                 contentDescription = buildString {
                     append(label)
@@ -429,7 +463,7 @@ private fun MetricTile(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 10.dp),
+                .padding(horizontal = Spacing.sm, vertical = Spacing.sm),
         ) {
             Icon(
                 icon,
@@ -437,27 +471,26 @@ private fun MetricTile(
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(15.dp),
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.xs))
             Text(
                 text = value,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
+                style = TileValueType,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = label,
-                fontSize = 10.sp,
+                style = ChronosType.label,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
             // A tile without a goal keeps the same height, so the row stays even.
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.xs))
             if (progress != null) {
                 ProgressLine(progress)
             } else {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.xs))
             }
         }
     }
@@ -477,34 +510,35 @@ private fun QuickAddRow(
     onAddSleep: () -> Unit,
     onRemoveSleep: () -> Unit,
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(18.dp),
-        modifier = Modifier.fillMaxWidth(),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radii.lg))
+            .background(MaterialTheme.colorScheme.surface)
+            .background(heroSurfaceBrush(topAlpha = 0.22f)),
     ) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+        Column(Modifier.padding(horizontal = Spacing.md, vertical = Spacing.md)) {
             Text(
                 text = "QUICK ADD",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.sp,
+                style = ChronosType.label,
+                letterSpacing = LABEL_TRACKING,
                 color = MaterialTheme.colorScheme.primary,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.sm))
             QuickAddLine("water") {
-                QuickAddButton("+250 ml") { onAddWater(250) }
-                QuickAddButton("+500 ml") { onAddWater(500) }
-                QuickAddButton("−250 ml", onRemoveWater)
+                QuickAddButton("+250 ml", primary = true) { onAddWater(250) }
+                QuickAddButton("+500 ml", primary = true) { onAddWater(500) }
+                QuickAddButton("−250 ml", onClick = onRemoveWater)
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.xs))
             QuickAddLine("steps") {
-                QuickAddButton("+500", onAddSteps)
-                QuickAddButton("−500", onRemoveSteps)
+                QuickAddButton("+500", primary = true, onClick = onAddSteps)
+                QuickAddButton("−500", onClick = onRemoveSteps)
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.xs))
             QuickAddLine("sleep") {
-                QuickAddButton("−30 min", onRemoveSleep)
-                QuickAddButton("+30 min", onAddSleep)
+                QuickAddButton("−30 min", onClick = onRemoveSleep)
+                QuickAddButton("+30 min", primary = true, onClick = onAddSleep)
             }
         }
     }
@@ -514,12 +548,12 @@ private fun QuickAddRow(
 @Composable
 private fun QuickAddLine(label: String, buttons: @Composable RowScope.() -> Unit) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
-            fontSize = 10.sp,
+            style = ChronosType.label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(34.dp),
         )
@@ -527,14 +561,27 @@ private fun QuickAddLine(label: String, buttons: @Composable RowScope.() -> Unit
     }
 }
 
-/** A single correction button, sized to share its line evenly. */
+/**
+ * A single correction button, sized to share its line evenly. Adding is the
+ * filled one and taking away is the outlined one, so the direction is readable
+ * before the label is.
+ */
 @Composable
-private fun RowScope.QuickAddButton(text: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.weight(1f),
-        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
-    ) { Text(text, fontSize = 11.sp, maxLines = 1) }
+private fun RowScope.QuickAddButton(text: String, primary: Boolean = false, onClick: () -> Unit) {
+    val padding = PaddingValues(horizontal = Spacing.sm, vertical = Spacing.sm)
+    if (primary) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier.weight(1f),
+            contentPadding = padding,
+        ) { Text(text, style = ChronosType.label, maxLines = 1) }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.weight(1f),
+            contentPadding = padding,
+        ) { Text(text, style = ChronosType.label, maxLines = 1) }
+    }
 }
 
 /**
@@ -548,19 +595,18 @@ private fun ExpandableNote(summary: String, detail: String) {
     Column(Modifier.fillMaxWidth()) {
         Text(
             text = summary,
-            fontSize = 12.sp,
-            lineHeight = 17.sp,
+            style = ChronosType.label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp, start = 4.dp),
+            modifier = Modifier.padding(top = Spacing.xs, start = Spacing.xs),
         )
         if (open) {
             WellnessNote(detail)
         }
         TextButton(
             onClick = { open = !open },
-            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+            contentPadding = PaddingValues(horizontal = Spacing.xs, vertical = Spacing.xs),
         ) {
-            Text(if (open) "Less" else "More", fontSize = 12.sp)
+            Text(if (open) "Less" else "More", style = ChronosType.label)
         }
     }
 }
@@ -596,10 +642,10 @@ private fun HeartRateCard(day: DayLog) {
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(Radii.lg),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Filled.Favorite,
@@ -607,12 +653,11 @@ private fun HeartRateCard(day: DayLog) {
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Spacing.sm))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = if (bpm > 0) "$bpm bpm" else "No reading yet",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = ChronosType.title,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
@@ -623,30 +668,29 @@ private fun HeartRateCard(day: DayLog) {
                             bpm > 0 -> "${WellnessLogic.heartRateBand(bpm)} · ${timeLabel(measuredAt)}"
                             else -> "Tap Measure and hold still"
                         },
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
             if (hasSensor) {
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(Spacing.sm))
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     when {
                         !granted -> Button(
                             onClick = {
                                 Haptics.tick(context)
                                 permissionLauncher.launch(android.Manifest.permission.BODY_SENSORS)
                             },
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) { Text("Allow", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.sm),
+                        ) { Text("Allow", style = ChronosType.label) }
                         else -> OutlinedButton(
                             onClick = {
                                 Haptics.tick(context)
                                 measuring = !measuring
                             },
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) { Text(if (measuring) "Stop" else "Measure", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.sm),
+                        ) { Text(if (measuring) "Stop" else "Measure", style = ChronosType.label) }
                     }
                 }
             }
@@ -671,10 +715,10 @@ private fun timeLabel(millis: Long): String {
 private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectActions) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(Radii.lg),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Filled.Sync,
@@ -682,7 +726,7 @@ private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectA
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Spacing.sm))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = when (state.status) {
@@ -691,8 +735,7 @@ private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectA
                             HealthConnectSource.Status.UpdateRequired -> "Health Connect needs an update"
                             HealthConnectSource.Status.Unavailable -> "Health Connect not available"
                         },
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = ChronosType.body,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
@@ -704,74 +747,73 @@ private fun HealthConnectCard(state: HealthConnectState, actions: HealthConnectA
                                 else -> "Allow read access to steps, water and sleep."
                             }
                         },
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
             if (state.status == HealthConnectSource.Status.Ready) {
                 if (state.granted) {
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(Spacing.xs))
                     Text(
                         text = buildString {
                             append(if (state.hasBackground) "Background sync on" else "Background sync off")
                             append(" · ")
                             append(if (state.hasHistory) "history read on" else "history read off")
                         },
-                        fontSize = 11.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Spacing.sm))
                 if (state.needsManualGrant) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Button(
                             onClick = { actions.updateHealthConnect() },
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                        ) { Text("Update Health Connect", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                        ) { Text("Update Health Connect", style = ChronosType.label) }
                         if (state.settingsAvailable) {
                             OutlinedButton(
                                 onClick = { actions.openSettings() },
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            ) { Text("Open Health Connect", fontSize = 12.sp) }
+                                contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                            ) { Text("Open Health Connect", style = ChronosType.label) }
                         }
                     }
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(Spacing.xs))
                     OutlinedButton(
                         onClick = actions.connect,
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    ) { Text("Try Connect again", fontSize = 11.sp) }
+                        contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.xs),
+                    ) { Text("Try Connect again", style = ChronosType.label) }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     if (!state.granted && !state.needsManualGrant) {
                         OutlinedButton(
                             onClick = { actions.openSettings() },
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                        ) { Text("Open Health Connect", fontSize = 12.sp) }
-                        Spacer(Modifier.width(8.dp))
+                            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                        ) { Text("Open Health Connect", style = ChronosType.label) }
+                        Spacer(Modifier.width(Spacing.sm))
                         Button(
                             onClick = actions.connect,
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) { Text("Connect", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.sm),
+                        ) { Text("Connect", style = ChronosType.label) }
                     } else if (state.granted) {
                         OutlinedButton(
                             onClick = actions.sync,
                             enabled = !state.busy,
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        ) { Text("Sync now", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.sm),
+                        ) { Text("Sync now", style = ChronosType.label) }
                         if (!state.hasBackground || !state.hasHistory) {
                             OutlinedButton(
                                 onClick = actions.requestExtras,
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            ) { Text("Background access", fontSize = 12.sp) }
+                                contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                            ) { Text("Background access", style = ChronosType.label) }
                         }
                         if (state.hasHistory) {
                             OutlinedButton(
                                 onClick = actions.importHistory,
                                 enabled = !state.busy,
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                            ) { Text("Import 84 days", fontSize = 12.sp) }
+                                contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                            ) { Text("Import 84 days", style = ChronosType.label) }
                         }
                     }
                 }

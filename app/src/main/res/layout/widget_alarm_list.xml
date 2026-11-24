@@ -5,18 +5,18 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/widget_pad">
 
     <TextView
         android:id="@+id/list_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ALARMS"
-        android:textColor="#4C8DFF"
+        android:text="@string/widget_header_alarms"
+        android:textColor="@color/widget_accent"
         android:textSize="9sp"
         android:letterSpacing="0.15"
         android:textStyle="bold"
-        android:layout_marginBottom="4dp" />
+        android:layout_marginBottom="@dimen/widget_gap" />
 
     <LinearLayout
         android:id="@+id/row1"
@@ -24,15 +24,15 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:paddingTop="@dimen/widget_gap"
+        android:paddingBottom="@dimen/widget_gap">
 
         <TextView
             android:id="@+id/row1_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="17sp"
-            android:textColor="#EDEFF3"
+            android:textColor="@color/widget_ink"
             android:textStyle="bold" />
 
         <TextView
@@ -40,35 +40,48 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/widget_pad_small"
             android:textSize="11sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="#9AA3B2" />
+            android:textColor="@color/widget_ink_muted" />
+
+        <!-- On or Off in words, so the state is not the dot's colour alone. -->
+        <TextView
+            android:id="@+id/row1_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/widget_pad_small"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:text="@string/widget_state_off"
+            android:textColor="@color/widget_ink_muted" />
 
         <ImageView
             android:id="@+id/row1_toggle"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:contentDescription="Toggle alarm"
-            android:padding="4dp"
+            android:layout_width="@dimen/widget_toggle_size"
+            android:layout_height="@dimen/widget_toggle_size"
+            android:layout_marginStart="@dimen/widget_gap"
+            android:contentDescription="@string/widget_cd_alarm_on"
+            android:padding="@dimen/widget_gap"
             android:src="@drawable/widget_toggle_on" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/row2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:paddingTop="@dimen/widget_gap"
+        android:paddingBottom="@dimen/widget_gap">
 
         <TextView
             android:id="@+id/row2_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="17sp"
-            android:textColor="#EDEFF3"
+            android:textColor="@color/widget_ink"
             android:textStyle="bold" />
 
         <TextView
@@ -76,35 +89,48 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/widget_pad_small"
             android:textSize="11sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="#9AA3B2" />
+            android:textColor="@color/widget_ink_muted" />
+
+        <!-- On or Off in words, so the state is not the dot's colour alone. -->
+        <TextView
+            android:id="@+id/row2_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/widget_pad_small"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:text="@string/widget_state_off"
+            android:textColor="@color/widget_ink_muted" />
 
         <ImageView
             android:id="@+id/row2_toggle"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:contentDescription="Toggle alarm"
-            android:padding="4dp"
+            android:layout_width="@dimen/widget_toggle_size"
+            android:layout_height="@dimen/widget_toggle_size"
+            android:layout_marginStart="@dimen/widget_gap"
+            android:contentDescription="@string/widget_cd_alarm_on"
+            android:padding="@dimen/widget_gap"
             android:src="@drawable/widget_toggle_on" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/row3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:paddingTop="@dimen/widget_gap"
+        android:paddingBottom="@dimen/widget_gap">
 
         <TextView
             android:id="@+id/row3_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="17sp"
-            android:textColor="#EDEFF3"
+            android:textColor="@color/widget_ink"
             android:textStyle="bold" />
 
         <TextView
@@ -112,18 +138,30 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/widget_pad_small"
             android:textSize="11sp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="#9AA3B2" />
+            android:textColor="@color/widget_ink_muted" />
+
+        <!-- On or Off in words, so the state is not the dot's colour alone. -->
+        <TextView
+            android:id="@+id/row3_state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/widget_pad_small"
+            android:textSize="9sp"
+            android:maxLines="1"
+            android:text="@string/widget_state_off"
+            android:textColor="@color/widget_ink_muted" />
 
         <ImageView
             android:id="@+id/row3_toggle"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
-            android:contentDescription="Toggle alarm"
-            android:padding="4dp"
+            android:layout_width="@dimen/widget_toggle_size"
+            android:layout_height="@dimen/widget_toggle_size"
+            android:layout_marginStart="@dimen/widget_gap"
+            android:contentDescription="@string/widget_cd_alarm_on"
+            android:padding="@dimen/widget_gap"
             android:src="@drawable/widget_toggle_on" />
     </LinearLayout>
 </LinearLayout>

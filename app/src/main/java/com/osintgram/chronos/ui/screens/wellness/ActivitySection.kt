@@ -41,12 +41,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.ui.components.EmptyState
+import com.osintgram.chronos.ui.components.LoadingState
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.wellness.ActivitySession
 import com.osintgram.chronos.wellness.HealthConnectSource
 import com.osintgram.chronos.wellness.WellnessStore
@@ -55,6 +58,12 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+/**
+ * The height a read state occupies while Health Connect is being read, so the
+ * spinner sits where the numbers will appear instead of shifting the list.
+ */
+private val LoadingBlockHeight = 96.dp
 
 /**
  * Activity that other apps already recorded.
@@ -87,12 +96,17 @@ fun ActivitySection() {
     }
 
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         item { WellnessLabel("TODAY, FROM YOUR PHONE") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 ActivityTile(
                     icon = Icons.Filled.DirectionsWalk,
                     value = distanceMeters?.let { formatDistance(it) } ?: "—",
@@ -112,14 +126,13 @@ fun ActivitySection() {
             item {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(Radii.lg),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(Modifier.padding(16.dp)) {
+                    Column(Modifier.padding(Spacing.lg)) {
                         Text(
                             text = "Health Connect is not connected",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            style = ChronosType.title,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         WellnessNote(
@@ -133,11 +146,32 @@ fun ActivitySection() {
         }
 
         item { WellnessLabel("RECORDED ACTIVITY") }
-        if (sessions.isEmpty()) {
+        // The same busy flag the Sync button sets, so the read state is the one
+        // the screen already had rather than a second, competing one.
+        if (busy) {
             item {
-                WellnessNote(
-                    if (granted) "No workout recorded by another app in the last week."
-                    else "Nothing to show yet.",
+                LoadingState(
+                    label = "Reading Health Connect…",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(LoadingBlockHeight),
+                )
+            }
+        }
+        if (sessions.isEmpty() && !busy) {
+            item {
+                EmptyState(
+                    title = "No workouts recorded yet",
+                    subtitle = if (granted) {
+                        "No workout recorded by another app in the last week. Sync from Health " +
+                            "Connect below to pull in what your phone or watch already saved."
+                    } else {
+                        "Nothing to show yet — connect Health Connect on the Today card first, " +
+                            "then sync from the button below."
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.md),
                 )
             }
         } else {
@@ -145,44 +179,45 @@ fun ActivitySection() {
         }
 
         item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(
-                    onClick = {
-                        Haptics.tick(context)
-                        scope.launch {
-                            busy = true
-                            val read = HealthConnectSource.readActivities(context)
-                            WellnessStore.mergeActivities(read)
-                            refresh++
-                            message = when {
-                                !granted -> "Connect Health Connect first"
-                                read.isEmpty() -> "Nothing new from Health Connect"
-                                else -> "${read.size} session(s) synced"
-                            }
-                            busy = false
+            // The one action on this screen: a full-width, filled Sync button,
+            // because everything else here is read-only.
+            Button(
+                onClick = {
+                    Haptics.tick(context)
+                    scope.launch {
+                        busy = true
+                        val read = HealthConnectSource.readActivities(context)
+                        WellnessStore.mergeActivities(read)
+                        refresh++
+                        message = when {
+                            !granted -> "Connect Health Connect first"
+                            read.isEmpty() -> "Nothing new from Health Connect"
+                            else -> "${read.size} session(s) synced"
                         }
-                    },
-                    enabled = !busy,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Sync from Health Connect", fontSize = 12.sp)
-                }
+                        busy = false
+                    }
+                },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
+            ) {
+                Icon(
+                    Icons.Filled.Sync,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(Spacing.sm))
+                Text("Sync from Health Connect", style = ChronosType.label)
             }
             if (message.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 Text(
                     text = message,
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.xs))
             WellnessNote(
                 "These sessions are read from Health Connect and stored with the rest of your " +
                     "wellness data, so the backup file carries them too. Chronos never writes a " +
@@ -201,26 +236,25 @@ private fun ActivityTile(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Radii.lg),
         modifier = modifier,
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.padding(Spacing.md)) {
             Icon(
                 icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp),
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.sm))
             Text(
                 text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
+                style = ChronosType.numeric,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = label,
-                fontSize = 11.sp,
+                style = ChronosType.label,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -231,11 +265,11 @@ private fun ActivityTile(
 private fun ActivityRow(session: ActivitySession) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radii.md),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -251,23 +285,22 @@ private fun ActivityRow(session: ActivitySession) {
                     modifier = Modifier.size(18.dp),
                 )
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
                 Text(
                     text = session.label,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    style = ChronosType.body,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "${whenLabel(session.startAt)} · ${session.minutes} min",
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = session.source,
-                fontSize = 10.sp,
+                style = ChronosType.label,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

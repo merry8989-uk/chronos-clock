@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -26,18 +27,26 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.ui.components.BarChart
+import com.osintgram.chronos.ui.components.EmptyState
+import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.StatTile
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.wellness.DayLog
 import com.osintgram.chronos.wellness.WellnessLogic
 import com.osintgram.chronos.wellness.WellnessStore
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
+/**
+ * The height presets offered for BMI, in centimetres.
+ */
+private val HEIGHT_PRESETS_CM = listOf(155, 165, 175, 185)
 
 /**
  * The body side of the tab: weight, BMI, oxygen and resting heart rate.
@@ -57,10 +66,10 @@ import java.time.format.DateTimeFormatter
  * kind of number this app refuses to print. The live heart rate reading is real
  * and is shown as read.
  *
- * The weight stepper and the height presets are therefore not drawn: a control
- * with no store behind it would take a tap and silently discard it. The two
- * lines marked below are the whole change needed once the store grows those
- * fields.
+ * The weight stepper and the height presets are drawn, because this build does
+ * have somewhere to put the answer: `WellnessStore.setWeightKg` writes
+ * `DayLog.weightKg` and `WellnessStore.setHeightCm` writes the single height the
+ * body keeps, so a tap on either is stored rather than silently discarded.
  */
 @Composable
 fun BodySection() {
@@ -72,65 +81,73 @@ fun BodySection() {
     val weighedDays = days.mapNotNull { day -> weightOf(day)?.let { day.date to it } }
 
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         item { WellnessLabel("WEIGHT") }
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
                     Text(
                         text = weightKg?.let { formatKg(it) } ?: DASH,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = ChronosType.numeric,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(Spacing.xs))
                     Text(
                         text = "current weight",
-                        fontSize = 12.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.height(Spacing.md))
+                    // The weight stepper is the one action this section offers,
+                    // so adding is the filled button and taking away is the
+                    // outlined one; the height presets below are plain pills.
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         OutlinedButton(
                             onClick = {
                                 val next = ((weightKg ?: 0.0) - 0.5).coerceAtLeast(0.0)
                                 if (next > 0.0) WellnessStore.setWeightKg(next)
                                 refresh++
                             },
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        ) { Text("-0.5 kg", fontSize = 12.sp) }
-                        OutlinedButton(
+                            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                        ) { Text("-0.5 kg", style = ChronosType.label) }
+                        Button(
                             onClick = {
                                 val base = weightKg ?: 0.0
                                 WellnessStore.setWeightKg(base + 0.5)
                                 refresh++
                             },
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        ) { Text("+0.5 kg", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
+                        ) { Text("+0.5 kg", style = ChronosType.label) }
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Spacing.md))
                     Text(
                         text = "Height, for BMI",
-                        fontSize = 12.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(6.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(155, 165, 175, 185).forEach { cm ->
-                            OutlinedButton(
+                    Spacer(Modifier.height(Spacing.sm))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        HEIGHT_PRESETS_CM.forEach { cm ->
+                            Pill(
+                                text = "$cm cm",
+                                selected = heightCm == cm.toDouble(),
                                 onClick = {
                                     WellnessStore.setHeightCm(cm.toDouble())
                                     refresh++
                                 },
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            ) { Text("$cm cm", fontSize = 11.sp) }
+                            )
                         }
                     }
                     WellnessNote(
@@ -141,28 +158,42 @@ fun BodySection() {
             }
         }
 
+        // Nothing weighed yet is a real state: say what fills it in rather than
+        // letting three em dashes stand there unexplained.
+        if (weightKg == null) {
+            item {
+                EmptyState(
+                    title = "No weight logged yet",
+                    subtitle = "Use the stepper above to add half a kilo at a time, and pick a " +
+                        "height. BMI fills in as soon as both are there.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.md),
+                )
+            }
+        }
+
         item { WellnessLabel("BMI") }
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         val bmi = WellnessLogic.bmi(weightKg ?: 0.0, heightCm)
                         Text(
                             text = bmi?.let {
                                 String.format(java.util.Locale.US, "%.1f", it)
                             } ?: DASH,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = ChronosType.numeric,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(Spacing.sm))
                         Text(
                             text = bmi?.let { WellnessLogic.bmiLabel(it) } ?: "add weight and height",
-                            fontSize = 13.sp,
+                            style = ChronosType.body,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -182,7 +213,7 @@ fun BodySection() {
 
         item { WellnessLabel("OXYGEN AND RESTING RATE") }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 StatTile(
                     label = "resting heart rate",
                     value = restingRate(today)?.let { "$it bpm" } ?: DASH,
@@ -206,10 +237,10 @@ fun BodySection() {
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Filled.Favorite,
@@ -217,26 +248,24 @@ fun BodySection() {
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp),
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(Spacing.sm))
                         Text(
                             text = "Latest reading",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            style = ChronosType.body,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
                             text = if (today.heartRateBpm > 0) "${today.heartRateBpm} bpm" else DASH,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = ChronosType.title,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     if (today.heartRateBpm > 0) {
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(Spacing.xs))
                         Text(
                             text = WellnessLogic.heartRateBand(today.heartRateBpm),
-                            fontSize = 12.sp,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -255,10 +284,10 @@ fun BodySection() {
             item {
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(Radii.lg),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(Modifier.padding(16.dp)) {
+                    Column(Modifier.padding(Spacing.lg)) {
                         BarChart(
                             values = weighedDays.map { it.second.toFloat() },
                             labels = weighedDays.map { dayLetter(it.first) },
