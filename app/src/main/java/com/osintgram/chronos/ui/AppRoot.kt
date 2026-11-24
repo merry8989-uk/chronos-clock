@@ -243,19 +243,8 @@ fun AppRoot() {
                         scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
                     ),
                     actions = {
-                        if (tabIndex == 0) {
-                            IconButton(
-                                modifier = Modifier.size(MinTouchTarget),
-                                onClick = {
-                                    Haptics.tap(context)
-                                    editingId = -1L
-                                    showEditor = true
-                                    Breadcrumbs.action("open", "alarm_editor")
-                                },
-                            ) {
-                                Icon(Icons.Filled.Add, contentDescription = "Add alarm")
-                            }
-                        }
+                        // No add button here: the alarm list has its own action,
+                        // and two of them on one screen is one too many.
                         IconButton(
                             modifier = Modifier.size(MinTouchTarget),
                             onClick = {
