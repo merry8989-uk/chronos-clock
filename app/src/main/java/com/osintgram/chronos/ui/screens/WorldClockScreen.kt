@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,12 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.data.WorldClockStore
 import com.osintgram.chronos.ui.components.EmptyState
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -91,14 +93,20 @@ fun WorldClockScreen(modifier: Modifier = Modifier) {
             Box(Modifier.weight(1f)) {
                 EmptyState(
                     title = "No cities yet",
-                    subtitle = "Add the cities you care about to see their time at a glance.",
+                    subtitle = "Tap Add city below and search for a city, " +
+                        "or tap Use my location to add the one you are in.",
                 )
             }
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(
+                    start = Spacing.md,
+                    end = Spacing.md,
+                    top = Spacing.sm,
+                    bottom = Spacing.sm,
+                ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 items(zones, key = { it }) { zoneId ->
                     CityCard(
@@ -113,19 +121,32 @@ fun WorldClockScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        // ---- One dominant action, the rest quiet ---------------------------
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { showPicker = true }) {
+            Button(
+                onClick = { showPicker = true },
+                shape = RoundedCornerShape(Radii.md),
+                contentPadding = PaddingValues(
+                    horizontal = Spacing.lg,
+                    vertical = Spacing.md,
+                ),
+                modifier = Modifier.weight(1f),
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = null)
-                Text("  Add city")
+                Spacer(Modifier.width(Spacing.sm))
+                Text("Add city", style = ChronosType.title)
             }
             TextButton(onClick = {
                 WorldClockStore.add(TimeZone.getDefault().id)
             }) {
                 Icon(Icons.Filled.MyLocation, contentDescription = null)
-                Text("  Use my location")
+                Text("  Use my location", style = ChronosType.label)
             }
         }
     }
@@ -135,8 +156,8 @@ fun WorldClockScreen(modifier: Modifier = Modifier) {
         val total = WorldClockStore.all().size
         AlertDialog(
             onDismissRequest = { menuZone = null },
-            title = { Text(zone.split('/').last().replace('_', ' ')) },
-            text = { Text("Reorder or remove this city.") },
+            title = { Text(zone.split('/').last().replace('_', ' '), style = ChronosType.title) },
+            text = { Text("Reorder or remove this city.", style = ChronosType.body) },
             confirmButton = {
                 TextButton(
                     enabled = index in 0 until total - 1,
@@ -212,10 +233,11 @@ private fun CityCard(
         (absSeconds % 3600) / 60,
     )
     val dayDiff = there.toLocalDate().toEpochDay() - local.toLocalDate().toEpochDay()
-    val dayText = when {
-        dayDiff > 0 -> " · tomorrow"
-        dayDiff < 0 -> " · yesterday"
-        else -> ""
+    // The day offset is spelled out, so "+1 day" never relies on a tint to read.
+    val dayLabel = when {
+        dayDiff > 0 -> if (dayDiff == 1L) "+1 day" else "+$dayDiff days"
+        dayDiff < 0 -> if (dayDiff == -1L) "−1 day" else "−${-dayDiff} days"
+        else -> null
     }
 
     // A night tint, so a glance across the list reads as day or night there.
@@ -225,7 +247,7 @@ private fun CityCard(
 
     Surface(
         color = tint,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(Radii.lg),
         modifier = Modifier
             .fillMaxWidth()
             .pointerInput(zoneId) {
@@ -233,36 +255,48 @@ private fun CityCard(
             },
     ) {
         Row(
-            modifier = Modifier.padding(start = 18.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
+            modifier = Modifier.padding(
+                start = Spacing.lg,
+                end = Spacing.xs,
+                top = Spacing.md,
+                bottom = Spacing.md,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = zoneId.split('/').last().replace('_', ' '),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = ChronosType.title,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                Spacer(Modifier.height(Spacing.xs))
                 Text(
-                    text = "$dateText$dayText · GMT$diffText from you",
-                    fontSize = 12.sp,
+                    text = "$dateText · GMT$diffText from you",
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (dayLabel != null) {
+                    Spacer(Modifier.height(Spacing.xs))
+                    Text(
+                        text = dayLabel,
+                        style = ChronosType.label,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = timeText,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Light,
+                        style = ChronosType.numeric,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     if (meridiem.isNotEmpty()) {
                         Text(
                             text = meridiem,
-                            fontSize = 12.sp,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 5.dp),
+                            modifier = Modifier.padding(start = Spacing.xs, bottom = Spacing.xs),
                         )
                     }
                 }
@@ -310,7 +344,7 @@ private fun CityPickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add a city") },
+        title = { Text("Add a city", style = ChronosType.title) },
         text = {
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -318,14 +352,15 @@ private fun CityPickerDialog(
                         value = query,
                         onValueChange = { query = it },
                         singleLine = true,
+                        shape = RoundedCornerShape(Radii.sm),
                         placeholder = { Text("Search for cities") },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Spacing.sm))
                     if (filtered.isEmpty()) {
                         Text(
-                            text = "No search result",
-                            fontSize = 13.sp,
+                            text = "No city matches that search. Try another spelling.",
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
@@ -337,28 +372,27 @@ private fun CityPickerDialog(
                                 item(key = "header-$letter") {
                                     Text(
                                         text = letter.toString(),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
+                                        style = ChronosType.label,
                                         color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(vertical = 6.dp),
+                                        modifier = Modifier.padding(vertical = Spacing.sm),
                                     )
                                 }
                                 items(cities, key = { it.zoneId }) { city ->
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 7.dp),
+                                            .padding(vertical = Spacing.sm),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
                                                 text = city.city,
-                                                fontSize = 15.sp,
+                                                style = ChronosType.body,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                             )
                                             Text(
                                                 text = "${city.region} · ${offsetLabel(city.zoneId)}",
-                                                fontSize = 11.sp,
+                                                style = ChronosType.label,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
@@ -377,7 +411,7 @@ private fun CityPickerDialog(
                     letterIndex.keys.forEach { letter ->
                         Text(
                             text = letter.toString(),
-                            fontSize = 10.sp,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .padding(vertical = 1.dp)

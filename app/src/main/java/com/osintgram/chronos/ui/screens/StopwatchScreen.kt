@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Pause
@@ -32,12 +35,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.stopwatch.StopwatchEngine
+import com.osintgram.chronos.ui.components.EmptyState
 import com.osintgram.chronos.ui.components.staggerIn
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.StatusColors
+import com.osintgram.chronos.ui.theme.heroSurfaceBrush
 import kotlinx.coroutines.delay
 
 @Composable
@@ -62,18 +70,37 @@ fun StopwatchScreen(modifier: Modifier = Modifier) {
     val slowest = if (laps.size >= 2) splits.maxOrNull() else null
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = StopwatchEngine.format(elapsed),
-            style = com.osintgram.chronos.ui.theme.ClockTextStyle,
-            fontSize = 60.sp,
-            fontWeight = FontWeight.Light,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-        )
+        // ---- Hero: the elapsed time is the running value -------------------
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md)
+                .clip(RoundedCornerShape(Radii.xl))
+                .background(heroSurfaceBrush())
+                .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = StopwatchEngine.format(elapsed),
+                    style = ChronosType.display,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = when {
+                        running -> "running"
+                        elapsed > 0L -> "paused"
+                        else -> "ready"
+                    },
+                    style = ChronosType.label,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
-        Spacer(Modifier.height(24.dp))
-
+        // ---- Controls: start/pause is filled, lap and reset are quiet ------
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -85,7 +112,7 @@ fun StopwatchScreen(modifier: Modifier = Modifier) {
                 enabled = running,
                 onClick = { StopwatchEngine.lap() },
             )
-            Spacer(Modifier.size(24.dp))
+            Spacer(Modifier.size(Spacing.xl))
             Surface(
                 color = MaterialTheme.colorScheme.primary,
                 shape = CircleShape,
@@ -102,7 +129,7 @@ fun StopwatchScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
-            Spacer(Modifier.size(24.dp))
+            Spacer(Modifier.size(Spacing.xl))
             ControlButton(
                 icon = Icons.Filled.Refresh,
                 description = "Reset",
@@ -111,82 +138,119 @@ fun StopwatchScreen(modifier: Modifier = Modifier) {
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(Spacing.lg))
 
+        // ---- Laps ----------------------------------------------------------
         if (laps.isNotEmpty()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = Spacing.lg, end = Spacing.lg, bottom = Spacing.sm),
             ) {
                 Text(
                     text = "LAP",
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(width = 44.dp, height = 16.dp),
+                    modifier = Modifier.width(40.dp),
                 )
                 Text(
                     text = "SPLIT",
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = "TOTAL",
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = Spacing.lg,
+                    end = Spacing.lg,
+                    bottom = Spacing.lg,
+                ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
                 items(laps.reversed()) { lap ->
-                    val color = when (lap.splitMs) {
-                        fastest -> MaterialTheme.colorScheme.primary
-                        slowest -> MaterialTheme.colorScheme.error
+                    val mark = when (lap.splitMs) {
+                        fastest -> "Fastest"
+                        slowest -> "Slowest"
+                        else -> null
+                    }
+                    val markColor = when (lap.splitMs) {
+                        fastest -> StatusColors.success
+                        slowest -> StatusColors.warning
                         else -> MaterialTheme.colorScheme.onSurface
                     }
-                    Row(
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        shape = RoundedCornerShape(Radii.md),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .staggerIn(lap.index)
-                            .padding(horizontal = 24.dp, vertical = 9.dp),
+                            .staggerIn(lap.index),
                     ) {
-                        Text(
-                            text = "${lap.index}",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(width = 44.dp, height = 20.dp),
-                        )
-                        Text(
-                            text = StopwatchEngine.format(lap.splitMs),
-                            fontSize = 14.sp,
-                            color = color,
-                            fontWeight = if (lap.splitMs == fastest || lap.splitMs == slowest) {
-                                FontWeight.SemiBold
-                            } else {
-                                FontWeight.Normal
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = StopwatchEngine.format(lap.totalMs),
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(
+                            modifier = Modifier.padding(
+                                horizontal = Spacing.md,
+                                vertical = Spacing.md,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "${lap.index}",
+                                style = ChronosType.label,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(40.dp),
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = StopwatchEngine.format(lap.splitMs),
+                                    style = ChronosType.body,
+                                    color = if (mark == null) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        markColor
+                                    },
+                                )
+                                // The word carries the meaning; colour only reinforces it.
+                                if (mark != null) {
+                                    Text(
+                                        text = mark,
+                                        style = ChronosType.label,
+                                        color = markColor,
+                                    )
+                                }
+                            }
+                            Text(
+                                text = StopwatchEngine.format(lap.totalMs),
+                                style = ChronosType.body,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
         } else {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                Text(
-                    text = "Tap the flag to record a lap. The fastest and slowest laps are\nhighlighted once you have two or more.",
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 40.dp, vertical = 24.dp),
+            // Empty state: what to do next, not just a blank area.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
+            ) {
+                EmptyState(
+                    title = "No laps yet",
+                    subtitle = "Tap Lap while the stopwatch runs to record a split. " +
+                        "The fastest and slowest laps are named once you have two.",
                 )
             }
         }
     }
 }
 
+/** A quiet, secondary control: the filled circle is the only primary action. */
 @Composable
 private fun ControlButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -197,6 +261,7 @@ private fun ControlButton(
     Box(
         modifier = Modifier
             .size(52.dp)
+            .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,

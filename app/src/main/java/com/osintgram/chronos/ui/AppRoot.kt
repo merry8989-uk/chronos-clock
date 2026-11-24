@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -27,6 +28,11 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.HourglassBottom
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,9 +56,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
@@ -60,7 +67,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.BuildConfig
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.diagnostics.Breadcrumbs
@@ -69,6 +75,7 @@ import com.osintgram.chronos.diagnostics.LogExporter
 import com.osintgram.chronos.ui.components.AnalogClock
 import com.osintgram.chronos.ui.components.ChronosBackground
 import com.osintgram.chronos.ui.components.DigitalClockLabel
+import com.osintgram.chronos.ui.components.EmptyState
 import com.osintgram.chronos.ui.components.LiveClockDialog
 import com.osintgram.chronos.ui.screens.AlarmEditScreen
 import com.osintgram.chronos.ui.screens.AlarmListScreen
@@ -79,18 +86,41 @@ import com.osintgram.chronos.ui.screens.TimerScreen
 import com.osintgram.chronos.ui.screens.LifeScreen
 import com.osintgram.chronos.ui.screens.SpecialAccessScreen
 import com.osintgram.chronos.ui.screens.WorldClockScreen
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.ui.theme.pressable
 
-private data class Tab(val label: String, val icon: ImageVector)
+/**
+ * The smallest touch target the shell allows, in dp. The platform guideline is
+ * 48 dp; controls keep their drawn size and grow their padding to reach it.
+ */
+private val MinTouchTarget = 48.dp
+
+/** The size of the live clock logo inside its (larger) touch target. */
+private val LogoSize = 38.dp
+
+/**
+ * One bottom-bar destination.
+ *
+ * Two glyphs per destination, so the selection reads even before the label is
+ * parsed: the filled icon means "you are here", the outlined one means "you
+ * could go here". `NavigationBarItem` swaps between them on selection.
+ */
+private data class Tab(
+    val label: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+)
 
 private val tabs = listOf(
-    Tab("Alarm", Icons.Filled.Alarm),
-    Tab("World", Icons.Filled.Public),
-    Tab("Timer", Icons.Filled.HourglassBottom),
-    Tab("Stopwatch", Icons.Filled.Timer),
-    Tab("Life", Icons.Filled.Checklist),
+    Tab("Alarm", Icons.Filled.Alarm, Icons.Outlined.Alarm),
+    Tab("World", Icons.Filled.Public, Icons.Outlined.Public),
+    Tab("Timer", Icons.Filled.HourglassBottom, Icons.Outlined.HourglassBottom),
+    Tab("Stopwatch", Icons.Filled.Timer, Icons.Outlined.Timer),
+    Tab("Life", Icons.Filled.Checklist, Icons.Outlined.Checklist),
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -161,39 +191,50 @@ fun AppRoot() {
             topBar = {
                 TopAppBar(
                     title = {
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            // The logo is the clock: three hands, live.
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // The logo is the clock: three hands, live. It is also the
+                            // shortcut to the clock screen, so it gets a full touch
+                            // target around the artwork rather than the artwork's size.
                             if (Settings.logoStyle.value == "analog") {
-                                AnalogClock(
+                                Box(
                                     modifier = Modifier
-                                        .size(38.dp)
+                                        .size(MinTouchTarget)
                                         .pressable(scale = 0.9f) { showClock = true }
                                         .semantics {
                                             contentDescription = "Open live clock"
                                             role = Role.Button
                                         },
-                                    showSecondHand = Settings.clockSecondHand.value,
-                                    smoothSweep = Settings.clockSmooth.value,
-                                    rimColor = MaterialTheme.colorScheme.primary,
-                                    tickColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    hourHandColor = MaterialTheme.colorScheme.onBackground,
-                                    minuteHandColor = MaterialTheme.colorScheme.onBackground,
-                                    secondHandColor = MaterialTheme.colorScheme.primary,
-                                )
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    AnalogClock(
+                                        modifier = Modifier.size(LogoSize),
+                                        showSecondHand = Settings.clockSecondHand.value,
+                                        smoothSweep = Settings.clockSmooth.value,
+                                        rimColor = MaterialTheme.colorScheme.primary,
+                                        tickColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        hourHandColor = MaterialTheme.colorScheme.onBackground,
+                                        minuteHandColor = MaterialTheme.colorScheme.onBackground,
+                                        secondHandColor = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
                             } else {
-                                DigitalClockLabel(
+                                Box(
                                     modifier = Modifier
-                                        .padding(end = 8.dp)
+                                        .heightIn(min = MinTouchTarget)
                                         .pressable(scale = 0.94f) { showClock = true }
-                                        .semantics { role = Role.Button },
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                )
+                                        .semantics { role = Role.Button }
+                                        .padding(end = Spacing.sm),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    DigitalClockLabel(
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    )
+                                }
                             }
-                            Spacer(Modifier.width(10.dp))
+                            Spacer(Modifier.width(Spacing.sm))
                             Text(
                                 text = tabs[tabIndex].label,
-                                fontSize = 21.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                style = ChronosType.title,
                             )
                         }
                     },
@@ -202,28 +243,26 @@ fun AppRoot() {
                         scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
                     ),
                     actions = {
-                        if (tabIndex == 0) {
-                            IconButton(onClick = {
-                                Haptics.tap(context)
-                                editingId = -1L
-                                showEditor = true
-                                Breadcrumbs.action("open", "alarm_editor")
-                            }) {
-                                Icon(Icons.Filled.Add, contentDescription = "Add alarm")
-                            }
-                        }
-                        IconButton(onClick = {
-                            Haptics.tick(context)
-                            menuOpen = true
-                        }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                        // No add button here: the alarm list has its own action,
+                        // and two of them on one screen is one too many.
+                        IconButton(
+                            modifier = Modifier.size(MinTouchTarget),
+                            onClick = {
+                                Haptics.tick(context)
+                                menuOpen = true
+                            },
+                        ) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = "App menu: settings, alarms, tools and diagnostics",
+                            )
                         }
                         DropdownMenu(
                             expanded = menuOpen,
                             onDismissRequest = { menuOpen = false },
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Settings") },
+                                text = { Text("Settings", style = ChronosType.body) },
                                 onClick = {
                                     menuOpen = false
                                     settingsScrollTo = null
@@ -232,7 +271,7 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Add alarm") },
+                                text = { Text("Add alarm", style = ChronosType.body) },
                                 onClick = {
                                     menuOpen = false
                                     tabIndex = 0
@@ -241,7 +280,7 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("About & updates") },
+                                text = { Text("About & updates", style = ChronosType.body) },
                                 onClick = {
                                     menuOpen = false
                                     settingsScrollTo = com.osintgram.chronos.ui.screens.SCROLL_ABOUT
@@ -250,7 +289,7 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Bedtime mode") },
+                                text = { Text("Bedtime mode", style = ChronosType.body) },
                                 onClick = {
                                     menuOpen = false
                                     runCatching {
@@ -264,7 +303,7 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Special access") },
+                                text = { Text("Special access", style = ChronosType.body) },
                                 onClick = {
                                     menuOpen = false
                                     showSpecialAccess = true
@@ -272,7 +311,7 @@ fun AppRoot() {
                                 },
                             )
                             DropdownMenuItem(
-                                text = { Text("Diagnostics & logs") },
+                                text = { Text("Diagnostics & logs", style = ChronosType.body) },
                                 onClick = {
                                     menuOpen = false
                                     showDiagnostics = true
@@ -288,15 +327,33 @@ fun AppRoot() {
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
                 ) {
                     tabs.forEachIndexed { index, tab ->
+                        val selected = tabIndex == index
                         NavigationBarItem(
-                            selected = tabIndex == index,
+                            selected = selected,
                             onClick = {
                                 if (tabIndex != index) Haptics.tick(context)
                                 tabIndex = index
                                 Breadcrumbs.screen(tabs[index].label)
                             },
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label, fontSize = 11.sp) },
+                            // Filled when selected, outlined otherwise: the shape of the
+                            // glyph, not just the tint, says where you are.
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = tab.label,
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    style = ChronosType.label,
+                                    maxLines = 1,
+                                )
+                            },
+                            // Every destination keeps its label, so the bar reads the same
+                            // whichever tab is open.
+                            alwaysShowLabel = true,
+                            modifier = Modifier.heightIn(min = MinTouchTarget),
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.onPrimary,
                                 indicatorColor = MaterialTheme.colorScheme.primary,
@@ -330,7 +387,7 @@ fun AppRoot() {
                 label = "tabContent",
                 modifier = Modifier.fillMaxSize(),
             ) { index ->
-                Box(modifier = Modifier.fillMaxSize()) {
+                TabPane(tab = tabs[index]) {
                     when (index) {
                         0 -> AlarmListScreen(
                             onEdit = { id ->
@@ -351,6 +408,63 @@ fun AppRoot() {
 }
 
 /**
+ * Hosts one destination's screen.
+ *
+ * The screen is composed exactly as before; this wrapper only guarantees that
+ * the pane is never an empty rectangle. If a screen composes nothing at all —
+ * a store that has not loaded yet, for instance — the shell draws a quiet
+ * placeholder of its own instead of leaving the area blank. Screens keep their
+ * own empty and loading states; this covers only the case where a screen emits
+ * no visible content whatsoever.
+ */
+@Composable
+private fun TabPane(
+    tab: Tab,
+    content: @Composable () -> Unit,
+) {
+    SubcomposeLayout(modifier = Modifier.fillMaxSize()) { constraints ->
+        val contentPlaceables = subcompose(TabPaneSlot.Content, content)
+            .map { measurable -> measurable.measure(constraints) }
+        val hasVisibleContent = contentPlaceables.any { it.width > 0 && it.height > 0 }
+        val fallbackPlaceables = if (hasVisibleContent) {
+            emptyList()
+        } else {
+            subcompose(TabPaneSlot.Fallback) { TabFallback(tab) }
+                .map { measurable -> measurable.measure(constraints) }
+        }
+        val width = if (constraints.hasBoundedWidth) {
+            constraints.maxWidth
+        } else {
+            contentPlaceables.maxOfOrNull { it.width } ?: 0
+        }
+        val height = if (constraints.hasBoundedHeight) {
+            constraints.maxHeight
+        } else {
+            contentPlaceables.maxOfOrNull { it.height } ?: 0
+        }
+        layout(width, height) {
+            contentPlaceables.forEach { placeable -> placeable.placeRelative(0, 0) }
+            fallbackPlaceables.forEach { placeable -> placeable.placeRelative(0, 0) }
+        }
+    }
+}
+
+/** Subcompose slots used by [TabPane]. */
+private enum class TabPaneSlot { Content, Fallback }
+
+/**
+ * What the shell shows when a destination has drawn nothing yet: the tab's own
+ * name, and a sentence saying the area will fill in, rather than blank space.
+ */
+@Composable
+private fun TabFallback(tab: Tab) {
+    EmptyState(
+        title = tab.label,
+        subtitle = "This tab has nothing to show yet. It fills in as soon as its data is ready.",
+    )
+}
+
+/**
  * If the app crashed last time, say so and offer the log — reachable even when
  * the screen that crashed cannot be opened.
  */
@@ -362,39 +476,44 @@ private fun CrashBanner() {
 
     Surface(
         color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radii.md),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            modifier = Modifier.padding(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Chronos crashed last time",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    style = ChronosType.title,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = info.second.ifBlank { "Unknown error" },
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                 )
             }
-            TextButton(onClick = {
-                val file = LogExporter.export(
-                    context, LogExporter.Format.TXT, "Chronos", BuildConfig.VERSION_NAME,
-                )
-                LogExporter.share(context, file, "text/plain")
-            }) { Text("Send log") }
-            TextButton(onClick = {
-                DiagnosticsLogger.clearCrashMarker()
-                crash = null
-            }) { Text("Dismiss") }
+            TextButton(
+                modifier = Modifier.heightIn(min = MinTouchTarget),
+                onClick = {
+                    val file = LogExporter.export(
+                        context, LogExporter.Format.TXT, "Chronos", BuildConfig.VERSION_NAME,
+                    )
+                    LogExporter.share(context, file, "text/plain")
+                },
+            ) { Text("Send log", style = ChronosType.label) }
+            TextButton(
+                modifier = Modifier.heightIn(min = MinTouchTarget),
+                onClick = {
+                    DiagnosticsLogger.clearCrashMarker()
+                    crash = null
+                },
+            ) { Text("Dismiss", style = ChronosType.label) }
         }
     }
 }

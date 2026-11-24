@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import com.osintgram.chronos.ui.theme.StatusColors
+import com.osintgram.chronos.ui.theme.Spacing
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -237,6 +241,71 @@ fun Pill(
                 else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             )
+        }
+    }
+}
+
+/**
+ * The state a screen shows while it is reading something. A spinner alone says
+ * nothing about what is being waited for, so it takes a line of text.
+ */
+@Composable
+fun LoadingState(label: String, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            androidx.compose.material3.CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp),
+                strokeWidth = 2.5.dp,
+            )
+            Spacer(Modifier.height(Spacing.md))
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * The state a screen shows when something failed. The word matters more than
+ * the colour: a red dot with no explanation is not an error message.
+ */
+@Composable
+fun ErrorState(title: String, detail: String, onRetry: (() -> Unit)? = null, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(Spacing.lg),
+        ) {
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Filled.ErrorOutline,
+                contentDescription = null,
+                tint = StatusColors.warning,
+                modifier = Modifier.size(26.dp),
+            )
+            Spacer(Modifier.height(Spacing.sm))
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                text = detail,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+            if (onRetry != null) {
+                Spacer(Modifier.height(Spacing.md))
+                androidx.compose.material3.OutlinedButton(onClick = onRetry) {
+                    Text("Try again", fontSize = 12.sp)
+                }
+            }
         }
     }
 }
