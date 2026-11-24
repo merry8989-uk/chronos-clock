@@ -230,7 +230,7 @@ object HealthConnectSource {
         start: Instant,
         end: Instant,
     ): Vitals {
-        fun latestResting(): Int? = runCatching {
+        suspend fun latestResting(): Int? = runCatching {
             hc.readRecords(
                 androidx.health.connect.client.request.ReadRecordsRequest(
                     recordType = RestingHeartRateRecord::class,
@@ -239,7 +239,7 @@ object HealthConnectSource {
             ).records.lastOrNull()?.beatsPerMinute?.toInt()
         }.getOrNull()
 
-        fun latestSpo2(): Double? = runCatching {
+        suspend fun latestSpo2(): Double? = runCatching {
             hc.readRecords(
                 androidx.health.connect.client.request.ReadRecordsRequest(
                     recordType = OxygenSaturationRecord::class,
@@ -248,7 +248,7 @@ object HealthConnectSource {
             ).records.lastOrNull()?.percentage?.value
         }.getOrNull()
 
-        fun latestWeight(): Double? = runCatching {
+        suspend fun latestWeight(): Double? = runCatching {
             hc.readRecords(
                 androidx.health.connect.client.request.ReadRecordsRequest(
                     recordType = WeightRecord::class,
