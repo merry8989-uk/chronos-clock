@@ -24,10 +24,14 @@ object AlarmScheduler {
     fun rescheduleAll(context: Context) {
         val holidays = HolidayStore.schedulingDates()
         val now = ZonedDateTime.now()
-        AlarmStore.all().forEach { alarm ->
+        val alarms = AlarmStore.all()
+        alarms.forEach { alarm ->
             if (alarm.enabled) schedule(context, alarm, holidays, now) else cancel(context, alarm.id)
         }
-        DiagnosticsLogger.log("AlarmScheduler", "Rescheduled all enabled alarms")
+        DiagnosticsLogger.log(
+            "AlarmScheduler",
+            "Rescheduled ${alarms.count { it.enabled }} enabled of ${alarms.size} alarm(s)",
+        )
     }
 
     fun schedule(

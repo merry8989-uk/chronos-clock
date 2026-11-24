@@ -327,6 +327,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Wellness got a visual layer: a gradient hero for today's steps with the count inside the ring, a Canvas bar chart for the seven-day progress, stat tiles for the week totals, and a small spacing scale
 - [x] Without usage access the screen still shows the explanation card and never a chart of zeros
 
+## Fixed in 6.11.1 — the crash the log caught
+
+- [x] **Crash:** setting a daily limit closed the app. The Limits tab keeps two lists in one scroll view — DAILY LIMITS and SET A LIMIT — and both used the package name as the item key, so the moment an app had a limit it appeared twice and Compose threw `Key "com.instagram.android" was already used`. Keys are now prefixed per section, and an app that already has a limit no longer appears in the set-a-limit list
+- [x] Same class of bug closed elsewhere: the task list's overdue and today sections, and the day view, key by section now too
+- [x] **Health Connect on this phone has neither a permission screen nor a settings app** — the log shows `No Activity found to handle Intent act=android.health.connect.action.HEALTH_HOME_SETTINGS`. The card no longer offers a button that cannot work: it says Health Connect has to be installed or updated from Play, and only shows "Open Health Connect" when that screen actually exists
+- [x] Alarm rescheduling now logs how many alarms it armed instead of the same sentence on every call
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

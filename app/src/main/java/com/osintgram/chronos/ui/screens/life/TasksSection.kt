@@ -186,7 +186,7 @@ private fun TodayView(tasks: List<Task>, onAdd: () -> Unit) {
 
         if (overdue.isNotEmpty()) {
             item { WellnessLabel("OVERDUE") }
-            items(overdue, key = { it.id }) { task -> TaskRow(task, showDate = true) }
+            items(overdue, key = { "overdue:${it.id}" }) { task -> TaskRow(task, showDate = true) }
         }
 
         item { WellnessLabel("TODAY") }
@@ -199,7 +199,7 @@ private fun TodayView(tasks: List<Task>, onAdd: () -> Unit) {
                 )
             }
         } else {
-            items(todays, key = { it.id }) { task -> TaskRow(task) }
+            items(todays, key = { "today:${it.id}" }) { task -> TaskRow(task) }
         }
     }
 }
@@ -558,7 +558,7 @@ private fun CalendarView(tasks: List<Task>) {
         if (dayTasks.isEmpty()) {
             item { WellnessNote("No tasks on this day.") }
         } else {
-            items(dayTasks, key = { it.id }) { task ->
+            items(dayTasks, key = { "day:${it.id}" }) { task ->
                 TaskRow(
                     task = task,
                     onAddToCalendar = { t ->
