@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,30 +33,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.ui.screens.wellness.ActivitySection
+import com.osintgram.chronos.ui.screens.wellness.BodySection
 import com.osintgram.chronos.ui.screens.wellness.LearnSection
 import com.osintgram.chronos.ui.screens.wellness.MeditateSection
 import com.osintgram.chronos.ui.screens.wellness.ProgressSection
+import com.osintgram.chronos.ui.screens.wellness.SleepSection
 import com.osintgram.chronos.ui.screens.wellness.TodaySection
-import com.osintgram.chronos.ui.screens.wellness.ActivitySection
 import com.osintgram.chronos.ui.screens.wellness.WorkoutSection
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
 import com.osintgram.chronos.ui.theme.pressable
 import androidx.compose.ui.platform.LocalContext
 
-/** The five parts of the Wellness tab. */
-enum class WellnessSection(val label: String) {
+/**
+ * The parts of the Wellness tab. Six of them are on the bar; [Workout] and
+ * [Learn] are kept in the enum but marked [hidden], because they are reached
+ * from the two buttons at the bottom of Today rather than from the bar.
+ */
+enum class WellnessSection(val label: String, val hidden: Boolean = false) {
     Today("Today"),
+    Sleep("Sleep"),
     Activity("Activity"),
-    Workout("Workout"),
-    Meditate("Breathe"),
+    Body("Body"),
+    Meditate("Mind"),
     Progress("Progress"),
-    Learn("Learn"),
+    Workout("Workout", hidden = true),
+    Learn("Learn", hidden = true),
 }
 
+/** The six entries the bar shows, in reading order. */
+private val barSections: List<WellnessSection> = WellnessSection.entries.filterNot { it.hidden }
+
 /**
- * The Wellness tab. One bottom-bar entry holds five sections behind a
- * segmented bar, because four extra bottom tabs would crowd the clock.
+ * The Wellness tab. One bottom-bar entry holds the sections behind a segmented
+ * bar, because eight extra bottom tabs would crowd the clock.
  */
 @Composable
 fun WellnessScreen() {
@@ -67,6 +80,19 @@ fun WellnessScreen() {
             if (picked != section) Haptics.tick(context)
             current = picked.name
         }
+        if (section.hidden) {
+            // Workout and Learn have no slot on the bar, so they carry their own
+            // way back rather than leaving the user on a section they cannot leave.
+            TextButton(
+                onClick = {
+                    Haptics.tick(context)
+                    current = WellnessSection.Today.name
+                },
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+            ) {
+                Text("Back to Today", fontSize = 12.sp)
+            }
+        }
         AnimatedContent(
             targetState = section,
             transitionSpec = {
@@ -74,18 +100,24 @@ fun WellnessScreen() {
                     fadeOut(tween(Motion.FAST))
             },
             label = "wellnessSection",
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { target ->
             Box(modifier = Modifier.fillMaxSize()) {
                 when (target) {
                     WellnessSection.Today -> TodaySection(
                         onOpenWorkout = { current = WellnessSection.Workout.name },
-                        onOpenMeditate = { current = WellnessSection.Meditate.name },
+                        onOpenSleep = { current = WellnessSection.Sleep.name },
+                        onOpenBody = { current = WellnessSection.Body.name },
+                        onOpenActivity = { current = WellnessSection.Activity.name },
+                        onOpenLearn = { current = WellnessSection.Learn.name },
+                        onOpenProgress = { current = WellnessSection.Progress.name },
                     )
+                    WellnessSection.Sleep -> SleepSection()
                     WellnessSection.Activity -> ActivitySection()
-                    WellnessSection.Workout -> WorkoutSection()
+                    WellnessSection.Body -> BodySection()
                     WellnessSection.Meditate -> MeditateSection()
                     WellnessSection.Progress -> ProgressSection()
+                    WellnessSection.Workout -> WorkoutSection()
                     WellnessSection.Learn -> LearnSection()
                 }
             }
@@ -104,7 +136,7 @@ private fun WellnessSectionBar(selected: WellnessSection, onSelect: (WellnessSec
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        WellnessSection.entries.forEach { entry ->
+        barSections.forEach { entry ->
             val active = entry == selected
             Box(
                 modifier = Modifier

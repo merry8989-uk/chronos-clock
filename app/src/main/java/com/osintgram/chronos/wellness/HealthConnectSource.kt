@@ -19,7 +19,10 @@ import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.HydrationRecord
 import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -63,6 +66,9 @@ object HealthConnectSource {
                 HealthPermission.getReadPermission(ExerciseSessionRecord::class),
                 HealthPermission.getReadPermission(DistanceRecord::class),
                 HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
+                HealthPermission.getReadPermission(RestingHeartRateRecord::class),
+                HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+                HealthPermission.getReadPermission(WeightRecord::class),
             )
         }.onFailure {
             DiagnosticsLogger.log("HealthConnect", "Read permission names failed: ${it.message}")
@@ -113,6 +119,15 @@ object HealthConnectSource {
         val distanceMeters: Double? = null,
         /** Active energy today, in kilocalories. */
         val energyKcal: Double? = null,
+        /** Resting heart rate the phone or a watch reported for the day. */
+        val restingBpm: Int? = null,
+        /** Blood oxygen, percent. */
+        val spo2Percent: Double? = null,
+        /** Latest body weight, kilograms. */
+        val weightKg: Double? = null,
+        /** Minutes asleep and awake from the night's stages, when present. */
+        val asleepMin: Int? = null,
+        val awakeMin: Int? = null,
     ) {
         val hasAny: Boolean get() = steps != null || waterMl != null || sleepMinutes != null
     }
@@ -184,12 +199,18 @@ object HealthConnectSource {
                     timeRangeFilter = TimeRangeFilter.between(start, end),
                 ),
             )
+            val vitals = readVitals(hc, start, end)
             Snapshot(
                 steps = result[StepsRecord.COUNT_TOTAL]?.toInt(),
                 waterMl = result[HydrationRecord.VOLUME_TOTAL]?.inMilliliters?.toInt(),
                 distanceMeters = result[DistanceRecord.DISTANCE_TOTAL]?.inMeters,
                 energyKcal = result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories,
                 sleepMinutes = result[SleepSessionRecord.SLEEP_DURATION_TOTAL]?.toMinutes()?.toInt(),
+                restingBpm = vitals.restingBpm,
+                spo2Percent = vitals.spo2Percent,
+                weightKg = vitals.weightKg,
+                asleepMin = vitals.asleepMin,
+                awakeMin = vitals.awakeMin,
             )
         }.onFailure {
             DiagnosticsLogger.log("HealthConnect", "Read failed for $date: ${it.message}")
@@ -197,6 +218,91 @@ object HealthConnectSource {
     }
 
     suspend fun readToday(context: Context): Snapshot? = readDay(context, LocalDate.now())
+
+    /**
+     * The vitals that arrive as individual records rather than as a daily total:
+     * resting heart rate, blood oxygen and body weight, plus the night's stages.
+     * Each is read separately and skipped when it was never recorded, because a
+     * phone without a band simply has no oxygen or resting-rate history.
+     */
+    private suspend fun readVitals(
+        hc: androidx.health.connect.client.HealthConnectClient,
+        start: Instant,
+        end: Instant,
+    ): Vitals {
+        suspend fun latestResting(): Int? = runCatching {
+            hc.readRecords(
+                androidx.health.connect.client.request.ReadRecordsRequest(
+                    recordType = RestingHeartRateRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                ),
+            ).records.lastOrNull()?.beatsPerMinute?.toInt()
+        }.getOrNull()
+
+        suspend fun latestSpo2(): Double? = runCatching {
+            hc.readRecords(
+                androidx.health.connect.client.request.ReadRecordsRequest(
+                    recordType = OxygenSaturationRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                ),
+            ).records.lastOrNull()?.percentage?.value
+        }.getOrNull()
+
+        suspend fun latestWeight(): Double? = runCatching {
+            hc.readRecords(
+                androidx.health.connect.client.request.ReadRecordsRequest(
+                    recordType = WeightRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                ),
+            ).records.lastOrNull()?.weight?.inKilograms
+        }.getOrNull()
+
+        val stages = runCatching {
+            val sessions = hc.readRecords(
+                androidx.health.connect.client.request.ReadRecordsRequest(
+                    recordType = SleepSessionRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                ),
+            ).records
+            var asleep = 0L
+            var awake = 0L
+            sessions.forEach { session ->
+                session.stages.forEach { stage ->
+                    val minutes = java.time.Duration.between(stage.startTime, stage.endTime).toMinutes()
+                    when (stage.stage) {
+                        SleepSessionRecord.STAGE_TYPE_SLEEPING -> asleep += minutes
+                        SleepSessionRecord.STAGE_TYPE_AWAKE,
+                        SleepSessionRecord.STAGE_TYPE_OUT_OF_BED,
+                        -> awake += minutes
+                        else -> Unit
+                    }
+                }
+            }
+            if (asleep == 0L && awake == 0L) null else asleep.toInt() to awake.toInt()
+        }.getOrNull()
+
+        DiagnosticsLogger.log(
+            "HealthConnect",
+            "vitals: resting=${latestResting()} spo2=${latestSpo2()} " +
+                "weight=${latestWeight()} stages=${stages != null}",
+        )
+        return Vitals(
+            restingBpm = latestResting(),
+            spo2Percent = latestSpo2(),
+            weightKg = latestWeight(),
+            asleepMin = stages?.first,
+            awakeMin = stages?.second,
+        )
+    }
+
+    /** The vitals that come as individual records, gathered in one place. */
+    private data class Vitals(
+        val restingBpm: Int? = null,
+        val spo2Percent: Double? = null,
+        val weightKg: Double? = null,
+        val asleepMin: Int? = null,
+        val awakeMin: Int? = null,
+    )
 
     /**
      * Workouts other apps already recorded — walks, rides, runs, gym sessions —

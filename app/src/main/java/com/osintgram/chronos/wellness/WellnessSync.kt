@@ -39,6 +39,20 @@ object WellnessSync {
                     sleepMinutes = snapshot.sleepMinutes,
                 )
             }
+            // The vitals arrive as individual records, so they are written
+            // straight to the store through the same setters the UI uses.
+            snapshot.restingBpm?.let { WellnessStore.setRestingHeartRate(it, today) }
+            snapshot.spo2Percent?.let { WellnessStore.setSpo2(it, today) }
+            snapshot.weightKg?.let { WellnessStore.setWeightKg(it, today) }
+            if (snapshot.asleepMin != null || snapshot.awakeMin != null) {
+                WellnessStore.setSleepStages(
+                    deep = 0,
+                    light = snapshot.asleepMin ?: 0,
+                    rem = 0,
+                    awake = snapshot.awakeMin ?: 0,
+                    date = today,
+                )
+            }
         }
     }
 

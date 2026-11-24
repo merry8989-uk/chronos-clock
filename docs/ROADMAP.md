@@ -342,6 +342,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] The Limits tab opens with a readiness card: usage access, draw-over-other-apps, watcher — each with a Fix button, because without all three a limit cannot be enforced
 - [x] The service logs its state once a minute (`fg=… used=…s limit=…m screenOn=… usageAccess=… overlay=… blocking=…`) and says at start which of the two permissions is missing
 
+## Shipped in 6.13.0 — vitals, and a Wellness area you can scan
+
+- [x] **Sleep** section: last night as hours and minutes, a sleep score ring, asleep and awake minutes, a seven-night chart, presets to log a night by hand. Health Connect 1.1 carries only asleep/awake, so the screen shows those two and says stage detail needs a watch that writes stages
+- [x] **Body** section: weight with a manual stepper, height, BMI with its band and a note that it is a guide, resting heart rate and blood oxygen tiles, and a weight trend once two days have a number
+- [x] New Health Connect reads: resting heart rate, oxygen saturation, weight, and the night's stages — each skipped when it was never recorded, so a phone without a band simply shows an em dash
+- [x] `DayLog` carries the vitals; they survive the backup file and a damaged record is skipped, not thrown
+- [x] `WellnessLogic.bmi`, `bmiLabel` and `sleepScore` are pure and covered by six new tests; the score falls back to duration alone when the source has no stage detail, instead of punishing the night for data the phone never had
+- [x] Wellness bar simplified: Today, Sleep, Activity, Body, Mind, Progress — Today becomes a dashboard of four tiles and one quick-add row
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
