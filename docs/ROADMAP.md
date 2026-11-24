@@ -334,6 +334,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] **Health Connect on this phone has neither a permission screen nor a settings app** — the log shows `No Activity found to handle Intent act=android.health.connect.action.HEALTH_HOME_SETTINGS`. The card no longer offers a button that cannot work: it says Health Connect has to be installed or updated from Play, and only shows "Open Health Connect" when that screen actually exists
 - [x] Alarm rescheduling now logs how many alarms it armed instead of the same sentence on every call
 
+## Fixed in 6.12.0 — limits that actually block
+
+- [x] **Why a 15-minute limit never fired:** the watcher reset the day's counter to whatever the phone's usage bucket reported, once a minute. When that bucket came back lower (or empty), the time already counted was wiped, so the number could never reach the limit. The counter now only ever moves forward
+- [x] Time between refreshes is added per tick, and only while the screen is on, so a locked phone no longer accrues time
+- [x] **Setting a limit now switches the watcher on.** A limit with the watcher off was the other half of the bug: nothing enforced it
+- [x] The Limits tab opens with a readiness card: usage access, draw-over-other-apps, watcher — each with a Fix button, because without all three a limit cannot be enforced
+- [x] The service logs its state once a minute (`fg=… used=…s limit=…m screenOn=… usageAccess=… overlay=… blocking=…`) and says at start which of the two permissions is missing
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

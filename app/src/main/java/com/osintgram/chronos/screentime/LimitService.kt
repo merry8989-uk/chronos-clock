@@ -57,6 +57,7 @@ class LimitService : Service() {
     private val snoozedUntil = mutableMapOf<String, Long>()
 
     private var shownFor: String? = null
+    private var lastStateLog = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -70,7 +71,25 @@ class LimitService : Service() {
                 delay(TICK_MS)
             }
         }
-        DiagnosticsLogger.log("LimitService", "Started, ${ScreenTimeStore.allLimits().size} limit(s)")
+        val limits = ScreenTimeStore.allLimits()
+        DiagnosticsLogger.log(
+            "LimitService",
+            "Started, ${limits.size} limit(s); usageAccess=${UsageSource.hasAccess(this)} " +
+                "overlay=${android.provider.Settings.canDrawOverlays(this)}",
+        )
+        if (!UsageSource.hasAccess(this)) {
+            DiagnosticsLogger.log(
+                "LimitService",
+                "Usage access missing: the watcher cannot see the foreground app, so limits " +
+                    "will not be enforced",
+            )
+        }
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            DiagnosticsLogger.log(
+                "LimitService",
+                "Draw-over-other-apps missing: the blocker cannot be shown",
+            )
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -92,13 +111,23 @@ class LimitService : Service() {
         if (now - lastRefresh > REFRESH_MS) {
             lastRefresh = now
             val day = UsageSource.today(this)
-            usedMillis.clear()
-            day.apps.forEach { usedMillis[it.packageName] = it.foregroundMillis }
+            // Never move a number backwards: a refresh that reports less than we
+            // have already counted (a stale usage bucket, or no usage access at
+            // all) used to reset the day to zero every minute, so a 15-minute
+            // limit could never be reached.
+            day.apps.forEach { app ->
+                val known = usedMillis[app.packageName] ?: 0L
+                usedMillis[app.packageName] = maxOf(known, app.foregroundMillis)
+            }
         }
 
         val foreground = UsageSource.foregroundPackage(this)
-        // Keep the cached number honest between refreshes.
-        if (foreground != null && foreground == lastPackage && foreground != packageName) {
+        // Keep the cached number honest between refreshes. The phone's own bucket
+        // is only refreshed once a minute, so the time in between is added here —
+        // but only while the screen is actually on, or a locked phone would keep
+        // counting the app that happened to be in front.
+        val screenOn = isScreenOn()
+        if (screenOn && foreground != null && foreground != packageName) {
             usedMillis[foreground] = (usedMillis[foreground] ?: 0L) + TICK_MS
         }
         lastPackage = foreground
@@ -118,6 +147,16 @@ class LimitService : Service() {
             return
         }
         val used = usedMillis[foreground] ?: 0L
+        if (now - lastStateLog > STATE_LOG_MS) {
+            lastStateLog = now
+            DiagnosticsLogger.log(
+                "LimitService",
+                "state fg=$foreground used=${used / 1000}s limit=${limit}m screenOn=$screenOn " +
+                    "usageAccess=${UsageSource.hasAccess(this)} " +
+                    "overlay=${android.provider.Settings.canDrawOverlays(this)} " +
+                    "blocking=${shownFor != null}",
+            )
+        }
         if (ScreenTimeLogic.limitReached(used, limit)) {
             if (shownFor != foreground) {
                 shownFor = foreground
@@ -141,6 +180,12 @@ class LimitService : Service() {
             hide()
         }
     }
+
+    /** True when the screen is on, so a locked phone does not accrue time. */
+    private fun isScreenOn(): Boolean = runCatching {
+        val power = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        power.isInteractive
+    }.getOrDefault(true)
 
     private fun hide() {
         if (shownFor != null) {
@@ -200,6 +245,7 @@ class LimitService : Service() {
         private const val TICK_MS = 4_000L
         private const val REFRESH_MS = 60_000L
         private const val SNOOZE_MS = 5 * 60_000L
+        private const val STATE_LOG_MS = 60_000L
 
         /** Starts or stops the watcher to match the setting. */
         fun sync(context: Context) {

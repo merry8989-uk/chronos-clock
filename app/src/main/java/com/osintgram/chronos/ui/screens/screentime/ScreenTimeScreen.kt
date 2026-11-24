@@ -1,5 +1,6 @@
 package com.osintgram.chronos.ui.screens.screentime
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
@@ -407,6 +410,50 @@ fun ScreenTimeScreen() {
                             }
                         }
                     }
+                    item {
+                        val usageOk = UsageSource.hasAccess(context)
+                        val overlayOk = android.provider.Settings.canDrawOverlays(context)
+                        val armed = Settings.screenTimeLimiter.value
+                        if (!usageOk || !overlayOk || !armed) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "Limits cannot be enforced yet",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    Spacer(Modifier.height(6.dp))
+                                    LimitCheck("Usage access", usageOk) {
+                                        context.startActivity(
+                                            Intent(
+                                                android.provider.Settings
+                                                    .ACTION_USAGE_ACCESS_SETTINGS,
+                                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                        )
+                                    }
+                                    LimitCheck("Draw over other apps", overlayOk) {
+                                        context.startActivity(
+                                            Intent(
+                                                android.provider.Settings
+                                                    .ACTION_MANAGE_OVERLAY_PERMISSION,
+                                                android.net.Uri.parse("package:${context.packageName}"),
+                                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                        )
+                                    }
+                                    LimitCheck("Limit watcher", armed) {
+                                        Settings.screenTimeLimiter.set(true)
+                                        LimitService.sync(context)
+                                        tick++
+                                    }
+                                }
+                            }
+                        }
+                    }
                     item { WellnessLabel("DAILY LIMITS") }
                     if (limits.isEmpty()) {
                         item { WellnessNote("No limits yet. Tap an app below to set one.") }
@@ -493,11 +540,52 @@ fun ScreenTimeScreen() {
             onDismiss = { limitTarget = null },
             onPick = { minutes ->
                 ScreenTimeStore.setLimit(target.packageName, minutes)
+                // A limit that nothing enforces is the same as no limit: switch
+                // the watcher on as soon as one exists, and say so in the log.
+                if (minutes > 0 && !Settings.screenTimeLimiter.value) {
+                    Settings.screenTimeLimiter.set(true)
+                    com.osintgram.chronos.diagnostics.DiagnosticsLogger.log(
+                        "ScreenTime",
+                        "Limit set for ${target.packageName}; limit watcher switched on",
+                    )
+                }
                 limitTarget = null
                 tick++
                 LimitService.sync(context)
             },
         )
+    }
+}
+
+/** One "is this ready?" row with a fix button when it is not. */
+@Composable
+private fun LimitCheck(label: String, ok: Boolean, onFix: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = if (ok) Icons.Filled.CheckCircle else Icons.Filled.ErrorOutline,
+            contentDescription = null,
+            tint = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (!ok) {
+            TextButton(onClick = onFix) { Text("Fix", fontSize = 12.sp) }
+        } else {
+            Text(
+                text = "ready",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
