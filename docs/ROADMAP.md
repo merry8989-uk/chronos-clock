@@ -358,6 +358,12 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Light / Dark / Follow system / AMOLED all still work, and the old accent picker stays as the "custom" path
 - [x] Settings has a Look picker showing each preset's name, character and accent dot, with the selection announced to a screen reader
 
+## Shipped in 6.16.0 — motion, and a gate that keeps the tokens honest
+
+- [x] **Reduce motion** setting: transitions keep their shape and take no time. Android's own "remove animations" developer switch is not readable from an app, so the app offers its own and [Motion.duration] honours it
+- [x] **Design token gate** in CI (`scripts/design-tokens.sh`): counts hard-coded colours, font sizes and corner radii per screen file and compares them with `docs/design-baseline.txt`. A file that gains one fails the pull request; a file that loses them must lower its baseline, so the number can only go down. Baseline today: 21 files, worst are Missions (42) and Settings (24)
+- [x] Life/Wellness and Screen time restyled onto the tokens, and the nine widgets brought onto one radius, one padding scale and one accent source (parallel agents)
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

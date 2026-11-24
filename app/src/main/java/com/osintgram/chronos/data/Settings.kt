@@ -40,6 +40,8 @@ object Settings {
     val accent = Setting("accent", "blue")                 // blue | violet | teal | amber | rose | green
     /** Named look: midnight | obsidian | aurora | ocean | forest | sunset | lavender | minimal | custom. */
     val themePreset = Setting("theme_preset", "midnight")
+    /** When on, transitions keep their shape but take no time. */
+    val reduceMotion = Setting("reduce_motion", false)
     val use24Hour = Setting("use_24_hour", false)
     val amoledBlack = Setting("amoled_black", true)
     val showSeconds = Setting("show_seconds", true)
@@ -116,6 +118,7 @@ object Settings {
         themeMode.load(p.getString(themeMode.key, themeMode.default) ?: "system")
         accent.load(p.getString(accent.key, accent.default) ?: "blue")
         themePreset.load(p.getString(themePreset.key, themePreset.default) ?: "midnight")
+        reduceMotion.load(p.getBoolean(reduceMotion.key, reduceMotion.default))
         use24Hour.load(p.getBoolean(use24Hour.key, use24Hour.default))
         amoledBlack.load(p.getBoolean(amoledBlack.key, amoledBlack.default))
         showSeconds.load(p.getBoolean(showSeconds.key, showSeconds.default))
@@ -194,6 +197,7 @@ object Settings {
         themeMode.resetToDefault()
         accent.resetToDefault()
         themePreset.resetToDefault()
+        reduceMotion.resetToDefault()
         use24Hour.resetToDefault()
         amoledBlack.resetToDefault()
         showSeconds.resetToDefault()
@@ -250,6 +254,7 @@ object Settings {
         themeMode.key to themeMode.value,
         accent.key to accent.value,
         themePreset.key to themePreset.value,
+        reduceMotion.key to reduceMotion.value,
         use24Hour.key to use24Hour.value,
         amoledBlack.key to amoledBlack.value,
         showSeconds.key to showSeconds.value,

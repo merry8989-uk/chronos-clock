@@ -36,6 +36,11 @@ jobs:
       # Maven Central redirects a few Kotlin artifacts to GitHub Releases, which
       # intermittently answers 504. A failed download is not a failed build, so
       # each Gradle step gets one retry before it is treated as a real failure.
+      # A rule nobody checks decays: this fails a PR that adds a hard-coded
+      # colour, font size or corner radius to a screen instead of using a token.
+      - name: Design token gate
+        run: ./scripts/design-tokens.sh
+
       - name: Assemble debug APK
         run: |
           gradle --no-daemon --stacktrace assembleDebug && exit 0

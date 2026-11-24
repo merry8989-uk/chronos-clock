@@ -397,6 +397,13 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     )
                     SettingsDivider()
                     SettingsSwitchRow(
+                        title = "Reduce motion",
+                        subtitle = "Transitions keep their shape but take no time",
+                        checked = Settings.reduceMotion.value,
+                        onCheckedChange = { Settings.reduceMotion.set(it) },
+                    )
+                    SettingsDivider()
+                    SettingsSwitchRow(
                         title = "Show seconds on the world clock",
                         checked = Settings.showSeconds.value,
                         onCheckedChange = { Settings.showSeconds.set(it) },
