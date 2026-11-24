@@ -20,6 +20,7 @@ object WellnessStore {
     private const val PREFS = "chronos_wellness"
     private const val KEY_WORKOUTS = "workouts"
     private const val KEY_ACTIVITIES = "activities"
+    private const val KEY_HEIGHT = "height_cm"
     private const val KEY_MEDITATIONS = "meditations"
     private const val KEY_DAYS = "days"
     private const val KEY_STEP_DATE = "step_baseline_date"
@@ -201,6 +202,52 @@ object WellnessStore {
     fun setHeartRate(bpm: Int, measuredAt: Long = System.currentTimeMillis(), date: String = WellnessLogic.todayKey()) {
         if (bpm <= 0) return
         updateDay(date) { it.copy(heartRateBpm = bpm, heartRateAt = measuredAt) }
+    }
+
+    /** Resting heart rate for the day; zero is ignored, never stored. */
+    fun setRestingHeartRate(bpm: Int, date: String = WellnessLogic.todayKey()) {
+        if (bpm <= 0) return
+        updateDay(date) { it.copy(restingHeartRateBpm = bpm) }
+    }
+
+    /** Sleep stages in minutes; the total is derived from them. */
+    fun setSleepStages(
+        deep: Int,
+        light: Int,
+        rem: Int,
+        awake: Int,
+        date: String = WellnessLogic.todayKey(),
+    ) = updateDay(date) {
+        val d = deep.coerceAtLeast(0)
+        val l = light.coerceAtLeast(0)
+        val r = rem.coerceAtLeast(0)
+        it.copy(
+            deepMin = d,
+            lightMin = l,
+            remMin = r,
+            awakeMin = awake.coerceAtLeast(0),
+            sleepMinutes = d + l + r,
+        )
+    }
+
+    /** Blood oxygen in percent; zero is ignored. */
+    fun setSpo2(percent: Double, date: String = WellnessLogic.todayKey()) {
+        if (percent <= 0.0) return
+        updateDay(date) { it.copy(spo2Percent = percent) }
+    }
+
+    /** Body weight in kilograms; zero is ignored. */
+    fun setWeightKg(kg: Double, date: String = WellnessLogic.todayKey()) {
+        if (kg <= 0.0) return
+        updateDay(date) { it.copy(weightKg = kg) }
+    }
+
+    /** Height is a body measurement, not a daily one, so it lives on its own. */
+    fun heightCm(): Double = prefs?.getFloat(KEY_HEIGHT, 0f)?.toDouble() ?: 0.0
+
+    fun setHeightCm(cm: Double) {
+        if (cm <= 0.0) return
+        prefs?.edit()?.putFloat(KEY_HEIGHT, cm.toFloat())?.apply()
     }
 
     fun toggleHabit(habitId: String, date: String = WellnessLogic.todayKey()) =

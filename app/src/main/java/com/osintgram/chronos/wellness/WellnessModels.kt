@@ -78,6 +78,17 @@ data class DayLog(
     val habits: Set<String> = emptySet(),
     val heartRateBpm: Int = 0,
     val heartRateAt: Long = 0L,
+    /** Resting heart rate the phone or a watch reported for the day. */
+    val restingHeartRateBpm: Int = 0,
+    /** Sleep stages, in minutes. Zero when the source had no stage detail. */
+    val deepMin: Int = 0,
+    val lightMin: Int = 0,
+    val remMin: Int = 0,
+    val awakeMin: Int = 0,
+    /** Blood oxygen, percent (98.0 = 98%). Zero when never measured. */
+    val spo2Percent: Double = 0.0,
+    /** Body weight in kilograms. Zero when never logged or read. */
+    val weightKg: Double = 0.0,
 ) {
     val isEmpty: Boolean
         get() = steps == 0 && waterMl == 0 && sleepMinutes == 0 && habits.isEmpty() &&

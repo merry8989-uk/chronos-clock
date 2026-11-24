@@ -124,6 +124,13 @@ object WellnessCodec {
                     .put("sleepMinutes", day.sleepMinutes)
                     .put("habits", JSONArray(day.habits.toList()))
                     .put("heartRateBpm", day.heartRateBpm)
+                    .put("restingHeartRateBpm", day.restingHeartRateBpm)
+                    .put("deepMin", day.deepMin)
+                    .put("lightMin", day.lightMin)
+                    .put("remMin", day.remMin)
+                    .put("awakeMin", day.awakeMin)
+                    .put("spo2Percent", day.spo2Percent)
+                    .put("weightKg", day.weightKg)
                     .put("heartRateAt", day.heartRateAt),
             )
         }

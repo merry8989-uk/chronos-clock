@@ -164,6 +164,52 @@ object WellnessLogic {
     fun formatMinutes(total: Int): String =
         com.osintgram.chronos.common.Dates.hoursMinutes(total.toLong())
 
+    /**
+     * Body mass index, or null when either number is missing. Rounded to one
+     * decimal, the way every health app shows it.
+     */
+    fun bmi(weightKg: Double, heightCm: Double): Double? {
+        if (weightKg <= 0.0 || heightCm <= 0.0) return null
+        val metres = heightCm / 100.0
+        return (weightKg / (metres * metres)).roundTo1()
+    }
+
+    /** The band a BMI falls in, in the words a person uses. */
+    fun bmiLabel(bmi: Double): String = when {
+        bmi < 18.5 -> "Underweight"
+        bmi < 25.0 -> "Healthy range"
+        bmi < 30.0 -> "Overweight"
+        else -> "Obese"
+    }
+
+    /**
+     * A 0-100 sleep score from the stages.
+     *
+     * Deliberately simple and stated as such: seven to nine hours scores full
+     * marks, and deep plus REM is expected to be roughly 40% of the night. It is
+     * a guide, not a clinical measure, and the screen says so.
+     */
+    fun sleepScore(deepMin: Int, lightMin: Int, remMin: Int, awakeMin: Int): Int? {
+        val asleep = deepMin + lightMin + remMin
+        if (asleep <= 0) return null
+        val durationScore = when {
+            asleep >= 420 && asleep <= 540 -> 70.0
+            asleep < 420 -> 70.0 * (asleep / 420.0)
+            else -> 70.0 * (540.0 / asleep).coerceAtMost(1.0)
+        }
+        // Health Connect 1.1 carries only asleep/awake, so deep and REM are
+        // often zero. In that case score on duration alone rather than punishing
+        // the night for detail the phone never had.
+        if (deepMin + remMin <= 0) {
+            return (durationScore / 70.0 * 100.0).toInt().coerceIn(0, 100)
+        }
+        val restorative = (deepMin + remMin).toDouble() / asleep
+        val qualityScore = 30.0 * (restorative / 0.4).coerceAtMost(1.0)
+        return (durationScore + qualityScore).toInt().coerceIn(0, 100)
+    }
+
+    private fun Double.roundTo1(): Double = kotlin.math.round(this * 10) / 10
+
     /** Water in millilitres as litres with one decimal: 1750 → "1.8 L". */
     fun formatLitres(ml: Int): String = String.format("%.1f L", ml / 1000.0)
 
