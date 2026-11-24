@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
@@ -86,6 +87,9 @@ fun ScreenTimeScreen() {
         UsageSource.today(context, ScreenTimeStore.notificationsFor())
     }
     val limits = ScreenTimeStore.allLimits()
+    val week = remember(refresh, tick, usageAccess) { UsageSource.week(context) }
+    val use24Hour = Settings.use24Hour.value
+    val currentHour = remember(refresh, tick) { java.time.LocalTime.now().hour }
 
     LazyColumn(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 28.dp),
@@ -178,6 +182,96 @@ fun ScreenTimeScreen() {
                                 }
                             }
                         }
+                    }
+                    item { WellnessLabel("TODAY, HOUR BY HOUR") }
+                    item {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                if (day.hasHourly) {
+                                    HourlyUsageChart(
+                                        hours = day.hourlyMillis,
+                                        currentHour = currentHour,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+                                    WellnessNote(
+                                        "Each bar is an hour of today, read off the phone's own " +
+                                            "event log. The hour you are in is picked out.",
+                                    )
+                                } else {
+                                    WellnessNote("No hour-by-hour record for today yet.")
+                                }
+                            }
+                        }
+                    }
+                    item { WellnessLabel("LAST 7 DAYS") }
+                    item {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                if (week.days.isEmpty()) {
+                                    WellnessNote("No week to compare against yet.")
+                                } else {
+                                    WeekTrendChart(week = week)
+                                    Spacer(Modifier.height(12.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                                        MiniStat(
+                                            ScreenTimeLogic.formatDuration(week.averageActiveMillis),
+                                            "average day",
+                                        )
+                                        MiniStat(
+                                            value = week.busiest
+                                                ?.let { ScreenTimeLogic.formatDuration(it.foregroundMillis) }
+                                                ?: "—",
+                                            label = week.busiest?.let { "busiest, ${it.name}" } ?: "busiest day",
+                                        )
+                                    }
+                                    WellnessNote("The average counts only the days with any use.")
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            StatTile(
+                                value = day.firstUnlockMillis
+                                    ?.let { ScreenTimeLogic.clockTime(it, use24Hour) }
+                                    ?: "—",
+                                label = "first pickup",
+                                sub = day.lastUnlockMillis
+                                    ?.let { "last ${ScreenTimeLogic.clockTime(it, use24Hour)}" },
+                                modifier = Modifier.weight(1f),
+                            )
+                            StatTile(
+                                value = day.longestSession
+                                    ?.let { ScreenTimeLogic.formatDuration(it.durationMillis) }
+                                    ?: "—",
+                                label = "longest session",
+                                sub = day.longestSession?.label,
+                                modifier = Modifier.weight(1f),
+                            )
+                            StatTile(
+                                value = "${day.sessionsOverFiveMinutes}",
+                                label = "over 5 min",
+                                sub = "sessions",
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                    item {
+                        WellnessNote(
+                            "Pickups and sessions come from the phone's own unlock and app-switch " +
+                                "records — nothing here is estimated.",
+                        )
                     }
                     item { WellnessLabel("MOST USED") }
                     if (day.topApps.isEmpty()) {
@@ -412,6 +506,49 @@ private fun MiniStat(value: String, label: String) {
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(text = label, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun StatTile(
+    value: String,
+    label: String,
+    sub: String?,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(14.dp),
+        modifier = modifier,
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+            Text(
+                text = value,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (sub != null) {
+                Text(
+                    text = sub,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 

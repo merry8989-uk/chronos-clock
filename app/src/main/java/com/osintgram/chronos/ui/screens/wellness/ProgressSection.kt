@@ -1,8 +1,6 @@
 package com.osintgram.chronos.ui.screens.wellness
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -26,8 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.ui.components.BarChart
 import com.osintgram.chronos.ui.components.ProgressLine
-import com.osintgram.chronos.ui.screens.MetricRow
+import com.osintgram.chronos.ui.components.StatTile
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
 import com.osintgram.chronos.wellness.WellnessLogic
@@ -38,14 +37,22 @@ import java.time.format.DateTimeFormatter
 /**
  * Progress: the last seven days, counted from what was actually logged. Days
  * with nothing recorded show as empty bars rather than being filled in.
+ *
+ * The week totals are a two-column grid of [StatTile]s so the numbers can be
+ * compared at a glance, and the seven days are one [BarChart] with today
+ * picked out, instead of a row of hand-built boxes.
  */
 @Composable
 fun ProgressSection() {
     val totals = WellnessStore.weekTotals(7)
     val days = WellnessStore.recentDays(7)
     val streak = WellnessStore.streak()
-    val maxSteps = days.maxOfOrNull { it.steps }?.coerceAtLeast(1) ?: 1
     val goal = com.osintgram.chronos.data.Settings.stepGoal.value
+    // recentDays is oldest-first, so today is the last bar — but match on the
+    // date rather than the position, so the highlight is right even if the
+    // window ever changes.
+    val todayKey = WellnessLogic.todayKey()
+    val todayIndex = days.indexOfFirst { it.date == todayKey }.takeIf { it >= 0 }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -87,38 +94,62 @@ fun ProgressSection() {
 
         item { WellnessLabel("THIS WEEK") }
         item {
-            MetricRow(
-                leftValue = WellnessLogic.formatSteps(totals.steps),
-                leftLabel = "steps",
-                rightValue = "${totals.workoutCount}",
-                rightLabel = "workouts",
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile(
+                    label = "steps",
+                    value = WellnessLogic.formatSteps(totals.steps),
+                    modifier = Modifier.weight(1f),
+                )
+                StatTile(
+                    label = "workouts",
+                    value = "${totals.workoutCount}",
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
         item {
-            MetricRow(
-                leftValue = WellnessLogic.formatMinutes(totals.meditationMinutes),
-                leftLabel = "meditation",
-                rightValue = WellnessLogic.formatMinutes(totals.workoutMinutes),
-                rightLabel = "workout time",
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile(
+                    label = "meditation",
+                    value = WellnessLogic.formatMinutes(totals.meditationMinutes),
+                    modifier = Modifier.weight(1f),
+                )
+                StatTile(
+                    label = "workout time",
+                    value = WellnessLogic.formatMinutes(totals.workoutMinutes),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
         item {
-            MetricRow(
-                leftValue = WellnessLogic.formatLitres(totals.waterMl),
-                leftLabel = "water",
-                rightValue = if (totals.sleepMinutesAverage == 0) "—"
-                else WellnessLogic.formatMinutes(totals.sleepMinutesAverage),
-                rightLabel = "sleep / night",
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile(
+                    label = "water",
+                    value = WellnessLogic.formatLitres(totals.waterMl),
+                    modifier = Modifier.weight(1f),
+                )
+                StatTile(
+                    label = "sleep / night",
+                    value = if (totals.sleepMinutesAverage == 0) "—"
+                    else WellnessLogic.formatMinutes(totals.sleepMinutesAverage),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
         if (totals.volumeKg > 0) {
             item {
-                MetricRow(
-                    leftValue = "${totals.volumeKg.toInt()} kg",
-                    rightValue = "${totals.daysWithSteps}/7",
-                    leftLabel = "volume lifted",
-                    rightLabel = "days with steps",
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    StatTile(
+                        label = "volume lifted",
+                        value = "${totals.volumeKg.toInt()} kg",
+                        modifier = Modifier.weight(1f),
+                    )
+                    StatTile(
+                        label = "days with steps",
+                        value = "${totals.daysWithSteps}/7",
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
 
@@ -130,56 +161,20 @@ fun ProgressSection() {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Row(
+                    BarChart(
+                        values = days.map { it.steps.toFloat() },
+                        labels = days.map { dayLetter(it.date) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Bottom,
-                    ) {
-                        days.forEach { day ->
-                            val fraction = (day.steps.toFloat() / maxSteps).coerceIn(0f, 1f)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Bottom,
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height((fraction * 96f).dp.coerceAtLeast(2.dp))
-                                        .background(
-                                            if (day.steps >= goal) MaterialTheme.colorScheme.primary
-                                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                            RoundedCornerShape(6.dp),
-                                        ),
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        days.forEach { day ->
-                            val label = runCatching {
-                                LocalDate.parse(day.date).format(DateTimeFormatter.ofPattern("EE"))
-                            }.getOrDefault("")
-                            Text(
-                                text = label.take(1),
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            )
-                        }
-                    }
+                        highlightIndex = todayIndex,
+                    )
                     Spacer(Modifier.height(10.dp))
                     ProgressLine(WellnessLogic.progress(totals.steps, goal * 7))
                     WellnessNote(
-                        "Filled bars reached the $goal step goal; lighter bars did not. " +
-                            "Total ${WellnessLogic.formatSteps(totals.steps)} steps this week.",
+                        "Bars are scaled to the busiest day this week, and today's bar is the " +
+                            "solid one. Goal ${WellnessLogic.formatSteps(goal)} steps a day · " +
+                            "total ${WellnessLogic.formatSteps(totals.steps)} steps this week.",
                     )
                 }
             }
@@ -195,3 +190,11 @@ fun ProgressSection() {
         }
     }
 }
+
+/**
+ * First letter of the weekday for a stored day key, or an empty string when the
+ * key cannot be parsed — the bar chart simply leaves that label out.
+ */
+private fun dayLetter(dateKey: String): String = runCatching {
+    LocalDate.parse(dateKey).format(DateTimeFormatter.ofPattern("EE")).take(1)
+}.getOrDefault("")

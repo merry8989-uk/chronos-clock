@@ -38,6 +38,25 @@ data class WorkoutSession(
         get() = entries.sumOf { it.sets.toDouble() * it.reps * it.weightKg }
 }
 
+/**
+ * A workout another app already recorded — a walk, a ride, a run — read back
+ * from Health Connect. Chronos does not invent these: they are what Google Fit,
+ * Samsung Health, a watch or a bike computer logged, and the title carries the
+ * readable type name resolved at read time.
+ */
+data class ActivitySession(
+    val id: Long,
+    val type: Int,
+    val title: String,
+    val startAt: Long,
+    val endAt: Long,
+    val source: String = "Health Connect",
+) {
+    val minutes: Int get() = ((endAt - startAt) / 60_000L).toInt().coerceAtLeast(0)
+
+    val label: String get() = title.ifBlank { "Workout" }
+}
+
 /** A completed meditation or breathing session. */
 data class MeditationSession(
     val id: Long,

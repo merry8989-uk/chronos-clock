@@ -54,6 +54,67 @@ object UsageSource {
             .getOrDefault(DayScreenTime())
     }
 
+    /**
+     * Today's foreground time in 24 hourly buckets, the shape the hourly chart
+     * draws.
+     *
+     * The buckets come from the event stream rather than from the per-app
+     * totals, because only the events know *when* an app was in front. An empty
+     * list means "could not read" (or no usage access), which the screen shows
+     * as a quiet note instead of a flat row of bars that would read as a day of
+     * no use.
+     */
+    fun hourlyToday(context: Context): List<Long> {
+        if (!hasAccess(context)) return emptyList()
+        val zone = ZoneId.systemDefault()
+        val start = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+        val end = System.currentTimeMillis()
+        val manager = usageManager(context) ?: return emptyList()
+        return runCatching {
+            val segments = scanEvents(manager, start, end).segments
+                .filter { it.packageName.isNotBlank() && it.packageName != context.packageName }
+            ScreenTimeLogic.hourlyBuckets(segments, start)
+        }.onFailure {
+            DiagnosticsLogger.log("ScreenTime", "Hourly read failed: ${it.javaClass.simpleName}: ${it.message}")
+        }.getOrDefault(emptyList())
+    }
+
+    /**
+     * The last [days] days of screen time, one total per day, oldest first.
+     *
+     * The trend row exists so a single heavy day can be read against the week
+     * it sits in; the totals are the same per-app foreground figures the rest
+     * of the tab uses, summed per day, so the row and the cards agree. Days the
+     * phone was not used come back as zero and the average ignores them.
+     */
+    fun week(context: Context, days: Int = 7): WeekUsage {
+        if (!hasAccess(context)) return WeekUsage()
+        val manager = usageManager(context) ?: return WeekUsage()
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val now = System.currentTimeMillis()
+        val span = days.coerceIn(1, 31)
+        val totals = (span - 1 downTo 0).map { offset ->
+            val date = today.minusDays(offset.toLong())
+            val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
+            val dayEnd = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = minOf(dayEnd, now)
+            val millis = if (end > start) {
+                foregroundBetween(manager, context.packageName, start, end)
+            } else {
+                0L
+            }
+            DayTotal(
+                dayStartMillis = start,
+                letter = ScreenTimeLogic.dayLetter(date),
+                name = ScreenTimeLogic.dayName(date),
+                foregroundMillis = millis,
+                isToday = offset == 0,
+            )
+        }
+        return ScreenTimeLogic.week(totals)
+    }
+
     /** Usage for any window — the today call is this with today's bounds. */
     fun read(
         context: Context,
@@ -61,8 +122,7 @@ object UsageSource {
         endMillis: Long,
         notifications: Map<String, Int> = emptyMap(),
     ): DayScreenTime {
-        val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
-            ?: return DayScreenTime()
+        val manager = usageManager(context) ?: return DayScreenTime()
 
         // Time in the foreground per package.
         val totals = mutableMapOf<String, Long>()
@@ -79,53 +139,52 @@ object UsageSource {
             DiagnosticsLogger.log("ScreenTime", "queryUsageStats failed: ${it.message}")
         }
 
-        // Launches, screen-on and unlocks from the event stream.
-        val launches = mutableMapOf<String, Int>()
-        var screenOn = 0
-        var unlocks = 0
-        runCatching {
-            val events = manager.queryEvents(startMillis, endMillis)
-            val event = UsageEvents.Event()
-            while (events.hasNextEvent()) {
-                events.getNextEvent(event)
-                when (event.eventType) {
-                    resumedEventType() -> {
-                        val pkg = event.packageName ?: continue
-                        launches[pkg] = (launches[pkg] ?: 0) + 1
-                    }
-                    UsageEvents.Event.SCREEN_INTERACTIVE -> screenOn++
-                    UsageEvents.Event.KEYGUARD_HIDDEN -> unlocks++
-                }
-            }
-        }.onFailure {
-            DiagnosticsLogger.log("ScreenTime", "queryEvents failed: ${it.message}")
+        // Launches, screen-on, unlocks and the foreground stretches, in one pass.
+        val scan = scanEvents(manager, startMillis, endMillis)
+
+        // Our own package is the app the user is looking at; counting it would
+        // make Screen time report the time spent reading Screen time.
+        val segments = scan.segments.filter {
+            it.packageName.isNotBlank() && it.packageName != context.packageName
+        }
+        val longest = ScreenTimeLogic.longestSession(segments)?.let { segment ->
+            AppSession(
+                packageName = segment.packageName,
+                label = labelFor(context, segment.packageName),
+                startMillis = segment.startMillis,
+                durationMillis = segment.durationMillis,
+            )
         }
 
-        val packages = (totals.keys + launches.keys + notifications.keys)
+        val packages = (totals.keys + scan.launches.keys + notifications.keys)
             .filter { it.isNotBlank() && it != context.packageName }
         val apps = packages.map { pkg ->
             AppUsage(
                 packageName = pkg,
                 label = labelFor(context, pkg),
                 foregroundMillis = totals[pkg] ?: 0L,
-                launches = launches[pkg] ?: 0,
+                launches = scan.launches[pkg] ?: 0,
                 notifications = notifications[pkg] ?: 0,
             )
         }
 
         return DayScreenTime(
             totalForegroundMillis = totals.filterKeys { it != context.packageName }.values.sum(),
-            screenOnCount = screenOn,
-            unlockCount = unlocks,
+            screenOnCount = scan.screenOnCount,
+            unlockCount = scan.unlockCount,
             apps = ScreenTimeLogic.sortByUsage(apps),
+            hourlyMillis = ScreenTimeLogic.hourlyBuckets(segments, startMillis),
+            firstUnlockMillis = scan.firstUnlockMillis,
+            lastUnlockMillis = scan.lastUnlockMillis,
+            longestSession = longest,
+            sessionsOverFiveMinutes = ScreenTimeLogic.sessionsLongerThan(segments),
         )
     }
 
     /** The package currently in the foreground, used by the limit watcher. */
     fun foregroundPackage(context: Context, lookBackMillis: Long = 15_000L): String? {
         if (!hasAccess(context)) return null
-        val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
-            ?: return null
+        val manager = usageManager(context) ?: return null
         return runCatching {
             val end = System.currentTimeMillis()
             val events = manager.queryEvents(end - lookBackMillis, end)
@@ -161,4 +220,112 @@ object UsageSource {
             @Suppress("DEPRECATION")
             UsageEvents.Event.MOVE_TO_FOREGROUND
         }
+
+    private fun usageManager(context: Context): UsageStatsManager? =
+        context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+
+    /**
+     * The foreground time one package got in a window, from the per-app totals.
+     *
+     * Split out of [read] so the seven-day series can ask the same question of
+     * six past windows without going through the whole day model each time.
+     */
+    private fun foregroundBetween(
+        manager: UsageStatsManager,
+        ownPackage: String,
+        startMillis: Long,
+        endMillis: Long,
+    ): Long = runCatching {
+        manager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startMillis, endMillis)
+            .orEmpty()
+            .filter { it.packageName != ownPackage && it.totalTimeInForeground > 0 }
+            .sumOf { it.totalTimeInForeground }
+    }.onFailure {
+        DiagnosticsLogger.log("ScreenTime", "queryUsageStats failed: ${it.message}")
+    }.getOrDefault(0L)
+
+    /** What one pass over the event stream yields. */
+    private class EventScan(
+        val segments: List<UsageSegment>,
+        val launches: Map<String, Int>,
+        val screenOnCount: Int,
+        val unlockCount: Int,
+        val firstUnlockMillis: Long?,
+        val lastUnlockMillis: Long?,
+    )
+
+    /**
+     * Turns the event stream into foreground stretches, launch counts and
+     * unlock times in a single pass.
+     *
+     * A resume opens a stretch for that package. It closes at the next resume
+     * for any package, when the screen stops being interactive, or when the
+     * keyguard comes up — the three ways a phone stops showing an app. Whatever
+     * is still open at the end of the window closes at the window end, which
+     * for today's read is "now", so the app on screen is counted as used up to
+     * this moment rather than dropped. Reading it once matters: the day card
+     * needs all four answers and queryEvents is the expensive call here.
+     */
+    private fun scanEvents(
+        manager: UsageStatsManager,
+        startMillis: Long,
+        endMillis: Long,
+    ): EventScan {
+        val segments = mutableListOf<UsageSegment>()
+        val launches = mutableMapOf<String, Int>()
+        var screenOn = 0
+        var unlocks = 0
+        var firstUnlock: Long? = null
+        var lastUnlock: Long? = null
+        var openPackage: String? = null
+        var openStart = 0L
+
+        runCatching {
+            val events = manager.queryEvents(startMillis, endMillis)
+            val event = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(event)
+                val at = event.timeStamp
+                val type = event.eventType
+                val resumed = type == resumedEventType()
+                val stopped = type == UsageEvents.Event.SCREEN_NON_INTERACTIVE ||
+                    type == UsageEvents.Event.KEYGUARD_SHOWN
+                val running = openPackage
+                if (running != null && (resumed || stopped)) {
+                    if (at > openStart) segments += UsageSegment(openStart, at, running)
+                    openPackage = null
+                }
+                when {
+                    resumed -> {
+                        val pkg = event.packageName
+                        if (!pkg.isNullOrBlank()) {
+                            launches[pkg] = (launches[pkg] ?: 0) + 1
+                            openPackage = pkg
+                            openStart = at
+                        }
+                    }
+                    type == UsageEvents.Event.SCREEN_INTERACTIVE -> screenOn++
+                    type == UsageEvents.Event.KEYGUARD_HIDDEN -> {
+                        unlocks++
+                        if (firstUnlock == null) firstUnlock = at
+                        lastUnlock = at
+                    }
+                }
+            }
+            openPackage?.let { pkg ->
+                if (endMillis > openStart) segments += UsageSegment(openStart, endMillis, pkg)
+            }
+        }.onFailure {
+            DiagnosticsLogger.log("ScreenTime", "queryEvents failed: ${it.message}")
+        }
+
+        return EventScan(
+            segments = segments,
+            launches = launches,
+            screenOnCount = screenOn,
+            unlockCount = unlocks,
+            firstUnlockMillis = firstUnlock,
+            lastUnlockMillis = lastUnlock,
+        )
+    }
 }

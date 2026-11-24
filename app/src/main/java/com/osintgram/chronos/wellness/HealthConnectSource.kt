@@ -16,9 +16,11 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.HydrationRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Volume
@@ -58,6 +60,9 @@ object HealthConnectSource {
                 HealthPermission.getReadPermission(StepsRecord::class),
                 HealthPermission.getReadPermission(HydrationRecord::class),
                 HealthPermission.getReadPermission(SleepSessionRecord::class),
+                HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+                HealthPermission.getReadPermission(DistanceRecord::class),
+                HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
             )
         }.onFailure {
             DiagnosticsLogger.log("HealthConnect", "Read permission names failed: ${it.message}")
@@ -104,6 +109,10 @@ object HealthConnectSource {
         val steps: Int?,
         val waterMl: Int?,
         val sleepMinutes: Int?,
+        /** Distance walked or ridden today, in metres, when another app recorded it. */
+        val distanceMeters: Double? = null,
+        /** Active energy today, in kilocalories. */
+        val energyKcal: Double? = null,
     ) {
         val hasAny: Boolean get() = steps != null || waterMl != null || sleepMinutes != null
     }
@@ -178,6 +187,8 @@ object HealthConnectSource {
             Snapshot(
                 steps = result[StepsRecord.COUNT_TOTAL]?.toInt(),
                 waterMl = result[HydrationRecord.VOLUME_TOTAL]?.inMilliliters?.toInt(),
+                distanceMeters = result[DistanceRecord.DISTANCE_TOTAL]?.inMeters,
+                energyKcal = result[TotalCaloriesBurnedRecord.ENERGY_TOTAL]?.inKilocalories,
                 sleepMinutes = result[SleepSessionRecord.SLEEP_DURATION_TOTAL]?.toMinutes()?.toInt(),
             )
         }.onFailure {
@@ -186,6 +197,67 @@ object HealthConnectSource {
     }
 
     suspend fun readToday(context: Context): Snapshot? = readDay(context, LocalDate.now())
+
+    /**
+     * Workouts other apps already recorded — walks, rides, runs, gym sessions —
+     * for the last [days] days. This is how Chronos sees cycling and driving
+     * style activity without inventing a tracker of its own: Health Connect is
+     * the one place on the phone where Google Fit, Samsung Health, a watch and a
+     * bike computer all land.
+     */
+    suspend fun readActivities(context: Context, days: Int = 7): List<ActivitySession> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val hc = healthClient(context) ?: return@runCatching emptyList()
+                val exercisePermission =
+                    HealthPermission.getReadPermission(ExerciseSessionRecord::class)
+                if (!grantedPermissions(context).contains(exercisePermission)) {
+                    DiagnosticsLogger.log("HealthConnect", "exercise read not granted")
+                    return@runCatching emptyList()
+                }
+                val end = Instant.now()
+                val start = end.minus(days.toLong(), java.time.temporal.ChronoUnit.DAYS)
+                val response = hc.readRecords(
+                    androidx.health.connect.client.request.ReadRecordsRequest(
+                        recordType = ExerciseSessionRecord::class,
+                        timeRangeFilter = TimeRangeFilter.between(start, end),
+                    ),
+                )
+                val sessions = response.records.map { record ->
+                    ActivitySession(
+                        id = record.startTime.toEpochMilli(),
+                        type = record.exerciseType,
+                        title = exerciseLabel(record.exerciseType, record.title),
+                        startAt = record.startTime.toEpochMilli(),
+                        endAt = record.endTime.toEpochMilli(),
+                    )
+                }
+                DiagnosticsLogger.log(
+                    "HealthConnect",
+                    "read ${sessions.size} exercise session(s) over $days day(s)",
+                )
+                sessions.sortedByDescending { it.startAt }
+            }.onFailure {
+                DiagnosticsLogger.log(
+                    "HealthConnect",
+                    "exercise read failed: ${it.javaClass.simpleName}: ${it.message}",
+                )
+            }.getOrDefault(emptyList())
+        }
+
+    /** The readable name for an exercise type code, from the client's own constants. */
+    private fun exerciseLabel(type: Int, title: String?): String = when (type) {
+        ExerciseSessionRecord.EXERCISE_TYPE_WALKING -> "Walking"
+        ExerciseSessionRecord.EXERCISE_TYPE_RUNNING -> "Running"
+        ExerciseSessionRecord.EXERCISE_TYPE_RUNNING_TREADMILL -> "Treadmill run"
+        ExerciseSessionRecord.EXERCISE_TYPE_BIKING -> "Cycling"
+        ExerciseSessionRecord.EXERCISE_TYPE_BIKING_STATIONARY -> "Stationary bike"
+        ExerciseSessionRecord.EXERCISE_TYPE_HIKING -> "Hiking"
+        ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING -> "Strength training"
+        ExerciseSessionRecord.EXERCISE_TYPE_SWIMMING_POOL -> "Swimming"
+        ExerciseSessionRecord.EXERCISE_TYPE_YOGA -> "Yoga"
+        else -> title?.takeIf { it.isNotBlank() } ?: "Workout"
+    }
 
     suspend fun backfillHistory(context: Context, days: Int = HISTORY_DAYS): Int {
         val zone = ZoneId.systemDefault()

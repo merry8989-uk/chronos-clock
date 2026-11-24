@@ -34,6 +34,12 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_HYDRATION" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <!-- Workouts, distance and energy that other health apps already recorded:
+         this is how walks, rides and gym sessions arrive without Chronos
+         tracking them itself. -->
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <!-- Lets the six-hourly worker read while the app is not on screen. -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
     <!-- Lets the one-off import reach past Health Connect's 30-day window (84 days). -->

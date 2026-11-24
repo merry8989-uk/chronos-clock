@@ -1,6 +1,5 @@
 package com.osintgram.chronos.ui.screens.wellness
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -45,9 +45,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,11 +53,14 @@ import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.ProgressLine
+import com.osintgram.chronos.ui.components.RingStat
 import com.osintgram.chronos.ui.screens.MetricBlock
 import com.osintgram.chronos.ui.screens.MetricRow
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.heroSurfaceBrush
 import com.osintgram.chronos.ui.theme.pressable
 import com.osintgram.chronos.wellness.DayLog
 import com.osintgram.chronos.wellness.HealthConnectActions
@@ -114,32 +115,53 @@ fun TodaySection(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth(),
+            // The hero. One number leads: the count sits inside its ring, the
+            // goal sits under it, and where the number came from is a caption.
+            // The gradient is the only new surface treatment on the screen.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .background(heroSurfaceBrush()),
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        StepRing(
-                            steps = shownSteps,
-                            goal = stepGoal,
-                            modifier = Modifier.size(104.dp),
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = WellnessLogic.formatSteps(shownSteps),
-                                fontSize = 30.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
+                        Box(
+                            modifier = Modifier.size(152.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            RingStat(
+                                progress = WellnessLogic.progress(shownSteps, stepGoal),
+                                modifier = Modifier.fillMaxSize(),
+                                strokeWidth = 12.dp,
                             )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = WellnessLogic.formatSteps(shownSteps),
+                                    fontSize = 26.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                )
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    text = "of ${WellnessLogic.formatSteps(stepGoal)}",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(Spacing.lg))
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                text = "steps today · goal ${WellnessLogic.formatSteps(stepGoal)}",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = "STEPS TODAY",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.2.sp,
+                                color = MaterialTheme.colorScheme.primary,
                             )
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(Spacing.sm))
                             Text(
                                 text = when {
                                     healthState.granted -> "Health Connect — whole day, refreshed every 10 s"
@@ -149,14 +171,25 @@ fun TodaySection(
                                     else -> "No step sensor — add steps by hand"
                                 },
                                 fontSize = 11.sp,
+                                lineHeight = 15.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (streak > 0) {
+                                Spacer(Modifier.height(Spacing.sm))
+                                Text(
+                                    text = "$streak day streak",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
-                    ProgressLine(WellnessLogic.progress(shownSteps, stepGoal))
-                    Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.height(Spacing.md))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    ) {
                         OutlinedButton(
                             onClick = {
                                 Haptics.tick(context)
@@ -171,15 +204,6 @@ fun TodaySection(
                             },
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                         ) { Text("+500", fontSize = 12.sp) }
-                        Spacer(Modifier.weight(1f))
-                        if (streak > 0) {
-                            Text(
-                                text = "$streak day streak",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
                     }
                 }
             }
@@ -349,39 +373,6 @@ fun TodaySection(
                 "Steps come from this phone's step counter and are counted from the first " +
                     "reading of the day. Water and sleep are entered by hand or synced from " +
                     "Health Connect. Nothing on this screen leaves the device.",
-            )
-        }
-    }
-}
-
-/** The arc that shows today's steps against the goal. */
-@Composable
-private fun StepRing(steps: Int, goal: Int, modifier: Modifier = Modifier) {
-    val progress = WellnessLogic.progress(steps, goal)
-    val track = MaterialTheme.colorScheme.surfaceVariant
-    val accent = MaterialTheme.colorScheme.primary
-    Canvas(modifier = modifier) {
-        val stroke = size.minDimension * 0.1f
-        val inset = stroke / 2f
-        val arcSize = Size(size.width - stroke, size.height - stroke)
-        drawArc(
-            color = track,
-            startAngle = -90f,
-            sweepAngle = 360f,
-            useCenter = false,
-            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
-            size = arcSize,
-            style = Stroke(width = stroke),
-        )
-        if (progress > 0f) {
-            drawArc(
-                color = accent,
-                startAngle = -90f,
-                sweepAngle = 360f * progress,
-                useCenter = false,
-                topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
-                size = arcSize,
-                style = Stroke(width = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
             )
         }
     }
