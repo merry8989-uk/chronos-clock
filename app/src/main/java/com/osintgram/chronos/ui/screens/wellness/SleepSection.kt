@@ -20,24 +20,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
 import com.osintgram.chronos.ui.components.BarChart
+import com.osintgram.chronos.ui.components.EmptyState
 import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.RingStat
 import com.osintgram.chronos.ui.components.StatTile
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.wellness.WellnessLogic
 import com.osintgram.chronos.wellness.WellnessStore
 import java.time.LocalDate
@@ -79,8 +81,13 @@ fun SleepSection() {
     val best = loggedNights.maxByOrNull { it.sleepMinutes }
 
     LazyColumn(
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         item { WellnessLabel("LAST NIGHT") }
         item {
@@ -90,15 +97,30 @@ fun SleepSection() {
             )
         }
 
+        // No night logged is a real state, and the presets below are the way
+        // out of it, so the empty state points at them rather than at nothing.
+        if (loggedNights.isEmpty()) {
+            item {
+                EmptyState(
+                    title = "No night logged yet",
+                    subtitle = "Tap a preset in Log sleep — 6, 7, 8 or 9 hours — and the ring, " +
+                        "the week chart and the average fill in from that one number.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = Spacing.md),
+                )
+            }
+        }
+
         item { WellnessLabel("STAGES") }
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         StatTile(
                             label = "asleep",
                             value = if (today.sleepMinutes > 0) {
@@ -145,10 +167,10 @@ fun SleepSection() {
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
                     BarChart(
                         values = days.map { it.sleepMinutes.toFloat() },
                         labels = days.map { dayLetter(it.date) },
@@ -157,8 +179,8 @@ fun SleepSection() {
                             .height(120.dp),
                         highlightIndex = todayIndex,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Spacer(Modifier.height(Spacing.md))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         StatTile(
                             label = "average",
                             value = if (loggedNights.isEmpty()) DASH
@@ -182,28 +204,30 @@ fun SleepSection() {
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(Spacing.lg)) {
                     Text(
                         text = "Last night was",
-                        fontSize = 13.sp,
+                        style = ChronosType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(Spacing.xs))
                     Text(
                         text = if (today.sleepMinutes > 0) {
                             WellnessLogic.formatMinutes(today.sleepMinutes)
                         } else {
                             "not logged yet"
                         },
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = ChronosType.numeric,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    Spacer(Modifier.height(12.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Spacer(Modifier.height(Spacing.md))
+                    // The presets are the action this section offers: a filled
+                    // pill writes the whole night in one tap. The fine steps
+                    // under them are text buttons, so they stay subordinate.
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         items(SLEEP_PRESETS_HOURS, key = { it }) { hours ->
                             val minutes = hours * 60
                             Pill(
@@ -216,22 +240,22 @@ fun SleepSection() {
                             )
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(
+                    Spacer(Modifier.height(Spacing.sm))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                        TextButton(
                             onClick = {
                                 Haptics.tick(context)
                                 WellnessStore.setSleepMinutes((today.sleepMinutes - 15).coerceAtLeast(0))
                             },
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        ) { Text("\u221215 min", fontSize = 12.sp) }
-                        OutlinedButton(
+                            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.xs),
+                        ) { Text("\u221215 min", style = ChronosType.label) }
+                        TextButton(
                             onClick = {
                                 Haptics.tick(context)
                                 WellnessStore.setSleepMinutes(today.sleepMinutes + 15)
                             },
-                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        ) { Text("+15 min", fontSize = 12.sp) }
+                            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.xs),
+                        ) { Text("+15 min", style = ChronosType.label) }
                     }
                     WellnessNote(
                         "A preset writes the whole night, so it replaces what was there. " +
@@ -266,11 +290,11 @@ fun SleepSection() {
 private fun SleepHero(sleepMinutes: Int, goalMinutes: Int) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(Radii.lg),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Spacing.lg),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -285,21 +309,20 @@ private fun SleepHero(sleepMinutes: Int, goalMinutes: Int) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = if (sleepMinutes > 0) WellnessLogic.formatMinutes(sleepMinutes) else DASH,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = ChronosType.title,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(Spacing.xs))
                     Text(
                         text = "of ${WellnessLogic.formatMinutes(goalMinutes)}",
-                        fontSize = 10.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                     )
                 }
             }
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(Spacing.lg))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -308,30 +331,28 @@ private fun SleepHero(sleepMinutes: Int, goalMinutes: Int) {
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp),
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(Spacing.xs))
                     Text(
                         text = "Last night",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        style = ChronosType.title,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 Text(
                     text = goalBandText(sleepMinutes, goalMinutes),
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
+                    style = ChronosType.body,
                     color = if (sleepMinutes >= goalMinutes && goalMinutes > 0) {
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Spacing.xs))
                 Text(
                     text = "Ring fills against your sleep goal.",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                    style = ChronosType.label,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

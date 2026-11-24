@@ -21,4 +21,51 @@
     <string name="widget_presets_desc">One tap starts a saved timer preset.</string>
     <string name="widget_screen_time_label">Chronos: Screen time</string>
     <string name="widget_screen_time_desc">Today screen time, the most-used app and the unlock count.</string>
+
+    <!-- Everything a widget says. Kept short: these have to fit a 2x1 widget. -->
+    <string name="widget_header_alarms">ALARMS</string>
+    <string name="widget_header_holidays">HOLIDAYS</string>
+    <string name="widget_header_screen_time">SCREEN TIME</string>
+    <string name="widget_header_next_alarm">NEXT ALARM</string>
+
+    <string name="widget_action_start">Start</string>
+    <string name="widget_action_pause">Pause</string>
+    <string name="widget_action_reset">Reset</string>
+    <string name="widget_preset_placeholder">Preset</string>
+
+    <!-- States, said in words so none of them depends on a colour alone. -->
+    <string name="widget_state_on">On</string>
+    <string name="widget_state_off">Off</string>
+    <string name="widget_state_over">Over</string>
+    <string name="widget_state_ready">Ready</string>
+    <string name="widget_state_paused">Paused</string>
+    <string name="widget_stopwatch_running">Running</string>
+    <string name="widget_timer_running">Running · %1$s</string>
+    <string name="widget_timer_ready">Ready · %1$s</string>
+    <string name="widget_timer_finished">Finished</string>
+
+    <string name="widget_no_alarms">No alarms</string>
+    <string name="widget_no_alarm_set">No alarm set</string>
+    <string name="widget_no_time">--:--</string>
+    <string name="widget_no_usage">--</string>
+    <string name="widget_tap_to_add">Tap to add one</string>
+    <string name="widget_tap_to_open">Tap to open</string>
+    <string name="widget_no_holidays">No holidays ahead</string>
+    <string name="widget_custom_holiday">Custom holiday</string>
+    <string name="widget_nothing_used">Nothing used yet today</string>
+    <string name="widget_usage_access">Allow Usage access</string>
+    <string name="widget_screen_unlocks">%1$d unlocks</string>
+    <string name="widget_screen_on">%1$d screen on</string>
+    <string name="widget_screen_alerts">%1$d alerts</string>
+
+    <string name="widget_countdown_now">now</string>
+    <string name="widget_countdown_soon">in under a minute</string>
+    <string name="widget_countdown_minutes">in %1$d min</string>
+    <string name="widget_countdown_hours">in %1$d h %2$d min</string>
+    <string name="widget_countdown_days">in %1$d days</string>
+
+    <!-- Spoken labels for the widget controls. -->
+    <string name="widget_cd_clock">Chronos clock</string>
+    <string name="widget_cd_alarm_on">Alarm on, tap to turn off</string>
+    <string name="widget_cd_alarm_off">Alarm off, tap to turn on</string>
 </resources>

@@ -84,47 +84,26 @@ object WidgetUpdater {
 
     // ------------------------------------------------------------------ clock
 
-    /** Accent colour per theme choice, kept here so widget code stays lean. */
-    private fun accentColor(): Int = when (Settings.accent.value) {
-        "violet" -> 0xFF8B7CFF.toInt()
-        "teal" -> 0xFF22C7A9.toInt()
-        "amber" -> 0xFFFFB020.toInt()
-        "rose" -> 0xFFFF6E8A.toInt()
-        "green" -> 0xFF4CD07D.toInt()
-        else -> 0xFF4C8DFF.toInt()
-    }
-
-    /** Background colour for the chosen style. */
-    private fun backgroundColor(): Int = when (Settings.widgetBgStyle.value) {
-        "transparent" -> 0x00000000
-        "white" -> 0xFFF2F4F8.toInt()
-        "blue" -> 0xFF1E3A66.toInt()
-        "custom" -> Settings.widgetBgColor.value
-        else -> 0xCC171B23.toInt()
-    }
-
-    /** Rounded preset drawable, or 0 when the user picked a custom colour. */
-    private fun backgroundResource(): Int = when (Settings.widgetBgStyle.value) {
-        "transparent" -> R.drawable.widget_bg_transparent
-        "white" -> R.drawable.widget_bg_white
-        "blue" -> R.drawable.widget_bg_blue
-        "custom" -> 0
-        else -> R.drawable.widget_bg
-    }
+    /**
+     * Colours for the user's background choice. [WidgetTheme] owns the accent
+     * and the contrast checks, so this file never holds a colour of its own.
+     */
+    private fun palette(): WidgetTheme.Palette = WidgetTheme.palette()
 
     private fun buildClock(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_clock)
-        val textColor = Settings.widgetTextColor.value
-        val accent = accentColor()
+        val colors = palette()
         val bitmap = ClockFaceRenderer.face(
             context = context,
             sizePx = 320,
-            background = backgroundColor(),
-            rimColor = accent,
-            tickColor = textColor,
-            hourHandColor = textColor,
-            minuteHandColor = textColor,
-            secondHandColor = accent,
+            background = colors.surface,
+            // Rim and second hand carry the accent, checked against the face
+            // background so they read on every background choice.
+            rimColor = colors.accentInk,
+            tickColor = colors.ink,
+            hourHandColor = colors.ink,
+            minuteHandColor = colors.ink,
+            secondHandColor = colors.accentInk,
             // Hour and minute hands only: the widget refreshes on the minute, so
             // a second hand would be visibly wrong between refreshes.
             showSecondHand = false,
@@ -142,17 +121,12 @@ object WidgetUpdater {
             else -> R.layout.widget_clock_digital_12s
         }
         val views = RemoteViews(context.packageName, layout)
-        val textColor = Settings.widgetTextColor.value
+        val colors = palette()
 
-        val resource = backgroundResource()
-        if (resource != 0) {
-            views.setInt(R.id.widget_root, "setBackgroundResource", resource)
-        } else {
-            views.setInt(R.id.widget_root, "setBackgroundColor", backgroundColor())
-        }
+        WidgetTheme.applyBackground(views, R.id.widget_root)
 
-        views.setTextColor(R.id.text_clock, textColor)
-        views.setTextColor(R.id.text_clock_date, accentColor())
+        views.setTextColor(R.id.text_clock, colors.ink)
+        views.setTextColor(R.id.text_clock_date, colors.accentInk)
         views.setTextViewTextSize(
             R.id.text_clock,
             TypedValue.COMPLEX_UNIT_SP,
@@ -164,6 +138,7 @@ object WidgetUpdater {
 
     private fun buildNextAlarm(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_next_alarm)
+        val colors = palette()
         val use24 = Settings.use24Hour.value
         val now = ZonedDateTime.now()
         val next = AlarmStore.all()
@@ -174,10 +149,15 @@ object WidgetUpdater {
             }
             .minByOrNull { it.second }
 
+        views.setTextColor(R.id.next_header, colors.accentInk)
+        views.setTextColor(R.id.next_time, colors.ink)
+        views.setTextColor(R.id.next_label, colors.mutedInk)
+        views.setTextColor(R.id.next_countdown, colors.accentInk)
+
         if (next == null) {
-            views.setTextViewText(R.id.next_time, "--:--")
-            views.setTextViewText(R.id.next_label, "No alarm set")
-            views.setTextViewText(R.id.next_countdown, "Tap to add one")
+            views.setTextViewText(R.id.next_time, context.getString(R.string.widget_no_time))
+            views.setTextViewText(R.id.next_label, context.getString(R.string.widget_no_alarm_set))
+            views.setTextViewText(R.id.next_countdown, context.getString(R.string.widget_tap_to_add))
         } else {
             val (alarm, triggerAt) = next
             views.setTextViewText(
@@ -188,7 +168,13 @@ object WidgetUpdater {
                 R.id.next_label,
                 alarm.label.ifBlank { alarm.repeatSummary() },
             )
-            views.setTextViewText(R.id.next_countdown, countdown(triggerAt - System.currentTimeMillis()))
+            // The countdown line also says the alarm is on, so the state is not
+            // left to a tint alone.
+            views.setTextViewText(
+                R.id.next_countdown,
+                countdown(context, triggerAt - System.currentTimeMillis()) + " · " +
+                    context.getString(R.string.widget_state_on),
+            )
         }
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 101))
         return views
@@ -196,6 +182,7 @@ object WidgetUpdater {
 
     private fun buildAlarmList(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_alarm_list)
+        val colors = palette()
         val use24 = Settings.use24Hour.value
         val alarms = AlarmStore.all().take(3)
         val rowIds = listOf(
@@ -204,6 +191,9 @@ object WidgetUpdater {
             Triple(R.id.row3_time, R.id.row3_label, R.id.row3_toggle),
         )
         val rowContainers = listOf(R.id.row1, R.id.row2, R.id.row3)
+        val stateIds = listOf(R.id.row1_state, R.id.row2_state, R.id.row3_state)
+
+        views.setTextColor(R.id.list_header, colors.accentInk)
 
         rowContainers.forEachIndexed { index, containerId ->
             val alarm = alarms.getOrNull(index)
@@ -220,9 +210,30 @@ object WidgetUpdater {
                     labelId,
                     alarm.label.ifBlank { alarm.repeatSummary() },
                 )
+                views.setTextColor(timeId, colors.ink)
+                views.setTextColor(labelId, colors.mutedInk)
+                // On or Off in words as well as in the dot, so the state does
+                // not depend on telling two tints apart.
+                views.setTextColor(
+                    stateIds[index],
+                    if (alarm.enabled) colors.accentInk else colors.mutedInk,
+                )
+                views.setTextViewText(
+                    stateIds[index],
+                    context.getString(
+                        if (alarm.enabled) R.string.widget_state_on else R.string.widget_state_off,
+                    ),
+                )
                 views.setImageViewResource(
                     toggleId,
                     if (alarm.enabled) R.drawable.widget_toggle_on else R.drawable.widget_toggle_off,
+                )
+                views.setContentDescription(
+                    toggleId,
+                    context.getString(
+                        if (alarm.enabled) R.string.widget_cd_alarm_on
+                        else R.string.widget_cd_alarm_off,
+                    ),
                 )
                 views.setOnClickPendingIntent(
                     toggleId,
@@ -232,9 +243,9 @@ object WidgetUpdater {
             }
         }
         if (alarms.isEmpty()) {
-            views.setTextViewText(R.id.list_header, "No alarms")
+            views.setTextViewText(R.id.list_header, context.getString(R.string.widget_no_alarms))
         } else {
-            views.setTextViewText(R.id.list_header, "ALARMS")
+            views.setTextViewText(R.id.list_header, context.getString(R.string.widget_header_alarms))
         }
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 102))
         return views
@@ -244,7 +255,14 @@ object WidgetUpdater {
 
     private fun buildTimer(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_timer)
+        val colors = palette()
         val state = TimerEngine.state.value
+
+        views.setTextColor(R.id.timer_chrono, colors.ink)
+        views.setTextColor(R.id.timer_state, colors.mutedInk)
+        views.setTextColor(R.id.timer_start, colors.buttonInk)
+        views.setTextColor(R.id.timer_pause, colors.buttonInk)
+        views.setTextColor(R.id.timer_reset, colors.buttonInk)
 
         if (state.running && state.remainingMs > 0) {
             views.setChronometerCountDown(R.id.timer_chrono, true)
@@ -254,7 +272,10 @@ object WidgetUpdater {
                 null,
                 true,
             )
-            views.setTextViewText(R.id.timer_state, "Running · ${state.label}")
+            views.setTextViewText(
+                R.id.timer_state,
+                context.getString(R.string.widget_timer_running, state.label),
+            )
         } else {
             views.setChronometerCountDown(R.id.timer_chrono, true)
             views.setChronometer(
@@ -265,7 +286,8 @@ object WidgetUpdater {
             )
             views.setTextViewText(
                 R.id.timer_state,
-                if (state.finished) "Finished" else "Ready · ${state.label}",
+                if (state.finished) context.getString(R.string.widget_timer_finished)
+                else context.getString(R.string.widget_timer_ready, state.label),
             )
         }
 
@@ -287,10 +309,12 @@ object WidgetUpdater {
 
     private fun buildTimerPresets(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_timer_presets)
+        val colors = palette()
         val presets = TimerPresets.all().take(4)
         val buttonIds = listOf(
             R.id.preset1, R.id.preset2, R.id.preset3, R.id.preset4,
         )
+        buttonIds.forEach { id -> views.setTextColor(id, colors.buttonInk) }
         buttonIds.forEachIndexed { index, id ->
             val preset = presets.getOrNull(index)
             if (preset == null) {
@@ -315,12 +339,20 @@ object WidgetUpdater {
 
     private fun buildStopwatch(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_stopwatch)
+        val colors = palette()
         val state = StopwatchEngine.state.value
         val base = SystemClock.elapsedRealtime() - state.elapsedMs
         views.setChronometer(R.id.stopwatch_chrono, base, null, state.running)
+        views.setTextColor(R.id.stopwatch_chrono, colors.ink)
+        views.setTextColor(R.id.stopwatch_state, colors.mutedInk)
+        views.setTextColor(R.id.stopwatch_toggle, colors.buttonInk)
+        views.setTextColor(R.id.stopwatch_reset, colors.buttonInk)
         views.setTextViewText(
             R.id.stopwatch_state,
-            if (state.running) "Running" else "Paused",
+            context.getString(
+                if (state.running) R.string.widget_stopwatch_running
+                else R.string.widget_state_paused,
+            ),
         )
         views.setOnClickPendingIntent(
             R.id.stopwatch_toggle,
@@ -341,7 +373,10 @@ object WidgetUpdater {
 
     private fun buildHolidays(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_holidays)
+        val colors = palette()
         val today = LocalDate.now()
+
+        views.setTextColor(R.id.hol_header, colors.accentInk)
         val upcoming = mutableListOf<Pair<LocalDate, String>>()
 
         for (year in intArrayOf(today.year, today.year + 1)) {
@@ -351,7 +386,9 @@ object WidgetUpdater {
             }
             HolidayStore.customDates().forEach { iso ->
                 runCatching { LocalDate.parse(iso) }.getOrNull()?.let { date ->
-                    if (!date.isBefore(today)) upcoming.add(date to "Custom holiday")
+                    if (!date.isBefore(today)) {
+                        upcoming.add(date to context.getString(R.string.widget_custom_holiday))
+                    }
                 }
             }
         }
@@ -375,9 +412,13 @@ object WidgetUpdater {
                     entry.first.format(DateTimeFormatter.ofPattern("d MMM", Locale.US)),
                 )
                 views.setTextViewText(nameId, entry.second)
+                views.setTextColor(dateId, colors.accentInk)
+                views.setTextColor(nameId, colors.ink)
             }
         }
-        if (next.isEmpty()) views.setTextViewText(R.id.hol_header, "No holidays ahead")
+        if (next.isEmpty()) {
+            views.setTextViewText(R.id.hol_header, context.getString(R.string.widget_no_holidays))
+        }
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 105))
         return views
     }
@@ -430,24 +471,18 @@ object WidgetUpdater {
 
     private fun buildScreenTime(context: Context): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_screen_time)
-        val accent = accentColor()
-        val textColor = Settings.widgetTextColor.value
-        val resource = backgroundResource()
-        if (resource != 0) {
-            views.setInt(R.id.widget_root, "setBackgroundResource", resource)
-        } else {
-            views.setInt(R.id.widget_root, "setBackgroundColor", backgroundColor())
-        }
-        views.setTextColor(R.id.screen_label, accent)
-        views.setTextColor(R.id.screen_total, textColor)
-        views.setTextColor(R.id.screen_top, textColor)
-        views.setTextColor(R.id.screen_meta, accent)
+        val colors = palette()
+        WidgetTheme.applyBackground(views, R.id.widget_root)
+        views.setTextColor(R.id.screen_label, colors.accentInk)
+        views.setTextColor(R.id.screen_total, colors.ink)
+        views.setTextColor(R.id.screen_top, colors.mutedInk)
+        views.setTextColor(R.id.screen_meta, colors.accentInk)
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context, 108))
 
         if (!com.osintgram.chronos.screentime.UsageSource.hasAccess(context)) {
-            views.setTextViewText(R.id.screen_total, "--")
-            views.setTextViewText(R.id.screen_top, "Allow Usage access in Chronos")
-            views.setTextViewText(R.id.screen_meta, "Tap to open")
+            views.setTextViewText(R.id.screen_total, context.getString(R.string.widget_no_usage))
+            views.setTextViewText(R.id.screen_top, context.getString(R.string.widget_usage_access))
+            views.setTextViewText(R.id.screen_meta, context.getString(R.string.widget_tap_to_open))
             return views
         }
 
@@ -468,16 +503,24 @@ object WidgetUpdater {
         val top = day.mostUsed
         views.setTextViewText(
             R.id.screen_top,
-            if (top == null) "Nothing used yet today"
+            if (top == null) context.getString(R.string.widget_nothing_used)
             else "${top.label} · " + com.osintgram.chronos.screentime.ScreenTimeLogic
                 .formatDuration(top.foregroundMillis),
         )
         val alerts = day.apps.sumOf { it.notifications }
-        views.setTextViewText(
-            R.id.screen_meta,
-            "${day.unlockCount} unlocks · ${day.screenOnCount} screen on" +
-                if (alerts > 0) " · $alerts alerts" else "",
-        )
+        val meta = StringBuilder()
+            .append(context.getString(R.string.widget_screen_unlocks, day.unlockCount))
+            .append(" · ")
+            .append(context.getString(R.string.widget_screen_on, day.screenOnCount))
+        if (alerts > 0) {
+            meta.append(" · ").append(context.getString(R.string.widget_screen_alerts, alerts))
+        }
+        // Usage against the goal: said in a word, not left to a tint, and only
+        // when a limit is set and one of those apps has passed it.
+        if (overGoal(day)) {
+            meta.append(" · ").append(context.getString(R.string.widget_state_over))
+        }
+        views.setTextViewText(R.id.screen_meta, meta.toString())
         return views
     }
 
@@ -511,16 +554,37 @@ object WidgetUpdater {
         )
     }
 
-    private fun countdown(remainingMs: Long): String {
-        if (remainingMs <= 0) return "now"
+    private fun countdown(context: Context, remainingMs: Long): String {
+        if (remainingMs <= 0) return context.getString(R.string.widget_countdown_now)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(remainingMs)
         val hours = TimeUnit.MILLISECONDS.toHours(remainingMs)
         val days = TimeUnit.MILLISECONDS.toDays(remainingMs)
         return when {
-            minutes < 1 -> "in under a minute"
-            minutes < 60 -> "in $minutes min"
-            hours < 24 -> "in $hours h ${minutes % 60} min"
-            else -> "in $days days"
+            minutes < 1 -> context.getString(R.string.widget_countdown_soon)
+            minutes < 60 -> context.getString(R.string.widget_countdown_minutes, minutes.toInt())
+            hours < 24 -> context.getString(
+                R.string.widget_countdown_hours,
+                hours.toInt(),
+                (minutes % 60).toInt(),
+            )
+            else -> context.getString(R.string.widget_countdown_days, days.toInt())
+        }
+    }
+
+    /**
+     * True when at least one app with a daily limit has passed it: the only
+     * "usage against the goal" these widgets can see. With no limits set there
+     * is no goal to be over, so nothing is claimed.
+     */
+    private fun overGoal(day: com.osintgram.chronos.screentime.DayScreenTime): Boolean {
+        val limits = com.osintgram.chronos.screentime.ScreenTimeStore.allLimits()
+        if (limits.isEmpty()) return false
+        return day.apps.any { app ->
+            val limit = limits[app.packageName] ?: return@any false
+            com.osintgram.chronos.screentime.ScreenTimeLogic.limitReached(
+                app.foregroundMillis,
+                limit,
+            )
         }
     }
 

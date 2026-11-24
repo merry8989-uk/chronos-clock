@@ -364,6 +364,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] **Design token gate** in CI (`scripts/design-tokens.sh`): counts hard-coded colours, font sizes and corner radii per screen file and compares them with `docs/design-baseline.txt`. A file that gains one fails the pull request; a file that loses them must lower its baseline, so the number can only go down. Baseline today: 21 files, worst are Missions (42) and Settings (24)
 - [x] Life/Wellness and Screen time restyled onto the tokens, and the nine widgets brought onto one radius, one padding scale and one accent source (parallel agents)
 
+## Shipped in 6.17.0 — Life, Screen time and the widgets onto the tokens
+
+- [x] Life hub and Wellness: one bar control for both switchers, a dominant action per section, an empty state per section, Activity gets a loading state while Health Connect is read, and every honesty note kept word for word
+- [x] Screen time: hero with the goal progress, charts on the tokens with the current hour marked by a wash **and the word "now"**, limit states said in words (Over / Close), and loading / error / empty states per tab
+- [x] The nine widgets: one padding scale and one radius, an accent that finally follows the chosen look instead of a private six-colour map, contrast measured per background (the light background was unreadable before — 1.05:1), state in words (Over / On / Off), and every string moved into strings.xml
+- [x] Widget drawables: corner radii now come from the dimens tokens, and the see-through background gained a faint scrim so light ink cannot vanish on a light wallpaper
+- [x] Design baseline regenerated from the restyled screens — the gate now measures the lower number
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

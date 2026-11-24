@@ -3,7 +3,7 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="4dp">
+    android:padding="@dimen/widget_gap">
 
     <!-- The face is drawn by ClockFaceRenderer so it matches the app icon. -->
     <ImageView
@@ -11,6 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="center"
-        android:contentDescription="Chronos clock"
+        android:contentDescription="@string/widget_cd_clock"
         android:scaleType="fitCenter" />
 </FrameLayout>

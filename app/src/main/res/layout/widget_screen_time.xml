@@ -5,14 +5,14 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/widget_pad">
 
     <TextView
         android:id="@+id/screen_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="SCREEN TIME"
-        android:textColor="#4C8DFF"
+        android:text="@string/widget_header_screen_time"
+        android:textColor="@color/widget_accent"
         android:textSize="9sp"
         android:letterSpacing="0.15"
         android:textStyle="bold" />
@@ -21,27 +21,28 @@
         android:id="@+id/screen_total"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/widget_gap_tiny"
         android:textSize="26sp"
-        android:textColor="#EDEFF3"
-        android:textStyle="bold"
-        android:layout_marginTop="2dp" />
+        android:textColor="@color/widget_ink"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/screen_top"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="12sp"
-        android:textColor="#9AA3B2"
+        android:textColor="@color/widget_ink_muted"
         android:maxLines="1"
         android:ellipsize="end" />
 
+    <!-- Ends with the word "Over" when a daily limit has been passed. -->
     <TextView
         android:id="@+id/screen_meta"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/widget_gap_tiny"
         android:textSize="11sp"
-        android:textColor="#4C8DFF"
-        android:layout_marginTop="2dp"
+        android:textColor="@color/widget_accent"
         android:maxLines="1"
         android:ellipsize="end" />
 </LinearLayout>
