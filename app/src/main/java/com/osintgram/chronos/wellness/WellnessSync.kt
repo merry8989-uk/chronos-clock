@@ -127,6 +127,7 @@ class WellnessSyncWorker(
         val snapshot = HealthConnectSource.readToday(context)
             ?: return Result.retry()
         WellnessSync.apply(context, snapshot)
+        WellnessStore.mergeActivities(HealthConnectSource.readActivities(context))
         DiagnosticsLogger.log(
             "WellnessSync",
             "Synced steps=${snapshot.steps} water=${snapshot.waterMl} sleep=${snapshot.sleepMinutes}",

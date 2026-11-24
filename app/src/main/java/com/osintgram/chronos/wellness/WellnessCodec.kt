@@ -159,14 +159,55 @@ object WellnessCodec {
         return out
     }
 
+    fun activitiesToJson(list: List<ActivitySession>): JSONArray {
+        val array = JSONArray()
+        list.forEach { session ->
+            array.put(
+                JSONObject()
+                    .put("id", session.id)
+                    .put("type", session.type)
+                    .put("title", session.title)
+                    .put("startAt", session.startAt)
+                    .put("endAt", session.endAt)
+                    .put("source", session.source),
+            )
+        }
+        return array
+    }
+
+    /** Damaged or unknown records are skipped; an empty list is always safe. */
+    fun activitiesFromJson(array: JSONArray?): List<ActivitySession> {
+        if (array == null) return emptyList()
+        val out = mutableListOf<ActivitySession>()
+        for (i in 0 until array.length()) {
+            val o = array.optJSONObject(i) ?: continue
+            val start = o.optLong("startAt", 0L)
+            val end = o.optLong("endAt", 0L)
+            if (start <= 0L || end < start) continue
+            out.add(
+                ActivitySession(
+                    id = o.optLong("id", 0L),
+                    type = o.optInt("type", 0),
+                    title = o.optString("title", ""),
+                    startAt = start,
+                    endAt = end,
+                    source = o.optString("source", "Health Connect"),
+                ),
+            )
+        }
+        return out
+    }
+
     /** One object holding everything, used by the backup file. */
     fun toJson(
         workouts: List<WorkoutSession>,
         meditations: List<MeditationSession>,
         days: List<DayLog>,
+        activities: List<ActivitySession> = emptyList(),
     ): JSONObject = JSONObject()
         .put("formatVersion", FORMAT_VERSION)
         .put("workouts", workoutsToJson(workouts))
         .put("meditations", meditationsToJson(meditations))
         .put("days", daysToJson(days))
+        .put("activities", activitiesToJson(activities))
 }

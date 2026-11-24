@@ -35,6 +35,7 @@ import com.osintgram.chronos.ui.screens.wellness.LearnSection
 import com.osintgram.chronos.ui.screens.wellness.MeditateSection
 import com.osintgram.chronos.ui.screens.wellness.ProgressSection
 import com.osintgram.chronos.ui.screens.wellness.TodaySection
+import com.osintgram.chronos.ui.screens.wellness.ActivitySection
 import com.osintgram.chronos.ui.screens.wellness.WorkoutSection
 import com.osintgram.chronos.ui.theme.Haptics
 import com.osintgram.chronos.ui.theme.Motion
@@ -44,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 /** The five parts of the Wellness tab. */
 enum class WellnessSection(val label: String) {
     Today("Today"),
+    Activity("Activity"),
     Workout("Workout"),
     Meditate("Breathe"),
     Progress("Progress"),
@@ -80,6 +82,7 @@ fun WellnessScreen() {
                         onOpenWorkout = { current = WellnessSection.Workout.name },
                         onOpenMeditate = { current = WellnessSection.Meditate.name },
                     )
+                    WellnessSection.Activity -> ActivitySection()
                     WellnessSection.Workout -> WorkoutSection()
                     WellnessSection.Meditate -> MeditateSection()
                     WellnessSection.Progress -> ProgressSection()

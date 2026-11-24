@@ -19,6 +19,7 @@ object WellnessStore {
 
     private const val PREFS = "chronos_wellness"
     private const val KEY_WORKOUTS = "workouts"
+    private const val KEY_ACTIVITIES = "activities"
     private const val KEY_MEDITATIONS = "meditations"
     private const val KEY_DAYS = "days"
     private const val KEY_STEP_DATE = "step_baseline_date"
@@ -29,6 +30,7 @@ object WellnessStore {
     private val workouts: SnapshotStateList<WorkoutSession> = mutableStateListOf()
     private val meditations: SnapshotStateList<MeditationSession> = mutableStateListOf()
     private val days: SnapshotStateList<DayLog> = mutableStateListOf()
+    private val activities: SnapshotStateList<ActivitySession> = mutableStateListOf()
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -36,6 +38,7 @@ object WellnessStore {
         meditations.clear()
         days.clear()
         workouts.addAll(WellnessCodec.workoutsFromJson(readArray(KEY_WORKOUTS)))
+        activities.addAll(WellnessCodec.activitiesFromJson(readArray(KEY_ACTIVITIES)))
         meditations.addAll(WellnessCodec.meditationsFromJson(readArray(KEY_MEDITATIONS)))
         days.addAll(WellnessCodec.daysFromJson(readArray(KEY_DAYS)))
         DiagnosticsLogger.log(
@@ -47,6 +50,23 @@ object WellnessStore {
     // ---- Reads -------------------------------------------------------------
 
     fun allWorkouts(): List<WorkoutSession> = workouts.toList()
+
+    /** Workouts another app recorded, newest first. */
+    fun allActivities(): List<ActivitySession> = activities.sortedByDescending { it.startAt }
+
+    /**
+     * Folds sessions read from Health Connect into the store, keyed by start
+     * time and type so a repeated sync cannot duplicate the same ride.
+     */
+    fun mergeActivities(read: List<ActivitySession>) {
+        if (read.isEmpty()) return
+        val known = activities.map { "${it.startAt}:${it.type}" }.toSet()
+        val fresh = read.filter { "${it.startAt}:${it.type}" !in known }
+        if (fresh.isEmpty()) return
+        activities.addAll(fresh)
+        persistActivities()
+        DiagnosticsLogger.log("WellnessStore", "Added ${fresh.size} activity session(s)")
+    }
 
     fun allMeditations(): List<MeditationSession> = meditations.toList()
 
@@ -209,6 +229,7 @@ object WellnessStore {
         workouts = workouts.toList(),
         meditations = meditations.toList(),
         days = days.toList(),
+        activities = activities.toList(),
     )
 
     /** Replaces everything with the records in [json]. Returns what was loaded. */
@@ -217,22 +238,27 @@ object WellnessStore {
         val restoredWorkouts = WellnessCodec.workoutsFromJson(json.optJSONArray("workouts"))
         val restoredMeditations = WellnessCodec.meditationsFromJson(json.optJSONArray("meditations"))
         val restoredDays = WellnessCodec.daysFromJson(json.optJSONArray("days"))
+        val restoredActivities = WellnessCodec.activitiesFromJson(json.optJSONArray("activities"))
         workouts.clear()
         workouts.addAll(restoredWorkouts)
         meditations.clear()
         meditations.addAll(restoredMeditations)
         days.clear()
         days.addAll(restoredDays)
+        activities.clear()
+        activities.addAll(restoredActivities)
         persistWorkouts()
         persistMeditations()
         persistDays()
+        persistActivities()
         return "${restoredWorkouts.size} workout(s), ${restoredMeditations.size} meditation(s), " +
-            "${restoredDays.size} day(s)"
+            "${restoredDays.size} day(s), ${restoredActivities.size} activity session(s)"
     }
 
     /** Everything the wellness feature holds, removed. Used by factory reset. */
     fun clearAll() {
         workouts.clear()
+        activities.clear()
         meditations.clear()
         days.clear()
         prefs?.edit()?.clear()?.apply()
@@ -256,4 +282,10 @@ object WellnessStore {
 
     private fun persistDays() =
         prefs?.edit()?.putString(KEY_DAYS, WellnessCodec.daysToJson(days.toList()).toString())?.apply()
+
+    private fun persistActivities() =
+        prefs?.edit()?.putString(
+            KEY_ACTIVITIES,
+            WellnessCodec.activitiesToJson(activities.toList()).toString(),
+        )?.apply()
 }

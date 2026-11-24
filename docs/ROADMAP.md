@@ -310,6 +310,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Docs from a parallel agent: every stale claim corrected against the code (removed sleep tracking, nine widgets with their real names, three Life areas, the screen-time widget, what the background worker really does), plus a "Known device issues" section for the Health Connect permission-controller crash
 - [x] Two comments that lied about the code (the Life hub's "two halves", the widget doc crediting `AnalogClock`) corrected
 
+## Shipped in 6.11.0 — activity from other apps
+
+- [x] New **Activity** section in Wellness: reads the exercise sessions, distance and active energy that other apps already recorded (Google Fit, Samsung Health, a watch, a bike computer) through Health Connect — Chronos does not run a second tracker
+- [x] Three new read permissions: `READ_EXERCISE`, `READ_DISTANCE`, `READ_TOTAL_CALORIES_BURNED`
+- [x] Sessions are de-duplicated by start time and type, so a repeated sync cannot double a ride; they are stored with the rest of wellness data and travel in the backup file
+- [x] The readable type name comes from the client's own constants (walking, running, treadmill, cycling, stationary bike, hiking, strength, swimming, yoga), with the record's title as the fallback
+- [x] Today's distance and energy are shown as tiles; without Health Connect the section says what it needs instead of showing zeros
+- [x] The six-hourly worker pulls activities too, so the list fills without opening the screen
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
