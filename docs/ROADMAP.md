@@ -319,6 +319,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Today's distance and energy are shown as tiles; without Health Connect the section says what it needs instead of showing zeros
 - [x] The six-hourly worker pulls activities too, so the list fills without opening the screen
 
+## Shipped in 6.11.0 — Digital-Wellbeing depth and a calmer Wellness UI
+
+- [x] Screen time now reads like Digital Wellbeing: an hour-by-hour chart for today with the current hour picked out, a seven-day trend with the average day and the busiest day, first and last pickup, the longest single app session with its app name, and the count of sessions over five minutes
+- [x] All of that maths lives in `ScreenTimeLogic` with 12 new tests: buckets split at the hour, segments clipped at midnight and at the day boundary, bar scaling with a flat all-zero day, the average ignoring empty days, the busiest day with ties, and the longest session
+- [x] One pass over the usage event stream now answers five questions instead of one, so the extra figures do not cost extra scans
+- [x] Wellness got a visual layer: a gradient hero for today's steps with the count inside the ring, a Canvas bar chart for the seven-day progress, stat tiles for the week totals, and a small spacing scale
+- [x] Without usage access the screen still shows the explanation card and never a chart of zeros
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen
