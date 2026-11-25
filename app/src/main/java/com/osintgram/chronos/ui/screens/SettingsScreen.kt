@@ -96,6 +96,10 @@ import com.osintgram.chronos.widget.WidgetPinner
 import com.osintgram.chronos.updater.UpdateViewModel
 import java.time.LocalDate
 
+private val WIDGET_BG_WHITE = Color(0xFFF2F4F8)
+private val WIDGET_BG_BLUE = Color(0xFF1E3A66)
+private val WIDGET_BG_HALF = Color(0xCC171B23)
+
 private const val INSTAGRAM_URL = "https://instagram.com/osintgram_io"
 private const val SOURCE_URL = "https://github.com/merry8989-uk/chronos-clock"
 
@@ -304,7 +308,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                                             } else {
                                                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                             },
-                                            shape = RoundedCornerShape(12.dp),
+                                            shape = RoundedCornerShape(Radii.md),
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .pressable(scale = 0.97f) {
@@ -328,13 +332,13 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                                                 Column {
                                                     Text(
                                                         text = preset.name,
-                                                        fontSize = 12.sp,
+                                                        style = ChronosType.label,
                                                         fontWeight = FontWeight.SemiBold,
                                                         color = MaterialTheme.colorScheme.onSurface,
                                                     )
                                                     Text(
                                                         text = preset.character,
-                                                        fontSize = 10.sp,
+                                                        style = ChronosType.micro,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                     )
                                                 }
@@ -432,7 +436,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                         Text(
                             text = "The app logo is a working clock — hour, minute and second " +
                                 "hands run off the device time.",
-                            fontSize = 11.sp,
+                            style = ChronosType.micro,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -1101,14 +1105,14 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
+                                        .clip(RoundedCornerShape(Radii.xs)),
                                 )
                             } else {
                                 LinearProgressIndicator(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
+                                        .clip(RoundedCornerShape(Radii.xs)),
                                 )
                             }
                             Spacer(Modifier.height(6.dp))
@@ -1254,7 +1258,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                 Column {
                     Text(
                         text = "Each press of − or + changes the timer by this much.",
-                        fontSize = 12.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(8.dp))
@@ -1266,7 +1270,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                             Text(
                                 text = "$option minute${if (option == 1) "" else "s"}",
                                 modifier = Modifier.weight(1f),
-                                fontSize = 15.sp,
+                                style = ChronosType.body,
                                 fontWeight = if (Settings.timerStepMinutes.value == option) {
                                     FontWeight.SemiBold
                                 } else {
@@ -1296,7 +1300,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     Text(
                         "Long-press an empty spot on your home screen → Widgets → Chronos, " +
                             "then drag the one you want.",
-                        fontSize = 13.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.height(10.dp))
@@ -1312,7 +1316,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     ).forEach { line ->
                         Text(
                             text = "·  $line",
-                            fontSize = 12.sp,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(vertical = 3.dp),
                         )
@@ -1321,7 +1325,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     Text(
                         "The clock, timer and stopwatch widgets animate themselves, so they " +
                             "keep running without the app being open.",
-                        fontSize = 11.sp,
+                        style = ChronosType.micro,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -1384,7 +1388,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                             Text(
                                 text = ".${format.ext}",
                                 modifier = Modifier.weight(1f),
-                                fontSize = 16.sp,
+                                style = ChronosType.title,
                             )
                             TextButton(onClick = {
                                 val file = LogExporter.export(
@@ -1490,10 +1494,10 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                                 onClick = null,
                             )
                             Column(modifier = Modifier.padding(start = 10.dp)) {
-                                Text(tone.title, fontSize = 15.sp)
+                                Text(tone.title, style = ChronosType.body)
                                 Text(
                                     tone.category,
-                                    fontSize = 12.sp,
+                                    style = ChronosType.label,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
@@ -1560,7 +1564,7 @@ private fun OptionDialog(
                         Text(
                             text = label(option),
                             modifier = Modifier.weight(1f),
-                            fontSize = 16.sp,
+                            style = ChronosType.title,
                             fontWeight = if (option == selected) FontWeight.SemiBold
                             else FontWeight.Normal,
                         )
@@ -1612,7 +1616,7 @@ private fun HolidaysScreen(onBack: () -> Unit) {
                 text = "Alarms with \"Skip public holidays\" switched on will not ring on these " +
                     "dates. Fixed national holidays are built in; add the moving festivals " +
                     "yourself so the app never guesses a date.",
-                fontSize = 12.sp,
+                style = ChronosType.label,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = RowHPad, vertical = Spacing.sm),
             )
@@ -1625,13 +1629,13 @@ private fun HolidaysScreen(onBack: () -> Unit) {
                     ) {
                         Text(
                             text = name,
-                            fontSize = 15.sp,
+                            style = ChronosType.body,
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = "${md.dayOfMonth}/${md.monthValue}",
-                            fontSize = 14.sp,
+                            style = ChronosType.body,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -1645,7 +1649,7 @@ private fun HolidaysScreen(onBack: () -> Unit) {
                 if (custom.isEmpty()) {
                     Text(
                         text = "No custom dates yet.",
-                        fontSize = 13.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(Spacing.lg),
                     )
@@ -1657,7 +1661,7 @@ private fun HolidaysScreen(onBack: () -> Unit) {
                         ) {
                             Text(
                                 text = iso,
-                                fontSize = 15.sp,
+                                style = ChronosType.body,
                                 modifier = Modifier.weight(1f),
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -2074,17 +2078,19 @@ private fun WidgetStylePreview() {
 
     val bg = when (Settings.widgetBgStyle.value) {
         "transparent" -> Color.Transparent
-        "white" -> Color(0xFFF2F4F8)
-        "blue" -> Color(0xFF1E3A66)
+        // These are the widget's real background colours, not theme colours:
+        // the preview has to show what the widget will actually look like.
+        "white" -> WIDGET_BG_WHITE
+        "blue" -> WIDGET_BG_BLUE
         "custom" -> Color(Settings.widgetBgColor.value)
-        else -> Color(0xCC171B23.toInt())
+        else -> WIDGET_BG_HALF
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(96.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(Radii.lg))
             .background(if (bg == Color.Transparent) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else bg),
         contentAlignment = Alignment.Center,
     ) {
@@ -2108,7 +2114,7 @@ private fun WidgetStylePreview() {
                     )
                 }.getOrDefault(""),
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 11.sp,
+                style = ChronosType.micro,
             )
         }
     }
