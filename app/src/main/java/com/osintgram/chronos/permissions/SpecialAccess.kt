@@ -135,14 +135,14 @@ object SpecialAccess {
         ),
         AccessItem(
             title = "Wi-Fi control",
-            state = "Granted at install",
+            state = "Built in — no setup needed",
             granted = true,
             usedBy = "Not used by any feature — the update check only reads the connection type",
             openSettings = null,
         ),
         AccessItem(
             title = "Turn screen on",
-            state = "Granted at install",
+            state = "Built in — no setup needed",
             granted = true,
             usedBy = "The alarm ring screen waking the display",
             openSettings = null,

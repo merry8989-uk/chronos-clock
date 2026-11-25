@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
@@ -43,15 +44,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.ui.components.EmptyState
+import com.osintgram.chronos.ui.components.RowDivider
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.StatusColors
+import com.osintgram.chronos.ui.theme.heroSurfaceBrush
 import com.osintgram.chronos.ui.theme.pressable
 import com.osintgram.chronos.wellness.HealthConnectSource
 import com.osintgram.chronos.wellness.WellnessLogic
@@ -69,6 +75,11 @@ import java.time.format.DateTimeFormatter
  * Workout: pick a routine, log sets as you go and close the session. The
  * session is written to the store the moment it starts, so switching tabs or
  * closing the app never loses a workout in progress.
+ *
+ * Styled against the design system: spacing comes from [Spacing], shapes from
+ * [Radii], type from [ChronosType]. The running session's volume is the one
+ * number the card leads with, "Log a set" is the only filled button on the
+ * screen, and everything that lists is a row rather than a card of its own.
  */
 @Composable
 fun WorkoutSection() {
@@ -77,33 +88,57 @@ fun WorkoutSection() {
     val history = WellnessStore.allWorkouts().filter { it.isFinished }.take(6)
     var showCustom by remember { mutableStateOf(false) }
     var confirmFinish by remember { mutableStateOf(false) }
+    // What Health Connect said about the last finished session: null until a
+    // write has been attempted. It only feeds the status line below; the write
+    // itself, and everything it is given, is unchanged.
+    var healthWrite by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
+        // The result of the Health Connect write is reported in words as well
+        // as in colour, so a failed write is never just an amber dot.
+        val outcome = healthWrite
+        if (outcome != null) {
+            item { HealthWriteStatus(written = outcome) }
+        }
+
         if (active != null) {
             item { ActiveSessionCard(active) }
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    // Finishing is the exception, not the action, so it steps
+                    // back to an outline while logging a set stays filled.
+                    OutlinedButton(
                         onClick = { confirmFinish = true },
                         modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(vertical = 12.dp),
+                        contentPadding = PaddingValues(
+                            horizontal = Spacing.lg,
+                            vertical = Spacing.md,
+                        ),
                     ) {
                         Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Finish session", fontSize = 13.sp)
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text("Finish session", style = ChronosType.label)
                     }
-                    OutlinedButton(
+                    TextButton(
                         onClick = {
                             Haptics.tick(context)
                             WellnessStore.discardWorkout(active.id)
                         },
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    ) { Text("Discard", fontSize = 13.sp) }
+                        contentPadding = PaddingValues(
+                            horizontal = Spacing.lg,
+                            vertical = Spacing.md,
+                        ),
+                    ) { Text("Discard", style = ChronosType.label) }
                 }
             }
             item { WellnessLabel("LOG A SET") }
@@ -112,29 +147,32 @@ fun WorkoutSection() {
                 items(plan.exercises, key = { it.name }) { exercise ->
                     Surface(
                         color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(Radii.md),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(
+                                horizontal = Spacing.md,
+                                vertical = Spacing.sm,
+                            ),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(
                                     text = exercise.name,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    style = ChronosType.title,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
                                     text = "Plan: ${exercise.sets} × ${exercise.reps}" +
                                         if (exercise.cue.isNotBlank()) " · ${exercise.cue}" else "",
-                                    fontSize = 11.sp,
-                                    lineHeight = 15.sp,
+                                    style = ChronosType.label,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            IconButton(
+                            Spacer(Modifier.width(Spacing.sm))
+                            // The one filled action on this screen.
+                            Button(
                                 onClick = {
                                     Haptics.tick(context)
                                     WellnessStore.addEntry(
@@ -142,12 +180,18 @@ fun WorkoutSection() {
                                         WorkoutEntry(exercise.name, 1, exercise.reps),
                                     )
                                 },
+                                contentPadding = PaddingValues(
+                                    horizontal = Spacing.md,
+                                    vertical = Spacing.sm,
+                                ),
                             ) {
                                 Icon(
                                     Icons.Filled.Add,
                                     contentDescription = "Log a set of ${exercise.name}",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp),
                                 )
+                                Spacer(Modifier.width(Spacing.xs))
+                                Text("Log a set", style = ChronosType.label)
                             }
                         }
                     }
@@ -157,8 +201,8 @@ fun WorkoutSection() {
                 OutlinedButton(
                     onClick = { showCustom = true },
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(vertical = 10.dp),
-                ) { Text("Log something else", fontSize = 13.sp) }
+                    contentPadding = PaddingValues(vertical = Spacing.sm),
+                ) { Text("Log something else", style = ChronosType.label) }
             }
             item { WellnessLabel("LOGGED") }
             if (active.entries.isEmpty()) {
@@ -166,34 +210,45 @@ fun WorkoutSection() {
                     WellnessNote("No sets logged yet. Tap + beside a movement each time you finish a set.")
                 }
             } else {
-                items(active.entries.size) { index ->
-                    val entry = active.entries[index]
+                // The logged sets read as one list: a single rounded surface
+                // with a divider between rows, rather than one card per set.
+                item {
                     Surface(
                         color = MaterialTheme.colorScheme.surface,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(Radii.md),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Row(
-                            modifier = Modifier.padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = "${entry.name} — ${entry.sets} × ${entry.reps}" +
-                                    if (entry.weightKg > 0) " @ ${entry.weightKg} kg" else "",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f),
-                            )
-                            IconButton(onClick = {
-                                Haptics.tick(context)
-                                WellnessStore.removeEntry(active.id, index)
-                            }) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = "Remove this set",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(18.dp),
-                                )
+                        Column {
+                            active.entries.forEachIndexed { index, entry ->
+                                if (index > 0) RowDivider()
+                                Row(
+                                    modifier = Modifier.padding(
+                                        start = Spacing.md,
+                                        end = Spacing.xs,
+                                        top = Spacing.xs,
+                                        bottom = Spacing.xs,
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "${entry.name} — ${entry.sets} × ${entry.reps}" +
+                                            if (entry.weightKg > 0) " @ ${entry.weightKg} kg" else "",
+                                        style = ChronosType.body,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    IconButton(onClick = {
+                                        Haptics.tick(context)
+                                        WellnessStore.removeEntry(active.id, index)
+                                    }) {
+                                        Icon(
+                                            Icons.Filled.Delete,
+                                            contentDescription = "Remove this set",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -204,13 +259,13 @@ fun WorkoutSection() {
             items(WellnessPlans.plans, key = { it.id }) { plan ->
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(Radii.md),
                     modifier = Modifier
                         .fillMaxWidth()
                         .pressable { WellnessStore.startWorkout(plan.id, plan.title) },
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Spacing.lg),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
@@ -219,25 +274,22 @@ fun WorkoutSection() {
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(22.dp),
                         )
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
                             Text(
                                 text = plan.title,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                style = ChronosType.title,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = "${plan.focus} · ${plan.minutes} min · ${plan.level}",
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp,
+                                style = ChronosType.label,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Text(
                             text = "Start",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -258,10 +310,13 @@ fun WorkoutSection() {
 
         if (active == null && history.isEmpty()) {
             item {
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(Spacing.lg))
+                // The empty state says how a session starts, then what the list
+                // will hold once one is finished.
                 EmptyState(
                     title = "No sessions yet",
-                    subtitle = "Your finished workouts will be listed here with duration and volume.",
+                    subtitle = "Tap a routine above to start a session. Finished workouts are " +
+                        "listed here with duration and volume.",
                     modifier = Modifier.height(160.dp),
                 )
             }
@@ -295,7 +350,7 @@ fun WorkoutSection() {
                     // The finished session is written to Health Connect as exercise.
                     val ended = System.currentTimeMillis()
                     scope.launch {
-                        HealthConnectSource.writeExercise(
+                        healthWrite = HealthConnectSource.writeExercise(
                             context = context,
                             title = active.title,
                             startMillis = active.startedAt,
@@ -312,6 +367,49 @@ fun WorkoutSection() {
     }
 }
 
+/**
+ * How the Health Connect write ended, in words and colour together.
+ *
+ * A failed write is the case that matters: it is drawn in [StatusColors.warning]
+ * and says in so many words that the session was not written, because a colour
+ * on its own is not a message.
+ */
+@Composable
+private fun HealthWriteStatus(written: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            if (written) Icons.Filled.Check else Icons.Filled.ErrorOutline,
+            contentDescription = null,
+            tint = if (written) MaterialTheme.colorScheme.primary else StatusColors.warning,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(Spacing.xs))
+        Text(
+            text = if (written) {
+                "Session written to Health Connect"
+            } else {
+                "Not written to Health Connect — the write did not go through"
+            },
+            style = ChronosType.label,
+            color = if (written) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                StatusColors.warning
+            },
+        )
+    }
+}
+
+/**
+ * The session in progress. The volume carried so far is the hero number, set in
+ * [ChronosType.numeric] over the soft accent wash, with the elapsed clock and
+ * the set count as the caption under it.
+ */
 @Composable
 private fun ActiveSessionCard(session: WorkoutSession) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -323,46 +421,54 @@ private fun ActiveSessionCard(session: WorkoutSession) {
     }
     val elapsed = WellnessLogic.minutesBetween(session.startedAt, now)
     val seconds = ((now - session.startedAt).coerceAtLeast(0) / 1000) % 60
-    Surface(
-        color = MaterialTheme.colorScheme.primary,
-        shape = RoundedCornerShape(18.dp),
-        modifier = Modifier.fillMaxWidth(),
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radii.lg))
+            .background(MaterialTheme.colorScheme.surface)
+            .background(heroSurfaceBrush()),
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Filled.Timer,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Spacing.xs))
                 Text(
                     text = "Session running",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = ChronosType.label,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.sm))
             Text(
                 text = session.title,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
+                style = ChronosType.title,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(Spacing.md))
+            // The hero: the volume this session has added up to. An em dash
+            // when no set carried a weight, rather than a zero that would read
+            // as a session with nothing in it.
+            Text(
+                text = if (session.volumeKg > 0) "${session.volumeKg.toInt()} kg" else DASH,
+                style = ChronosType.numeric,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = String.format("%02d:%02d", elapsed, seconds) + " · ${session.entries.size} set(s)",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
+                text = "total volume",
+                style = ChronosType.label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            if (session.volumeKg > 0) {
-                Text(
-                    text = "Volume ${session.volumeKg.toInt()} kg",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
-                )
-            }
+            Spacer(Modifier.height(Spacing.sm))
+            Text(
+                text = String.format("%02d:%02d", elapsed, seconds) + " · ${session.entries.size} set(s)",
+                style = ChronosType.body,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -375,24 +481,28 @@ private fun HistoryRow(session: WorkoutSession) {
         .format(DateTimeFormatter.ofPattern("d MMM"))
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radii.md),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(14.dp),
+            modifier = Modifier.padding(
+                start = Spacing.md,
+                end = Spacing.xs,
+                top = Spacing.sm,
+                bottom = Spacing.sm,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
                     text = session.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    style = ChronosType.title,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = "$date · ${session.minutes} min · ${session.entries.size} set(s)" +
                         if (session.volumeKg > 0) " · ${session.volumeKg.toInt()} kg" else "",
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -418,7 +528,7 @@ private fun CustomEntryDialog(onDismiss: () -> Unit, onAdd: (WorkoutEntry) -> Un
         onDismissRequest = onDismiss,
         title = { Text("Log an exercise") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -426,7 +536,7 @@ private fun CustomEntryDialog(onDismiss: () -> Unit, onAdd: (WorkoutEntry) -> Un
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     OutlinedTextField(
                         value = sets,
                         onValueChange = { sets = it.filter { c -> c.isDigit() }.take(2) },
@@ -472,3 +582,6 @@ private fun CustomEntryDialog(onDismiss: () -> Unit, onAdd: (WorkoutEntry) -> Un
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
+
+/** The em dash used when the session has no volume to show. */
+private const val DASH = "\u2014"

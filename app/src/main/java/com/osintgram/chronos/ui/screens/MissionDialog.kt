@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,10 +41,30 @@ import androidx.compose.ui.window.DialogProperties
 import com.osintgram.chronos.data.MissionInfo
 import com.osintgram.chronos.data.MissionSpec
 import com.osintgram.chronos.ui.components.Pill
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.StatusColors
+
+/** How many missions an alarm may require before it stops asking for more. */
+private const val MaxMissions = 5
+
+/** The tallest the catalog may grow before it scrolls, so the buttons stay on screen. */
+private val CatalogMaxHeight = 320.dp
+
+/** Side of the letter badge in front of a catalog row: square, so it is its own constant. */
+private val CatalogBadgeSize = 38.dp
+
+/** Tracking on the group headings, which read as small caps over the catalog. */
+private val GroupTracking = 1.sp
 
 /**
  * Chooses the missions that must be completed before this alarm can be
  * dismissed. Up to five, run in the order shown.
+ *
+ * Save is the only filled button: it is the one action that leaves the dialog
+ * with a change applied. Cancel, and the per-row controls, are text or icon
+ * affordances so nothing competes with it.
  */
 @Composable
 fun MissionDialog(
@@ -59,25 +80,29 @@ fun MissionDialog(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            shape = RoundedCornerShape(Radii.xl),
+            modifier = Modifier.fillMaxWidth().padding(Spacing.md),
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Text("Wake-up missions", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
+            Column(modifier = Modifier.padding(Spacing.lg)) {
+                Text(
+                    text = "Wake-up missions",
+                    style = ChronosType.title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(Spacing.xs))
                 Text(
                     text = "Complete these before the alarm can be snoozed or dismissed. " +
                         "They run in order, up to five.",
-                    fontSize = 12.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.lg))
 
                 if (missions.isEmpty()) {
                     Text(
-                        text = "No mission — the alarm is dismissed with one tap.",
-                        fontSize = 13.sp,
+                        text = "No mission selected. The alarm is dismissed with one tap.",
+                        style = ChronosType.body,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
@@ -85,21 +110,22 @@ fun MissionDialog(
                         val info = MissionSpec.info(spec.type)
                         Surface(
                             color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                            shape = RoundedCornerShape(Radii.lg),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = Spacing.xs),
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
+                            Column(modifier = Modifier.padding(Spacing.md)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = "Mission ${index + 1}/${missions.size}",
-                                        fontSize = 11.sp,
+                                        style = ChronosType.label,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(Spacing.sm))
                                     Text(
                                         text = info?.title ?: spec.type,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        style = ChronosType.title,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.weight(1f),
                                     )
@@ -113,7 +139,7 @@ fun MissionDialog(
                                         )
                                     }
                                 }
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                                     (info?.countOptions ?: listOf(spec.count)).forEach { option ->
                                         Pill(
                                             text = "$option ${info?.unit ?: ""}".trim(),
@@ -131,89 +157,116 @@ fun MissionDialog(
                     }
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(Spacing.sm))
 
-                if (missions.size < 5) {
+                if (missions.size < MaxMissions) {
                     Column(
                         modifier = Modifier
-                            .heightIn(max = 320.dp)
+                            .heightIn(max = CatalogMaxHeight)
                             .verticalScroll(rememberScrollState()),
                     ) {
                         listOf(MissionInfo.BRAIN, MissionInfo.BODY).forEach { group ->
                             Text(
                                 text = group,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
+                                style = ChronosType.label.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = GroupTracking,
+                                ),
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(top = 10.dp, bottom = 6.dp),
+                                modifier = Modifier.padding(
+                                    top = Spacing.sm,
+                                    bottom = Spacing.xs,
+                                ),
                             )
                             MissionSpec.catalog.filter { it.group == group }.forEach { info ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable {
+                                        .clickable(
+                                            onClickLabel = "Add ${info.title}",
+                                            role = Role.Button,
+                                        ) {
                                             missions = missions + MissionSpec(
                                                 type = info.type,
                                                 count = info.defaultCount,
                                             )
                                         }
-                                        .padding(vertical = 9.dp),
+                                        .padding(vertical = Spacing.sm),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
+                                            .size(CatalogBadgeSize)
                                             .background(
                                                 MaterialTheme.colorScheme.surfaceVariant,
-                                                RoundedCornerShape(12.dp),
+                                                RoundedCornerShape(Radii.md),
                                             ),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
                                             text = info.title.take(1),
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
+                                            style = ChronosType.title.copy(
+                                                fontWeight = FontWeight.Bold,
+                                            ),
                                             color = MaterialTheme.colorScheme.primary,
                                         )
                                     }
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(Spacing.md))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = info.title,
-                                            fontSize = 15.sp,
+                                            style = ChronosType.title,
                                             color = MaterialTheme.colorScheme.onSurface,
                                         )
                                         Text(
                                             text = info.subtitle,
-                                            fontSize = 11.sp,
+                                            style = ChronosType.label,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                     Text(
                                         text = "Add",
-                                        fontSize = 13.sp,
+                                        style = ChronosType.body,
                                         color = MaterialTheme.colorScheme.primary,
                                     )
                                 }
                             }
                         }
                     }
-                } else {
-                    Text(
-                        text = "Five missions is the maximum.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
 
-                Spacer(Modifier.height(14.dp))
+                // The dialog's own state, in words first: what will happen when
+                // Save is pressed. Colour is the second signal, never the only one.
+                Spacer(Modifier.height(Spacing.md))
+                val statusColor = when {
+                    missions.isEmpty() -> StatusColors.info
+                    missions.size >= MaxMissions -> StatusColors.warning
+                    else -> StatusColors.success
+                }
+                Text(
+                    text = when {
+                        missions.isEmpty() ->
+                            "Nothing to solve yet. The alarm can be dismissed with one tap."
+                        missions.size >= MaxMissions ->
+                            "Five missions is the maximum. Remove one before adding another."
+                        missions.size == 1 ->
+                            "Ready. One mission will run before the alarm can be dismissed."
+                        else ->
+                            "Ready. ${missions.size} missions will run in order before the " +
+                                "alarm can be dismissed."
+                    },
+                    style = ChronosType.label,
+                    color = statusColor,
+                )
+
+                Spacer(Modifier.height(Spacing.lg))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = onDismiss) { Text("Cancel") }
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Spacing.sm))
                     Button(onClick = { onSave(missions) }) { Text("Save") }
                 }
             }

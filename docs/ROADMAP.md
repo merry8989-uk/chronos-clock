@@ -378,6 +378,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Two tokens added because the scale had no step for them: `ChronosType.micro` (11sp) and `Radii.xs` (3dp)
 - [x] Missions, the shared task views, Workout/Learn/Meditate and the five smaller screens restyled onto the same tokens (parallel agents)
 
+## Shipped in 6.19.0 — the token queue is empty
+
+- [x] Missions and the mission picker: 56 hard-coded values down to 3. The 3 that remain are the puzzle palette — the odd-one-out grid has to draw colours that differ, or there is no puzzle — defined once with that comment. Every tile also carries a numeral and a description, so a screen-reader user can name them
+- [x] Mission states in words: a wrong answer and a right answer each say what happened; the picker says "Nothing to solve yet" / "Five missions is the maximum" / "Ready. 3 missions will run in order"
+- [x] Shared task views, Workout, Learn and Meditate, and the five smaller screens (sound picker, diagnostics, wallpaper, special access, explore) onto the tokens — every one of them to zero
+- [x] Workout now reports whether the session reached Health Connect, with the failure written out rather than swallowed
+- [x] Diagnostics got a labelled loading state while logcat is collected, and an empty state when there is nothing to export
+- [x] **Design baseline: 24 files → 3.** What is left is the puzzle palette, the widget preview's real colours, and three derived numeric steps in Screen time
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

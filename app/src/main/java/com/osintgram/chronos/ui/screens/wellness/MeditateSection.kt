@@ -2,7 +2,6 @@ package com.osintgram.chronos.ui.screens.wellness
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +24,6 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -41,18 +39,21 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.Settings
+import com.osintgram.chronos.ui.components.EmptyState
 import com.osintgram.chronos.ui.components.Pill
+import com.osintgram.chronos.ui.components.RingStat
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
-import com.osintgram.chronos.ui.theme.ClockTextStyle
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.heroSurfaceBrush
 import com.osintgram.chronos.wellness.WellnessPlans
 import com.osintgram.chronos.wellness.WellnessSound
 import com.osintgram.chronos.wellness.WellnessStore
@@ -61,10 +62,17 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/** Diameter of the breathing circle and of the ring that tracks its phase. */
+private val BREATH_SIZE = 196.dp
+
 /**
  * Meditation: a breathing timer that follows a real pattern, with the bundled
  * alarm bell closing the session. The pattern drives both the circle and the
  * on-screen cue, so the screen and the breathing stay in step.
+ *
+ * The circle is drawn from theme colours and its ring is [RingStat], so the
+ * breath follows the user's accent; the start/pause control is the one filled
+ * action, and the patterns are [Pill]s.
  */
 @Composable
 fun MeditateSection() {
@@ -118,6 +126,12 @@ fun MeditateSection() {
         animationSpec = tween(durationMillis = phase.seconds * 1000, easing = com.osintgram.chronos.ui.theme.Motion.easeInOut),
         label = "breath",
     )
+    // How far through the current phase the breath is, for the ring only.
+    val phaseProgress = if (running) {
+        ((phase.seconds - phaseRemaining).toFloat() / phase.seconds.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
     val todayMinutes = WellnessStore.allMeditations()
         .filter { isToday(it.completedAt) }
         .sumOf { it.minutes }
@@ -125,36 +139,52 @@ fun MeditateSection() {
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         item {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier.fillMaxWidth(),
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radii.lg))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .background(heroSurfaceBrush()),
             ) {
                 Column(
-                    modifier = Modifier.padding(vertical = 22.dp, horizontal = 16.dp),
+                    modifier = Modifier.padding(
+                        horizontal = Spacing.lg,
+                        vertical = Spacing.xl,
+                    ),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Box(contentAlignment = Alignment.Center) {
+                        // The breath itself: a disc in the accent that grows on
+                        // the in-breath and settles on the out-breath.
                         Box(
                             modifier = Modifier
-                                .size(196.dp)
+                                .size(BREATH_SIZE)
                                 .scale(scale)
                                 .background(
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                                     CircleShape,
                                 ),
                         )
-                        Canvas(modifier = Modifier.size(196.dp)) {
-                            drawCircle(
-                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0f),
-                                radius = size.minDimension / 2f,
-                                style = Stroke(width = 1f),
-                            )
-                        }
+                        // The ring tracks the phase the pattern is in, so the
+                        // progress of one breath is visible without adding a
+                        // second timer to read. Drawn over the disc so it stays
+                        // legible when the breath is at its widest.
+                        RingStat(
+                            progress = phaseProgress,
+                            modifier = Modifier.size(BREATH_SIZE),
+                            strokeWidth = Spacing.xs,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            progressColor = MaterialTheme.colorScheme.primary,
+                        )
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = String.format(
@@ -162,24 +192,24 @@ fun MeditateSection() {
                                     remaining / 60,
                                     remaining % 60,
                                 ),
-                                fontSize = 34.sp,
-                                fontWeight = FontWeight.Bold,
-                                style = ClockTextStyle,
+                                style = ChronosType.numeric,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
+                            Spacer(Modifier.height(Spacing.xs))
                             Text(
                                 text = when {
                                     remaining == 0 -> "Session complete"
                                     running -> phase.label
                                     else -> "${phase.seconds} s · ${pattern.subtitle}"
                                 },
-                                fontSize = 13.sp,
+                                style = ChronosType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    Spacer(Modifier.height(18.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Spacer(Modifier.height(Spacing.lg))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        // The one filled action: begin, pause, begin again.
                         Button(
                             onClick = {
                                 if (remaining == 0) {
@@ -191,15 +221,21 @@ fun MeditateSection() {
                                 running = !running
                                 Haptics.tick(context)
                             },
-                            contentPadding = PaddingValues(horizontal = 26.dp, vertical = 12.dp),
+                            contentPadding = PaddingValues(
+                                horizontal = Spacing.xl,
+                                vertical = Spacing.md,
+                            ),
                         ) {
                             Icon(
                                 if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
                             )
-                            Spacer(Modifier.width(8.dp))
-                            Text(if (running) "Pause" else if (remaining == 0) "Again" else "Begin", fontSize = 14.sp)
+                            Spacer(Modifier.width(Spacing.sm))
+                            Text(
+                                if (running) "Pause" else if (remaining == 0) "Again" else "Begin",
+                                style = ChronosType.label,
+                            )
                         }
                         OutlinedButton(
                             onClick = {
@@ -210,11 +246,14 @@ fun MeditateSection() {
                                 phaseRemaining = pattern.phases.first().seconds
                                 completedOnce = false
                             },
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            contentPadding = PaddingValues(
+                                horizontal = Spacing.lg,
+                                vertical = Spacing.md,
+                            ),
                         ) {
                             Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Reset", fontSize = 13.sp)
+                            Spacer(Modifier.width(Spacing.xs))
+                            Text("Reset", style = ChronosType.label)
                         }
                     }
                 }
@@ -223,7 +262,7 @@ fun MeditateSection() {
 
         item { WellnessLabel("PATTERN") }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(WellnessPlans.patterns, key = { it.id }) { option ->
                     Pill(
                         text = option.title,
@@ -247,7 +286,7 @@ fun MeditateSection() {
 
         item { WellnessLabel("LENGTH") }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(listOf(3, 5, 10, 15, 20), key = { it }) { option ->
                     Pill(
                         text = "$option min",
@@ -268,32 +307,48 @@ fun MeditateSection() {
         item {
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(Radii.md),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Row(modifier = Modifier.padding(14.dp)) {
+                Row(modifier = Modifier.padding(Spacing.md)) {
                     Text(
                         text = if (todayMinutes == 0) "No minutes yet today"
                         else "${todayMinutes} min in ${WellnessStore.allMeditations().count { isToday(it.completedAt) }} session(s) today",
-                        fontSize = 13.sp,
+                        style = ChronosType.body,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
         }
 
-        if (recent.isNotEmpty()) {
-            item { WellnessLabel("RECENT") }
+        item { WellnessLabel("RECENT") }
+        if (recent.isEmpty()) {
+            item {
+                // Says what a pattern is, because that is the one thing a first
+                // visit here has not been told yet.
+                EmptyState(
+                    title = "No sessions yet",
+                    subtitle = "A pattern is a fixed rhythm of breath phases — in, hold, out — " +
+                        "that the circle above follows. Pick one and press Begin.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                )
+            }
+        } else {
             items(recent, key = { it.id }) { session ->
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(Radii.md),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
                             text = "${session.minutes} min · ${WellnessPlans.pattern(session.patternId).title}",
-                            fontSize = 13.sp,
+                            style = ChronosType.body,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f),
                         )
@@ -302,7 +357,7 @@ fun MeditateSection() {
                                 .atZone(ZoneId.systemDefault())
                                 .toLocalDate()
                                 .format(DateTimeFormatter.ofPattern("d MMM")),
-                            fontSize = 12.sp,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }

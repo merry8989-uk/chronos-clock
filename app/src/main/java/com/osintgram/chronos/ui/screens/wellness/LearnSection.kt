@@ -6,16 +6,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
@@ -33,12 +32,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.osintgram.chronos.ui.components.RowDivider
 import com.osintgram.chronos.ui.screens.WellnessLabel
 import com.osintgram.chronos.ui.screens.WellnessNote
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.ui.theme.pressable
 import com.osintgram.chronos.wellness.WellnessPlans
 
@@ -46,6 +47,11 @@ import com.osintgram.chronos.wellness.WellnessPlans
  * Learn: pose references drawn from icons, and follow-along suggestions that
  * open a search on the service they name. Nothing here pretends to be bundled
  * media — the app ships no video, audio or photo content of its own.
+ *
+ * The words on this screen are the content, and they are accurate, so only the
+ * presentation is styled here: each group is one card holding a list of rows,
+ * every row headed in [ChronosType.title] over [ChronosType.body] text, so the
+ * page can be scanned by heading instead of read card by card.
  */
 @Composable
 fun LearnSection() {
@@ -53,148 +59,150 @@ fun LearnSection() {
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(
+            start = Spacing.lg,
+            end = Spacing.lg,
+            top = Spacing.xs,
+            bottom = Spacing.xl,
+        ),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         item { WellnessLabel("YOGA POSES") }
-        items(WellnessPlans.poses, key = { it.name }) { pose ->
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
+        item {
+            ListCard {
+                WellnessPlans.poses.forEachIndexed { index, pose ->
+                    if (index > 0) RowDivider()
+                    Row(
                         modifier = Modifier
-                            .size(44.dp)
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                RoundedCornerShape(12.dp),
-                            ),
-                        contentAlignment = Alignment.Center,
+                            .fillMaxWidth()
+                            .padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            poseIcon(pose.icon),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = pose.name,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = pose.benefit,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = pose.cue,
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                    RoundedCornerShape(Radii.md),
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                poseIcon(pose.icon),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = pose.name,
+                                style = ChronosType.title,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = pose.benefit,
+                                style = ChronosType.body,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = pose.cue,
+                                style = ChronosType.body,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
         }
 
         item { WellnessLabel("FOLLOW ALONG") }
-        items(WellnessPlans.suggestions, key = { it.url }) { suggestion ->
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .pressable {
-                        Haptics.tick(context)
-                        runCatching {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(suggestion.url))
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        item {
+            ListCard {
+                WellnessPlans.suggestions.forEachIndexed { index, suggestion ->
+                    if (index > 0) RowDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressable {
+                                Haptics.tick(context)
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_VIEW, Uri.parse(suggestion.url))
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                    )
+                                }
+                            }
+                            .padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Filled.PlayCircleOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = suggestion.title,
+                                style = ChronosType.title,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "${suggestion.detail} · ${suggestion.source}",
+                                style = ChronosType.body,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    },
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Filled.PlayCircleOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = suggestion.title,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = "${suggestion.detail} · ${suggestion.source}",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        Icon(
+                            Icons.Filled.OpenInNew,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
                         )
                     }
-                    Icon(
-                        Icons.Filled.OpenInNew,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
-                    )
                 }
             }
         }
 
         item { WellnessLabel("BREATHING PATTERNS") }
-        items(WellnessPlans.patterns, key = { it.id }) { pattern ->
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Filled.Air,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = pattern.title,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface,
+        item {
+            ListCard {
+                WellnessPlans.patterns.forEachIndexed { index, pattern ->
+                    if (index > 0) RowDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Filled.Air,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
                         )
-                        Text(
-                            text = pattern.subtitle,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (pattern.caution.isNotBlank()) {
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(Modifier.weight(1f)) {
                             Text(
-                                text = pattern.caution,
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp,
+                                text = pattern.title,
+                                style = ChronosType.title,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = pattern.subtitle,
+                                style = ChronosType.body,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (pattern.caution.isNotBlank()) {
+                                Text(
+                                    text = pattern.caution,
+                                    style = ChronosType.body,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -208,6 +216,18 @@ fun LearnSection() {
                     "service shows at the time. Nothing is downloaded or played inside Chronos.",
             )
         }
+    }
+}
+
+/** One card holding a group of rows, each separated by a divider. */
+@Composable
+private fun ListCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(Radii.lg),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(content = content)
     }
 }
 
