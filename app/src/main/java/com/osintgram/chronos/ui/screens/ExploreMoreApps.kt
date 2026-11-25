@@ -20,7 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 
 /**
  * "Explore more apps by us" - a cross-promotion list shown at the end of Settings.
@@ -166,56 +168,67 @@ fun ExploreMoreAppsSection(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     if (ExploreApps.all.isEmpty()) return
 
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Spacer(Modifier.height(8.dp))
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = Spacing.sm)) {
+        Spacer(Modifier.height(Spacing.sm))
         Text(
             text = "Explore more apps by us",
-            style = MaterialTheme.typography.titleMedium,
+            style = ChronosType.title,
             fontWeight = FontWeight.SemiBold,
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Spacing.xs))
         Text(
             text = "Other apps we build. Free, no ads, no accounts - same as this one.",
-            style = MaterialTheme.typography.bodySmall,
+            style = ChronosType.label,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(Spacing.sm))
 
         ExploreApps.all.forEach { app ->
             Surface(
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(Radii.lg),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+                    .padding(vertical = Spacing.xs)
                     .clickable {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(app.url))
                         runCatching { context.startActivity(intent) }
                     },
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    modifier = Modifier.fillMaxWidth().padding(Spacing.md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = app.name,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = ChronosType.body,
                             fontWeight = FontWeight.Medium,
                         )
                         Text(
                             text = app.tagline,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = ChronosType.label,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                         )
                     }
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = app.action,
-                        style = MaterialTheme.typography.labelMedium,
+                    Spacer(Modifier.width(Spacing.sm))
+                    // Each card has exactly one action, and it is the only
+                    // filled element on the card, so it reads as the thing to do.
+                    Surface(
                         color = MaterialTheme.colorScheme.primary,
-                    )
+                        shape = RoundedCornerShape(Radii.sm),
+                    ) {
+                        Text(
+                            text = app.action,
+                            style = ChronosType.label,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.padding(
+                                horizontal = Spacing.md,
+                                vertical = Spacing.xs,
+                            ),
+                        )
+                    }
                 }
             }
         }

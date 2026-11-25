@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,10 +41,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.permissions.SpecialAccess
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import com.osintgram.chronos.ui.theme.pressable
+
+/**
+ * The state of one access, said in words. A row never relies on its tint alone:
+ * "Granted" and "Not granted" are the shared vocabulary, and the Android
+ * wording from [SpecialAccess] stays underneath as the detail.
+ */
+private fun statusWord(granted: Boolean?): String = when (granted) {
+    true -> "Granted"
+    false -> "Not granted"
+    // A null state means the platform does not expose the switch at all.
+    null -> "Unknown"
+}
 
 /**
  * The special accesses Android keeps outside the permission dialog: what each
@@ -88,22 +103,26 @@ fun SpecialAccessScreen(onBack: () -> Unit) {
     ) { padding ->
         LazyColumn(
             modifier = Modifier.padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                end = Spacing.lg,
+                top = Spacing.sm,
+                bottom = Spacing.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             item {
                 Text(
                     text = "Android keeps these switches in system settings, so Chronos can only " +
                         "show the state and take you to the right screen. Tap a row to open it.",
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             items(items, key = { it.title }) { item ->
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(Radii.lg),
                     modifier = Modifier
                         .fillMaxWidth()
                         .pressable(enabled = item.openSettings != null) {
@@ -113,7 +132,7 @@ fun SpecialAccessScreen(onBack: () -> Unit) {
                         },
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(Spacing.md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
@@ -138,45 +157,76 @@ fun SpecialAccessScreen(onBack: () -> Unit) {
                                 modifier = Modifier.size(16.dp),
                             )
                         }
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
                             Text(
                                 text = item.title,
-                                fontSize = 14.sp,
+                                style = ChronosType.body,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
-                            Text(
-                                text = item.state,
-                                fontSize = 12.sp,
-                                color = if (item.granted == true) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.error,
-                            )
+                            // The word comes first and the tint supports it, so
+                            // the state is readable without seeing the colour.
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = statusWord(item.granted),
+                                    style = ChronosType.label,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (item.granted == true) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
+                                    },
+                                )
+                                Spacer(Modifier.width(Spacing.sm))
+                                Text(
+                                    text = item.state,
+                                    style = ChronosType.label,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             Text(
                                 text = item.usedBy,
-                                fontSize = 11.sp,
-                                lineHeight = 15.sp,
+                                style = ChronosType.label,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         if (item.openSettings != null) {
-                            Icon(
-                                Icons.Filled.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (item.granted == true) {
+                                // Nothing to fix, so the row keeps a quiet
+                                // affordance rather than a button.
+                                Icon(
+                                    Icons.Filled.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                // The one action of the row: open the system
+                                // screen that grants this access.
+                                Spacer(Modifier.width(Spacing.sm))
+                                Button(
+                                    onClick = {
+                                        Haptics.tick(context)
+                                        item.openSettings?.invoke()
+                                        tick++
+                                    },
+                                    contentPadding = PaddingValues(
+                                        horizontal = Spacing.md,
+                                        vertical = Spacing.xs,
+                                    ),
+                                ) { Text("Open settings", style = ChronosType.label) }
+                            }
                         }
                     }
                 }
             }
             item {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Spacing.sm))
                 Text(
                     text = "Notification access is used only by Screen time, and only to count how " +
                         "many notifications each app posted. The listener never stores a title, " +
                         "text or sender.",
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,8 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -42,8 +45,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.tasks.Project
@@ -53,13 +61,100 @@ import com.osintgram.chronos.tasks.TaskReminders
 import com.osintgram.chronos.tasks.TaskStore
 import com.osintgram.chronos.ui.components.Pill
 import com.osintgram.chronos.ui.components.ProgressLine
+import com.osintgram.chronos.ui.theme.ChronosType
 import com.osintgram.chronos.ui.theme.Haptics
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.StatusColors
 import com.osintgram.chronos.ui.theme.pressable
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+// ---- Local sizes -----------------------------------------------------------
+// Everything that is padding, a radius or a type size comes from Spacing, Radii
+// and ChronosType. These three are fixed sizes those scales do not cover: an
+// icon, the dot that marks a high-priority task, and a colour swatch big enough
+// to be a tap target. ColorDot keeps its own diameter as a default argument, so
+// its signature is unchanged for the calendar rows that call it.
+
+/** The small glyphs inside a row and inside a button. */
+private val IconSize = 18.dp
+
+/** The tick and the remove glyph inside a checklist step, a size apart. */
+private val ChecklistTickIconSize = 20.dp
+private val ChecklistRemoveIconSize = 16.dp
+
+/** The dot beside a high-priority task. */
+private val PriorityDotSize = 8.dp
+
+/** A tappable colour swatch in the project editor. */
+private val SwatchSize = 30.dp
+
+/**
+ * The project palette.
+ *
+ * A project's colour is data, not theme: it is chosen once, stored with the
+ * project and shown back on its card, so it must not be repainted when the user
+ * changes preset. The five ARGB values therefore live here, once, as a named
+ * list — and each carries the name its dot is announced with, because a dot
+ * alone tells a person who cannot separate two blues nothing at all.
+ */
+private data class ProjectColour(val argb: Int, val name: String)
+
+private val ProjectPalette: List<ProjectColour> = listOf(
+    ProjectColour(0xFF4C8DFF.toInt(), "Blue"),
+    ProjectColour(0xFF22C7A9.toInt(), "Teal"),
+    ProjectColour(0xFFFFB020.toInt(), "Amber"),
+    ProjectColour(0xFFFF6E8A.toInt(), "Rose"),
+    ProjectColour(0xFF8B7CFF.toInt(), "Violet"),
+)
+
+/** The palette name for a stored colour, so any dot can be described out loud. */
+private fun colourName(argb: Int): String =
+    ProjectPalette.firstOrNull { it.argb == argb }?.name ?: "Custom colour"
 
 /** One task line: tick, title, project and due time, plus calendar and delete. */
 @Composable
 fun TaskRow(
+    task: Task,
+    showDate: Boolean = false,
+    onAddToCalendar: ((Task) -> Unit)? = null,
+) {
+    TaskLine(task = task, showDate = showDate, onAddToCalendar = onAddToCalendar)
+}
+
+/**
+ * Priority as a word, not a colour, the way the restyled task list reads it:
+ * high on the warning colour, low quietly, and normal carries nothing so the
+ * list stays calm for the tasks that have nothing to say.
+ */
+@Composable
+private fun PriorityTag(text: String, high: Boolean) {
+    Surface(
+        color = if (high) StatusColors.warning else MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(Radii.sm),
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text,
+                style = ChronosType.label,
+                fontWeight = FontWeight.SemiBold,
+                color = if (high) StatusColors.onWarning else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * The body of a task line. It follows the task list's scan row: a title on the
+ * body step, one metadata line on the label step, the card on [Radii.md] and
+ * the row's padding on the spacing scale.
+ */
+@Composable
+private fun TaskLine(
     task: Task,
     showDate: Boolean = false,
     onAddToCalendar: ((Task) -> Unit)? = null,
@@ -70,11 +165,16 @@ fun TaskRow(
     val checklistProgress = TaskLogic.checklistProgress(task)
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(Radii.md),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(start = 10.dp, end = 2.dp, top = 6.dp, bottom = 6.dp),
+            modifier = Modifier.padding(
+                start = Spacing.sm,
+                end = Spacing.xs,
+                top = Spacing.xs,
+                bottom = Spacing.xs,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
@@ -97,39 +197,52 @@ fun TaskRow(
                     .weight(1f)
                     .clickable { showChecklist = true },
             ) {
-                Text(
-                    text = task.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onSurface,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = task.title,
+                        style = ChronosType.body,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (task.priority == 2) {
+                        Spacer(Modifier.width(Spacing.sm))
+                        Box(
+                            Modifier
+                                .size(PriorityDotSize)
+                                .background(MaterialTheme.colorScheme.error, CircleShape),
+                        )
+                        Spacer(Modifier.width(Spacing.xs))
+                        PriorityTag(text = "High", high = true)
+                    }
+                }
                 val bits = buildList {
-                    if (showDate) add(java.time.format.DateTimeFormatter.ofPattern("d MMM")
-                        .format(TaskLogic.dateOf(task.dueAt)))
+                    if (showDate) {
+                        add(DateTimeFormatter.ofPattern("d MMM").format(TaskLogic.dateOf(task.dueAt)))
+                    }
+                    project?.let { add(it.name) }
                     if (!task.allDay) add(timeOf(task))
                     if (task.repeat != Task.REPEAT_NONE) add(task.repeat)
-                    project?.let { add(it.name) }
                     if (task.calendarEventId != null) add("in calendar")
                     if (!checklistProgress.isEmpty) {
                         add("${checklistProgress.done}/${checklistProgress.total} steps")
                     }
                 }
                 if (bits.isNotEmpty()) {
+                    // No weight here: this Text sits in a Column that wraps its
+                    // content, and a weighted child in an unbounded column
+                    // collapses to nothing. Ellipsis does the clipping instead.
                     Text(
                         text = bits.joinToString(" · "),
-                        fontSize = 11.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-            if (task.priority == 2) {
-                Box(
-                    Modifier
-                        .size(8.dp)
-                        .background(MaterialTheme.colorScheme.error, CircleShape),
-                )
-                Spacer(Modifier.width(6.dp))
             }
             if (onAddToCalendar != null && task.calendarEventId == null) {
                 IconButton(onClick = { onAddToCalendar(task) }) {
@@ -137,7 +250,7 @@ fun TaskRow(
                         Icons.Filled.Event,
                         contentDescription = "Add to phone calendar",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(IconSize),
                     )
                 }
             }
@@ -149,7 +262,7 @@ fun TaskRow(
                     Icons.Filled.Delete,
                     contentDescription = "Delete task",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(IconSize),
                 )
             }
         }
@@ -163,6 +276,9 @@ fun TaskRow(
 /**
  * The checklist inside one task: tick a step, add one, delete one. The task is
  * re-read from the store on every change, so a tick shows immediately.
+ *
+ * Each step is a row on [Radii.md], the add field is the dialog's action, and
+ * an empty checklist says what to do next rather than showing nothing.
  */
 @Composable
 fun ChecklistDialog(taskId: Long, onDismiss: () -> Unit) {
@@ -175,51 +291,80 @@ fun ChecklistDialog(taskId: Long, onDismiss: () -> Unit) {
         title = {
             Text(
                 text = task.title,
-                fontSize = 16.sp,
+                style = ChronosType.title,
                 maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
                 if (task.checklist.isEmpty()) {
-                    Text(
-                        text = "No steps yet — add the first one below.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                task.checklist.forEachIndexed { index, item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { TaskStore.toggleChecklistItem(taskId, index) }) {
-                            Icon(
-                                if (item.done) Icons.Filled.CheckCircle
-                                else Icons.Filled.RadioButtonUnchecked,
-                                contentDescription = if (item.done) "Untick ${item.text}" else "Tick ${item.text}",
-                                tint = if (item.done) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp),
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(Radii.md),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(Modifier.padding(Spacing.md)) {
+                            Text(
+                                text = "No steps yet",
+                                style = ChronosType.body,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.height(Spacing.xs))
+                            Text(
+                                text = "Break this task down below: every step you add is a tick " +
+                                    "you can make in one go.",
+                                style = ChronosType.label,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Text(
-                            text = item.text,
-                            fontSize = 14.sp,
-                            color = if (item.done) MaterialTheme.colorScheme.onSurfaceVariant
-                            else MaterialTheme.colorScheme.onSurface,
-                            textDecoration = if (item.done) {
-                                androidx.compose.ui.text.style.TextDecoration.LineThrough
-                            } else {
-                                null
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
-                        IconButton(onClick = { TaskStore.removeChecklistItem(taskId, index) }) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = "Remove ${item.text}",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp),
+                    }
+                }
+                task.checklist.forEachIndexed { index, item ->
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(Radii.md),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = Spacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(onClick = { TaskStore.toggleChecklistItem(taskId, index) }) {
+                                Icon(
+                                    if (item.done) Icons.Filled.CheckCircle
+                                    else Icons.Filled.RadioButtonUnchecked,
+                                    contentDescription = if (item.done) "Untick ${item.text}" else "Tick ${item.text}",
+                                    tint = if (item.done) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(ChecklistTickIconSize),
+                                )
+                            }
+                            Text(
+                                text = item.text,
+                                style = ChronosType.body,
+                                color = if (item.done) MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurface,
+                                textDecoration = if (item.done) {
+                                    TextDecoration.LineThrough
+                                } else {
+                                    null
+                                },
+                                modifier = Modifier.weight(1f),
                             )
+                            IconButton(onClick = { TaskStore.removeChecklistItem(taskId, index) }) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = "Remove ${item.text}",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(ChecklistRemoveIconSize),
+                                )
+                            }
                         }
                     }
                 }
@@ -231,19 +376,22 @@ fun ChecklistDialog(taskId: Long, onDismiss: () -> Unit) {
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.width(6.dp))
-                    TextButton(
+                    Spacer(Modifier.width(Spacing.sm))
+                    Button(
                         enabled = text.isNotBlank(),
                         onClick = {
                             TaskStore.addChecklistItem(taskId, text)
                             text = ""
                         },
-                    ) { Text("Add") }
+                        shape = RoundedCornerShape(Radii.md),
+                    ) {
+                        Text("Add", style = ChronosType.label, fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 if (!progress.isEmpty) {
                     Text(
                         text = "${progress.done} of ${progress.total} steps done",
-                        fontSize = 11.sp,
+                        style = ChronosType.label,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -269,23 +417,57 @@ internal fun GroupHeader(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title,
-                fontSize = 13.sp,
+                style = ChronosType.body,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 text = subtitle,
-                fontSize = 11.sp,
+                style = ChronosType.label,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Spacer(Modifier.height(5.dp))
+        Spacer(Modifier.height(Spacing.xs))
         ProgressLine(progress)
     }
 }
 
-/** Add / edit a task. Everything the store understands is on this sheet. */
+/**
+ * An all-caps section heading inside a form, on the same label step the task
+ * list uses for its group headings, so the two read as one family.
+ */
+@Composable
+private fun FormSectionLabel(text: String) {
+    Text(
+        text = text.uppercase(),
+        style = ChronosType.label,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.sp,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = Spacing.xs, top = Spacing.sm, bottom = Spacing.xs),
+    )
+}
+
+/** The quiet label above a row of pills, one step below a section heading. */
+@Composable
+private fun FieldLabel(text: String) {
+    Text(
+        text = text,
+        style = ChronosType.label,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = Spacing.xs),
+    )
+}
+
+/**
+ * Add / edit a task. Everything the store understands is on this sheet, grouped
+ * into sections so the form reads as three short questions rather than one long
+ * column: what it is, when it is due, and what it is tagged with.
+ *
+ * Save is the only filled button here; Cancel and the checklist's "Add" stay
+ * quiet so the primary action is unambiguous.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskEditorDialog(
@@ -327,7 +509,11 @@ fun TaskEditorDialog(
         onDismissRequest = onDismiss,
         title = { Text("New task") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                FormSectionLabel("The task")
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it.take(120) },
@@ -335,23 +521,34 @@ fun TaskEditorDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (title.isBlank()) {
+                    Text(
+                        text = "A title is needed before this can be saved.",
+                        style = ChronosType.label,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = Spacing.xs),
+                    )
+                }
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it.take(500) },
                     label = { Text("Notes (optional)") },
                     modifier = Modifier.fillMaxWidth(),
                 )
+
+                FormSectionLabel("When")
                 OutlinedButton(
                     onClick = { showPicker = true },
+                    shape = RoundedCornerShape(Radii.md),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        "Due " + java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy").format(date),
-                        fontSize = 13.sp,
+                        "Due " + DateTimeFormatter.ofPattern("d MMM yyyy").format(date),
+                        style = ChronosType.body,
                     )
                 }
-                Text("Time", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FieldLabel("Time")
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     listOf(-1L to "All day", 9L to "09:00", 12L to "12:00", 18L to "18:00")
                         .forEach { (value, label) ->
                             Pill(
@@ -361,8 +558,10 @@ fun TaskEditorDialog(
                             )
                         }
                 }
-                Text("Priority", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+
+                FormSectionLabel("Details")
+                FieldLabel("Priority")
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     listOf(0 to "Low", 1 to "Normal", 2 to "High").forEach { (value, label) ->
                         Pill(
                             text = label,
@@ -371,8 +570,8 @@ fun TaskEditorDialog(
                         )
                     }
                 }
-                Text("Repeat", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FieldLabel("Repeat")
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     Task.REPEATS.forEach { option ->
                         Pill(
                             text = option,
@@ -382,8 +581,8 @@ fun TaskEditorDialog(
                     }
                 }
                 if (projects.isNotEmpty()) {
-                    Text("Project", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FieldLabel("Project")
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         Pill(
                             text = "None",
                             selected = projectId == null,
@@ -398,22 +597,36 @@ fun TaskEditorDialog(
                         }
                     }
                 }
-                Text(
-                    "Checklist (optional)",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+
+                FormSectionLabel("Checklist")
+                if (checklistDraft.isEmpty()) {
+                    Text(
+                        text = "Optional: steps you can tick off one at a time.",
+                        style = ChronosType.label,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = Spacing.xs),
+                    )
+                }
                 checklistDraft.forEachIndexed { index, item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "• $item",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = {
-                            checklistDraft = checklistDraft.filterIndexed { i, _ -> i != index }
-                        }) { Text("Remove", fontSize = 11.sp) }
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(Radii.md),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = item,
+                                style = ChronosType.body,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = {
+                                checklistDraft = checklistDraft.filterIndexed { i, _ -> i != index }
+                            }) { Text("Remove", style = ChronosType.label) }
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -424,20 +637,20 @@ fun TaskEditorDialog(
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(Spacing.sm))
                     TextButton(
                         enabled = checklistText.isNotBlank(),
                         onClick = {
                             checklistDraft = checklistDraft + checklistText.trim()
                             checklistText = ""
                         },
-                    ) { Text("Add") }
+                    ) { Text("Add", style = ChronosType.label) }
                 }
             }
         },
         confirmButton = {
             val context = LocalContext.current
-            TextButton(
+            Button(
                 enabled = title.isNotBlank(),
                 onClick = {
                     val dueAt = if (timeMinutes < 0) {
@@ -460,7 +673,8 @@ fun TaskEditorDialog(
                     Haptics.success(context)
                     onDismiss()
                 },
-            ) { Text("Add task") }
+                shape = RoundedCornerShape(Radii.md),
+            ) { Text("Save", style = ChronosType.body, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
@@ -470,19 +684,13 @@ fun TaskEditorDialog(
 @Composable
 fun ProjectEditorDialog(onDismiss: () -> Unit) {
     var name by remember { mutableStateOf("") }
-    val colors = listOf(
-        0xFF4C8DFF.toInt(),
-        0xFF22C7A9.toInt(),
-        0xFFFFB020.toInt(),
-        0xFFFF6E8A.toInt(),
-        0xFF8B7CFF.toInt(),
-    )
-    var color by remember { mutableStateOf(colors.first()) }
+    val colors = ProjectPalette
+    var color by remember { mutableStateOf(colors.first().argb) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("New project") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(60) },
@@ -490,21 +698,22 @@ fun ProjectEditorDialog(onDismiss: () -> Unit) {
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    colors.forEach { value ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    colors.forEach { swatch ->
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
-                                .background(androidx.compose.ui.graphics.Color(value), CircleShape)
-                                .pressable { color = value },
+                                .size(SwatchSize)
+                                .background(Color(swatch.argb), CircleShape)
+                                .semantics { contentDescription = swatch.name }
+                                .pressable { color = swatch.argb },
                             contentAlignment = Alignment.Center,
                         ) {
-                            if (color == value) {
+                            if (color == swatch.argb) {
                                 Icon(
                                     Icons.Filled.CheckCircle,
                                     contentDescription = "Selected colour",
-                                    tint = androidx.compose.ui.graphics.Color.White,
-                                    modifier = Modifier.size(18.dp),
+                                    tint = Color.White,
+                                    modifier = Modifier.size(IconSize),
                                 )
                             }
                         }
@@ -512,7 +721,7 @@ fun ProjectEditorDialog(onDismiss: () -> Unit) {
                 }
                 Text(
                     "Tap a colour to pick it",
-                    fontSize = 11.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -530,13 +739,18 @@ fun ProjectEditorDialog(onDismiss: () -> Unit) {
     )
 }
 
-/** Colour swatch helper used by the project cards. */
+/**
+ * Colour swatch helper used by the project cards and the calendar rows. A
+ * project's colour is data, so it arrives as a stored ARGB value; the dot names
+ * it for anyone who cannot tell two dots apart by sight.
+ */
 @Composable
 internal fun ColorDot(color: Int, size: Int = 10) {
     Box(
         modifier = Modifier
             .size(size.dp)
-            .background(androidx.compose.ui.graphics.Color(color), CircleShape),
+            .background(Color(color), CircleShape)
+            .semantics { contentDescription = colourName(color) },
     )
 }
 
@@ -546,30 +760,29 @@ internal fun ProjectCard(project: Project, onClick: () -> Unit) {
     val progress = TaskStore.projectProgress(project.id)
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(Radii.lg),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
+            .padding(vertical = Spacing.xs),
         onClick = onClick,
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.padding(Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ColorDot(project.color)
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(Spacing.sm))
                 Text(
                     text = project.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    style = ChronosType.title,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = "${progress.done}/${progress.total}",
-                    fontSize = 12.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.sm))
             ProgressLine(progress.percent)
         }
     }
@@ -580,11 +793,12 @@ internal fun ProjectCard(project: Project, onClick: () -> Unit) {
 internal fun AddButton(label: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
+        shape = RoundedCornerShape(Radii.md),
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 10.dp),
+        contentPadding = PaddingValues(vertical = Spacing.md),
     ) {
-        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(label, fontSize = 13.sp)
+        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(IconSize))
+        Spacer(Modifier.width(Spacing.sm))
+        Text(label, style = ChronosType.body, fontWeight = FontWeight.SemiBold)
     }
 }

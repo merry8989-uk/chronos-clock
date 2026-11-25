@@ -37,9 +37,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -48,10 +51,144 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.osintgram.chronos.data.MissionSpec
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
+import com.osintgram.chronos.ui.theme.StatusColors
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.random.Random
+
+// ------------------------------------------------------------- tokens -----
+
+/**
+ * Geometry the design tokens do not cover.
+ *
+ * [Spacing] and [Radii] describe the rhythm of a screen: padding and corners.
+ * The side of a square tile is a different kind of number, so each grid that
+ * draws squares names its own here rather than borrowing a padding step and
+ * silently changing the size of the puzzle.
+ */
+private val OddTileSize = 74.dp
+private val FindTileSize = 72.dp
+private val ShapeTileSize = 70.dp
+private val PatternTileSize = 88.dp
+
+/** The numeral badge on a tile: big enough to read, small enough to leave the colour visible. */
+private val TileBadgeSize = 20.dp
+
+/** The answer field on the math mission, wide enough for a signed three-digit answer. */
+private val AnswerFieldWidth = 200.dp
+
+/** Tracking on the mission heading, which sits above the puzzle as a small caps label. */
+private val HeadingTracking = 2.sp
+
+/**
+ * The colours the two colour puzzles draw, defined once.
+ *
+ * This is the only place in the mission code that names a colour of its own.
+ * The odd-one-out grid and the pattern grid are *about* telling tiles apart, so
+ * they cannot borrow a pair of surface roles: a preset can put `surfaceVariant`
+ * and a low-contrast accent close enough together that the tile the user is
+ * looking for disappears. The list is therefore the puzzle itself, and every
+ * entry has to stay visibly different from the others.
+ *
+ * The base hue is the theme accent (see [oddTileBases]), so the grid still
+ * belongs to the look the user picked; the entries below are the fixed hues it
+ * falls back to, and any the accent already matches are dropped so no two tiles
+ * are ever drawn identically. A numeral is drawn on every odd-one-out tile, so
+ * the colour is never the only cue on screen.
+ */
+private val missionTileColors = listOf(
+    // The pattern grid's resting plate: the dark ground its lit tile reads against.
+    Color(0xFF232833),
+    // The odd-one-out grid's fixed base hues, used after the theme accent.
+    Color(0xFF8B7CFF), Color(0xFF22C7A9), Color(0xFFFFB020),
+    Color(0xFFFF6E8A), Color(0xFF4CD07D),
+)
+
+/** How far apart two tile hues must be before they can both be drawn. */
+private const val MinTileSeparation = 0.25f
+
+/** How far the lit tile is pulled towards the accent, 0f..1f. */
+private const val PatternLitMix = 0.78f
+
+/** Rough per-channel distance between two colours, used only to keep tiles apart. */
+private fun channelsApart(a: Color, b: Color): Float =
+    abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue)
+
+/** The odd-one-out bases: the theme accent first, then the fixed hues it does not already match. */
+@Composable
+private fun oddTileBases(): List<Color> {
+    val accent = MaterialTheme.colorScheme.primary
+    return buildList {
+        add(accent)
+        // Index 0 is the pattern grid's plate, not a base hue, so it is skipped.
+        missionTileColors.drop(1).filterTo(this) { channelsApart(it, accent) > MinTileSeparation }
+    }
+}
+
+/** The pattern grid's two shades: the resting plate and the lit tile the accent produces. */
+@Composable
+private fun patternLitTile(): Color =
+    lerp(patternRestingTile(), MaterialTheme.colorScheme.primary, PatternLitMix)
+
+/** The pattern grid's resting plate, the first entry of the drawn set. */
+private fun patternRestingTile(): Color = missionTileColors.first()
+
+/** How the most recent attempt went. [None] means nothing has been answered yet. */
+private enum class Attempt { None, Wrong, Right }
+
+/**
+ * Reports the last attempt in words, with colour as a second signal only.
+ *
+ * A wrong answer is amber and says what happened and what to do next; a right
+ * one is green and says the step was accepted. The line is a polite live region
+ * so a screen reader announces the change instead of leaving the user to hunt
+ * for it.
+ */
+@Composable
+private fun AttemptFeedback(
+    attempt: Attempt,
+    wrongText: String,
+    rightText: String,
+) {
+    if (attempt != Attempt.None) {
+        val wrong = attempt == Attempt.Wrong
+        Text(
+            text = if (wrong) wrongText else rightText,
+            color = if (wrong) StatusColors.warning else StatusColors.success,
+            style = ChronosType.label,
+            modifier = Modifier
+                .padding(top = Spacing.sm)
+                .semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+}
+
+/**
+ * The numeral drawn in the corner of a grid tile.
+ *
+ * It sits on a theme surface rather than straight on the tile colour so it
+ * stays legible whatever hue the puzzle drew, and it gives a user who cannot
+ * separate the hues something to name the tiles by.
+ */
+@Composable
+private fun TileBadge(label: String) {
+    Box(
+        modifier = Modifier
+            .size(TileBadgeSize)
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(Radii.sm)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.label,
+        )
+    }
+}
 
 /**
  * Renders the mission an alarm requires. [onSolved] fires only when the user
@@ -74,15 +211,16 @@ fun MissionRunner(
         Text(
             text = info?.title ?: spec.type,
             color = MaterialTheme.colorScheme.primary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp,
+            style = ChronosType.label.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = HeadingTracking,
+            ),
         )
         Text(
             text = info?.subtitle ?: "",
-            color = Color(0xFF9AA3B2),
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = 14.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = ChronosType.label,
+            modifier = Modifier.padding(bottom = Spacing.md),
         )
 
         when (spec.type) {
@@ -96,7 +234,11 @@ fun MissionRunner(
             "shake" -> ShakeMission(spec, onSolved, onUnavailable)
             "step" -> StepMission(spec, onSolved, onUnavailable)
             else -> {
-                Text("This mission is not available.", color = Color(0xFF9AA3B2), fontSize = 13.sp)
+                Text(
+                    "This mission is not available.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = ChronosType.label,
+                )
                 TextButton(onClick = onUnavailable) { Text("Continue") }
             }
         }
@@ -107,9 +249,9 @@ fun MissionRunner(
 private fun Progress(label: String, value: String) {
     Text(
         text = "$label  $value",
-        color = Color(0xFF9AA3B2),
-        fontSize = 13.sp,
-        modifier = Modifier.padding(top = 12.dp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = ChronosType.label,
+        modifier = Modifier.padding(top = Spacing.md),
     )
 }
 
@@ -143,17 +285,16 @@ private fun MathMission(spec: MissionSpec, onSolved: () -> Unit) {
     var solved by remember { mutableIntStateOf(0) }
     var seed by remember { mutableIntStateOf(0) }
     var input by remember(seed) { mutableStateOf("") }
-    var wrong by remember(seed) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(Attempt.None) }
     val problem = remember(seed) { newProblem() }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "${problem.text} = ?",
-            color = Color.White,
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Light,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.display,
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spacing.lg))
         OutlinedTextField(
             value = input,
             onValueChange = { text ->
@@ -161,23 +302,21 @@ private fun MathMission(spec: MissionSpec, onSolved: () -> Unit) {
             },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(200.dp),
+            modifier = Modifier.width(AnswerFieldWidth),
         )
-        if (wrong) {
-            Text(
-                "Not quite — try again",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
-        Spacer(Modifier.height(14.dp))
+        AttemptFeedback(
+            attempt = attempt,
+            wrongText = "Not quite. Check the sum and try again.",
+            rightText = "Correct. Next problem.",
+        )
+        Spacer(Modifier.height(Spacing.lg))
         Button(onClick = {
             if (input.trim().toIntOrNull() == problem.answer) {
                 solved += 1
+                attempt = Attempt.Right
                 if (solved >= spec.count) onSolved() else seed += 1
             } else {
-                wrong = true
+                attempt = Attempt.Wrong
                 input = ""
             }
         }) { Text("Check") }
@@ -203,17 +342,17 @@ private fun TypingMission(spec: MissionSpec, onSolved: () -> Unit) {
     var seed by remember { mutableIntStateOf(0) }
     val phrase = remember(seed) { phrases[Random.nextInt(phrases.size)] }
     var input by remember(seed) { mutableStateOf("") }
-    var wrong by remember(seed) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(Attempt.None) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = phrase,
-            color = Color.White,
-            fontSize = 22.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.headline,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp),
+            modifier = Modifier.padding(horizontal = Spacing.md),
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spacing.lg))
         OutlinedTextField(
             value = input,
             onValueChange = { input = it },
@@ -221,21 +360,19 @@ private fun TypingMission(spec: MissionSpec, onSolved: () -> Unit) {
             placeholder = { Text("Type it exactly") },
             modifier = Modifier.fillMaxWidth(0.9f),
         )
-        if (wrong) {
-            Text(
-                "Not matching yet",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
-        Spacer(Modifier.height(14.dp))
+        AttemptFeedback(
+            attempt = attempt,
+            wrongText = "That does not match yet. Type the phrase exactly as it is shown.",
+            rightText = "Matched. Next phrase.",
+        )
+        Spacer(Modifier.height(Spacing.lg))
         Button(onClick = {
             if (input.trim().equals(phrase, ignoreCase = true)) {
                 done += 1
+                attempt = Attempt.Right
                 if (done >= spec.count) onSolved() else seed += 1
             } else {
-                wrong = true
+                attempt = Attempt.Wrong
             }
         }) { Text("Done") }
         Progress("Typed", "$done / ${spec.count}")
@@ -244,20 +381,16 @@ private fun TypingMission(spec: MissionSpec, onSolved: () -> Unit) {
 
 // --------------------------------------------------------- colour tiles -----
 
-private val tileColors = listOf(
-    Color(0xFF4C8DFF), Color(0xFF8B7CFF), Color(0xFF22C7A9),
-    Color(0xFFFFB020), Color(0xFFFF6E8A), Color(0xFF4CD07D),
-)
-
 @Composable
 private fun ColorTilesMission(spec: MissionSpec, onSolved: () -> Unit) {
     var done by remember { mutableIntStateOf(0) }
     var seed by remember { mutableIntStateOf(0) }
-    var wrong by remember(seed) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(Attempt.None) }
 
-    val base = remember(seed) { tileColors[Random.nextInt(tileColors.size)] }
+    val bases = oddTileBases()
+    val base = remember(seed, bases) { bases[Random.nextInt(bases.size)] }
     val oddIndex = remember(seed) { Random.nextInt(9) }
-    val odd = remember(seed) {
+    val odd = remember(seed, base) {
         val shift = 0.16f + Random.nextInt(0, 8) / 100f
         Color(
             red = (base.red + shift).coerceAtMost(1f),
@@ -273,34 +406,39 @@ private fun ColorTilesMission(spec: MissionSpec, onSolved: () -> Unit) {
                     val index = row * 3 + col
                     Box(
                         modifier = Modifier
-                            .padding(5.dp)
-                            .size(74.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .padding(Spacing.xs)
+                            .size(OddTileSize)
+                            .clip(RoundedCornerShape(Radii.md))
                             .background(if (index == oddIndex) odd else base)
-                            .semantics {
-                                contentDescription = "Tile ${index + 1}"
+                            // Merged so the numeral is not read out as a second
+                            // node: the tile is announced once, by name.
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Tile ${index + 1} of 9"
                                 role = Role.Button
                             }
                             .clickable {
                                 if (index == oddIndex) {
                                     done += 1
+                                    attempt = Attempt.Right
                                     if (done >= spec.count) onSolved() else seed += 1
                                 } else {
-                                    wrong = true
+                                    attempt = Attempt.Wrong
                                 }
                             },
-                    )
+                        contentAlignment = Alignment.TopStart,
+                    ) {
+                        Box(modifier = Modifier.padding(Spacing.xs)) {
+                            TileBadge(label = "${index + 1}")
+                        }
+                    }
                 }
             }
         }
-        if (wrong) {
-            Text(
-                "Wrong tile",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
+        AttemptFeedback(
+            attempt = attempt,
+            wrongText = "That tile matches the others. Look for the one that does not.",
+            rightText = "Found the odd tile.",
+        )
         Progress("Found", "$done / ${spec.count}")
     }
 }
@@ -318,52 +456,59 @@ private fun ArrangeShapesMission(spec: MissionSpec, onSolved: () -> Unit) {
     }
     val options = remember(seed) { target.shuffled() }
     var tapped by remember(seed) { mutableStateOf(0) }
-    var wrong by remember(seed) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(Attempt.None) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "Tap in this order",
-            color = Color(0xFF9AA3B2),
-            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = ChronosType.label,
         )
         Text(
             text = target.joinToString("  "),
-            color = Color.White,
-            fontSize = 30.sp,
-            modifier = Modifier.padding(vertical = 12.dp),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.display,
+            modifier = Modifier.padding(vertical = Spacing.md),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             options.forEach { glyph ->
                 Surface(
-                    color = Color(0xFF232833),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.size(70.dp).clickable {
-                        if (target.getOrNull(tapped) == glyph) {
-                            tapped += 1
-                            wrong = false
-                            if (tapped >= target.size) {
-                                if (seed + 1 >= spec.count) onSolved() else seed += 1
-                            }
-                        } else {
-                            tapped = 0
-                            wrong = true
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(Radii.lg),
+                    modifier = Modifier
+                        .size(ShapeTileSize)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "Shape $glyph"
+                            role = Role.Button
                         }
-                    },
+                        .clickable {
+                            if (target.getOrNull(tapped) == glyph) {
+                                tapped += 1
+                                attempt = Attempt.Right
+                                if (tapped >= target.size) {
+                                    if (seed + 1 >= spec.count) onSolved() else seed += 1
+                                }
+                            } else {
+                                tapped = 0
+                                attempt = Attempt.Wrong
+                            }
+                        },
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(glyph, color = Color.White, fontSize = 30.sp)
+                        Text(
+                            glyph,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = ChronosType.display,
+                        )
                     }
                 }
             }
         }
-        if (wrong) {
-            Text(
-                "Start again from the first shape",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
+        AttemptFeedback(
+            attempt = attempt,
+            wrongText = "That is out of order. Start again from the first shape.",
+            rightText = "In order so far. Keep going.",
+        )
         Progress("Placed", "$tapped / ${target.size}")
     }
 }
@@ -374,7 +519,7 @@ private fun ArrangeShapesMission(spec: MissionSpec, onSolved: () -> Unit) {
 private fun FindGridMission(spec: MissionSpec, onSolved: () -> Unit, letters: Boolean) {
     var done by remember { mutableIntStateOf(0) }
     var seed by remember { mutableIntStateOf(0) }
-    var wrong by remember(seed) { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(Attempt.None) }
 
     val pool = remember(letters) {
         if (letters) ('A'..'Z').map { it.toString() } else (1..99).map { it.toString() }
@@ -385,42 +530,50 @@ private fun FindGridMission(spec: MissionSpec, onSolved: () -> Unit, letters: Bo
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = "Find  $target",
-            color = Color.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Light,
-            modifier = Modifier.padding(bottom = 12.dp),
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.numeric,
+            modifier = Modifier.padding(bottom = Spacing.md),
         )
         for (row in 0 until 3) {
             Row {
                 for (col in 0 until 3) {
                     val value = cells[row * 3 + col]
                     Surface(
-                        color = Color(0xFF232833),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.padding(5.dp).size(72.dp).clickable {
-                            if (value == target) {
-                                done += 1
-                                if (done >= spec.count) onSolved() else seed += 1
-                            } else {
-                                wrong = true
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(Radii.md),
+                        modifier = Modifier
+                            .padding(Spacing.xs)
+                            .size(FindTileSize)
+                            .semantics {
+                                contentDescription = "Tile $value"
+                                role = Role.Button
                             }
-                        },
+                            .clickable {
+                                if (value == target) {
+                                    done += 1
+                                    attempt = Attempt.Right
+                                    if (done >= spec.count) onSolved() else seed += 1
+                                } else {
+                                    attempt = Attempt.Wrong
+                                }
+                            },
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(value, color = Color.White, fontSize = 22.sp)
+                            Text(
+                                value,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = ChronosType.headline,
+                            )
                         }
                     }
                 }
             }
         }
-        if (wrong) {
-            Text(
-                "That is not $target",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 6.dp),
-            )
-        }
+        AttemptFeedback(
+            attempt = attempt,
+            wrongText = "That is not $target. Look again.",
+            rightText = "Found $target.",
+        )
         Progress("Found", "$done / ${spec.count}")
     }
 }
@@ -437,12 +590,14 @@ private fun MemoryMission(spec: MissionSpec, onSolved: () -> Unit) {
     var showing by remember(round) { mutableStateOf(true) }
     var litTile by remember(round) { mutableIntStateOf(-1) }
     var entered by remember(round) { mutableStateOf(0) }
-    var wrong by remember(round) { mutableStateOf(false) }
+    var attempt by remember(round) { mutableStateOf(Attempt.None) }
+    val litColor = patternLitTile()
+    val restingTile = patternRestingTile()
 
     LaunchedEffect(round) {
         showing = true
         entered = 0
-        wrong = false
+        attempt = Attempt.None
         sequence = List(length) { Random.nextInt(4) }
         delay(500)
         sequence.forEach { tile ->
@@ -457,9 +612,13 @@ private fun MemoryMission(spec: MissionSpec, onSolved: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = if (showing) "Watch the sequence" else "Repeat it",
-            color = if (showing) MaterialTheme.colorScheme.primary else Color(0xFF9AA3B2),
-            fontSize = 13.sp,
-            modifier = Modifier.padding(bottom = 12.dp),
+            color = if (showing) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            style = ChronosType.label,
+            modifier = Modifier.padding(bottom = Spacing.md),
         )
         for (row in 0 until 2) {
             Row {
@@ -468,35 +627,47 @@ private fun MemoryMission(spec: MissionSpec, onSolved: () -> Unit) {
                     val isLit = litTile == tile
                     Box(
                         modifier = Modifier
-                            .padding(6.dp)
-                            .size(88.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(
-                                if (isLit) Color(0xFF9FC4FF) else Color(0xFF232833),
-                            )
+                            .padding(Spacing.sm)
+                            .size(PatternTileSize)
+                            .clip(RoundedCornerShape(Radii.lg))
+                            .background(if (isLit) litColor else restingTile)
+                            // The lit state is part of the name, so the pattern
+                            // is available to a screen reader and not only to
+                            // the eye watching the grid.
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = if (isLit) {
+                                    "Tile ${tile + 1}, lit"
+                                } else {
+                                    "Tile ${tile + 1}"
+                                }
+                                role = Role.Button
+                            }
                             .clickable(enabled = !showing) {
                                 if (sequence.getOrNull(entered) == tile) {
                                     entered += 1
+                                    attempt = Attempt.Right
                                     if (entered >= sequence.size) {
                                         if (round + 1 >= spec.count) onSolved() else round += 1
                                     }
                                 } else {
-                                    wrong = true
+                                    attempt = Attempt.Wrong
                                     entered = 0
                                 }
                             },
-                    )
+                        contentAlignment = Alignment.TopStart,
+                    ) {
+                        Box(modifier = Modifier.padding(Spacing.sm)) {
+                            TileBadge(label = "${tile + 1}")
+                        }
+                    }
                 }
             }
         }
-        if (wrong) {
-            Text(
-                "Wrong — watch it again",
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
+        AttemptFeedback(
+            attempt = attempt,
+            wrongText = "That is out of sequence. Watch the pattern again.",
+            rightText = "Right tile. Keep going.",
+        )
         Progress("Rounds", "$round / ${spec.count}")
     }
 }
@@ -545,8 +716,8 @@ private fun ShakeMission(spec: MissionSpec, onSolved: () -> Unit, onUnavailable:
         if (!available) {
             Text(
                 "This device has no accelerometer, so the shake mission cannot run.",
-                color = Color(0xFF9AA3B2),
-                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = ChronosType.label,
                 textAlign = TextAlign.Center,
             )
             TextButton(onClick = onUnavailable) { Text("Continue") }
@@ -554,11 +725,14 @@ private fun ShakeMission(spec: MissionSpec, onSolved: () -> Unit, onUnavailable:
         }
         Text(
             text = "$count / ${spec.count}",
-            color = Color.White,
-            fontSize = 46.sp,
-            fontWeight = FontWeight.Light,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.display,
         )
-        Text("Shake the phone", color = Color(0xFF9AA3B2), fontSize = 13.sp)
+        Text(
+            "Shake the phone",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = ChronosType.label,
+        )
     }
 }
 
@@ -599,10 +773,10 @@ private fun StepMission(spec: MissionSpec, onSolved: () -> Unit, onUnavailable: 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         if (!available) {
             Text(
-                "This device has no step counter. Walk-off missions need one — " +
-                    "grant activity permission or pick another mission.",
-                color = Color(0xFF9AA3B2),
-                fontSize = 13.sp,
+                "This device has no step counter. Walk-off missions need one, " +
+                    "so grant activity permission or pick another mission.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = ChronosType.label,
                 textAlign = TextAlign.Center,
             )
             TextButton(onClick = onUnavailable) { Text("Continue") }
@@ -610,10 +784,13 @@ private fun StepMission(spec: MissionSpec, onSolved: () -> Unit, onUnavailable: 
         }
         Text(
             text = "$steps / ${spec.count}",
-            color = Color.White,
-            fontSize = 46.sp,
-            fontWeight = FontWeight.Light,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = ChronosType.display,
         )
-        Text("Walk to dismiss", color = Color(0xFF9AA3B2), fontSize = 13.sp)
+        Text(
+            "Walk to dismiss",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = ChronosType.label,
+        )
     }
 }

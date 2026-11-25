@@ -43,18 +43,31 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
+import com.osintgram.chronos.ui.components.EmptyState
+import com.osintgram.chronos.ui.theme.ChronosType
+import com.osintgram.chronos.ui.theme.Radii
+import com.osintgram.chronos.ui.theme.Spacing
 import java.io.File
+
+/**
+ * Heights of the thumbnail grid and of the empty state that replaces it. The
+ * spacing scale has no vertical size step, so they are named here.
+ */
+private val GridHeight = 240.dp
+private val EmptyStateHeight = 150.dp
 
 /**
  * Picks the picture shown behind the clock when this alarm rings. Images are
  * copied into the app's own storage, so they keep working if the original is
  * deleted or the gallery permission is revoked later.
+ *
+ * Save is the one filled action: adding, removing and the random switch are all
+ * quiet, and an empty selection is explained in words rather than shown as a
+ * blank area.
  */
 @Composable
 fun WallpaperDialog(
@@ -95,24 +108,24 @@ fun WallpaperDialog(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
+            shape = RoundedCornerShape(Radii.xl),
+            modifier = Modifier.fillMaxWidth().padding(Spacing.md),
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Text("Background for the alarm", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(6.dp))
+            Column(modifier = Modifier.padding(Spacing.lg)) {
+                Text("Background for the alarm", style = ChronosType.headline)
+                Spacer(Modifier.height(Spacing.sm))
                 Text(
                     text = "Shown behind the clock when this alarm rings.",
-                    fontSize = 12.sp,
+                    style = ChronosType.label,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(Radii.md))
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -124,15 +137,19 @@ fun WallpaperDialog(
                             Icon(Icons.Filled.Add, contentDescription = "Add images")
                         }
                     }
-                    Spacer(Modifier.size(14.dp))
+                    Spacer(Modifier.size(Spacing.md))
                     Text(
                         text = "Add image",
-                        fontSize = 14.sp,
+                        style = ChronosType.body,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                     )
-                    Text("Random", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        text = "Random",
+                        style = ChronosType.label,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.size(Spacing.sm))
                     Switch(
                         checked = random,
                         onCheckedChange = { random = it },
@@ -140,25 +157,27 @@ fun WallpaperDialog(
                     )
                 }
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
                 if (paths.isEmpty()) {
-                    Text(
-                        text = "No image yet — the ring screen will use the plain dark theme.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Empty state: no picture chosen yet.
+                    EmptyState(
+                        title = "No background yet",
+                        subtitle = "The ring screen uses the plain dark theme until you add an " +
+                            "image.",
+                        modifier = Modifier.height(EmptyStateHeight),
                     )
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(3),
-                        modifier = Modifier.height(240.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.height(GridHeight),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                     ) {
                         items(paths, key = { it }) { path ->
                             Box(
                                 modifier = Modifier
                                     .size(96.dp)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(Radii.md))
                                     .background(MaterialTheme.colorScheme.surfaceVariant),
                             ) {
                                 val bitmap = remember(path, version) {
@@ -190,14 +209,17 @@ fun WallpaperDialog(
                     }
                 }
 
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Spacing.md))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    Spacer(Modifier.size(8.dp))
-                    Button(onClick = { onSave(paths, random && paths.size > 1) }) { Text("Save") }
+                    TextButton(onClick = onDismiss) { Text("Cancel", style = ChronosType.label) }
+                    Spacer(Modifier.size(Spacing.sm))
+                    // The one filled action of the dialog.
+                    Button(onClick = { onSave(paths, random && paths.size > 1) }) {
+                        Text("Save", style = ChronosType.title)
+                    }
                 }
             }
         }
