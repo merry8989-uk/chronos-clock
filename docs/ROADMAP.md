@@ -372,6 +372,12 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Widget drawables: corner radii now come from the dimens tokens, and the see-through background gained a faint scrim so light ink cannot vanish on a light wallpaper
 - [x] Design baseline regenerated from the restyled screens — the gate now measures the lower number
 
+## Shipped in 6.18.0 — the rest of the token queue
+
+- [x] Settings: 18 font sizes and 3 radii became tokens; the widget preview's colours are named once, with a comment saying they are the widget's real colours and not theme colours
+- [x] Two tokens added because the scale had no step for them: `ChronosType.micro` (11sp) and `Radii.xs` (3dp)
+- [x] Missions, the shared task views, Workout/Learn/Meditate and the five smaller screens restyled onto the same tokens (parallel agents)
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

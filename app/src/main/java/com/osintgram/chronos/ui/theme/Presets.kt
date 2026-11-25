@@ -118,6 +118,8 @@ object StatusColors {
  * shape stop being invented per screen.
  */
 object Radii {
+    /** For hairlines and tiny previews, where 8 dp would swallow the shape. */
+    val xs = 3.dp
     val sm = 8.dp
     val md = 12.dp
     val lg = 16.dp
@@ -156,5 +158,11 @@ object ChronosType {
         fontSize = 12.sp,
         lineHeight = 16.sp,
         fontWeight = FontWeight.Medium,
+    )
+
+    /** The smallest step: chips inside a chip, preview captions, dense metadata. */
+    val micro = androidx.compose.ui.text.TextStyle(
+        fontSize = 11.sp,
+        lineHeight = 14.sp,
     )
 }
