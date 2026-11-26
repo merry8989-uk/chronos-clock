@@ -95,7 +95,6 @@ object Settings {
     // ---- Screen time ------------------------------------------------------
     val screenTimeLimiter = Setting("screen_time_limiter", false)
     /**
-    /**
      * The hour the limits reset. A midnight reset hands a fresh allowance to
      * someone still up at 1 am, so the day starts when the user says it does.
      */
