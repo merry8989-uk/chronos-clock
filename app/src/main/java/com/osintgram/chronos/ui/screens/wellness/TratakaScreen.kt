@@ -31,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
@@ -157,15 +156,21 @@ fun TratakaScreen(onBack: () -> Unit) {
                 .weight(1f),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                // The point takes the user's accent rather than a fixed flame
+                // colour, so it belongs to whatever look they chose. Only the
+                // core is lightened, so the centre always has something to fix
+                // the gaze on.
+                val accent = MaterialTheme.colorScheme.primary
+                val core = MaterialTheme.colorScheme.onPrimary
                 Canvas(Modifier.size(220.dp)) {
                     val centre = Offset(size.width / 2f, size.height / 2f)
                     val radius = size.minDimension / 2f
                     drawCircle(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFFFE9B0),
-                                Color(0xFFFFC24B),
-                                Color(0x00FFC24B),
+                                core.copy(alpha = 0.55f),
+                                accent.copy(alpha = 0.85f),
+                                accent.copy(alpha = 0f),
                             ),
                             center = centre,
                             radius = radius,
@@ -174,7 +179,7 @@ fun TratakaScreen(onBack: () -> Unit) {
                         center = centre,
                     )
                     drawCircle(
-                        color = Color(0xFFFFF4D6),
+                        color = core,
                         radius = radius * 0.12f,
                         center = centre,
                     )
