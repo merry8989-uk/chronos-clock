@@ -405,6 +405,14 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Accessibility-based blocking (so a limited app cannot be opened at all) and a health panel that says exactly which check is failing, in parallel
 - [x] Five tests for the day boundary: 1 am belongs to yesterday, the day ends 24 hours after it starts, and a midnight start still behaves like the old calendar day
 
+## Shipped in 6.22.0 — guided yoga and meditation, step by step
+
+- [x] **A guided player**: one step at a time, timed, with the instruction and a short cue kept on screen, the bell at every change of step, and a thin progress bar for the whole session. Previous / Next / End, and the screen stays awake
+- [x] **Twelve complete practices**: six yoga (Surya Namaskar with a breath on each of its twelve steps, morning warm-up, standing flow, seated folds, bedtime stretch, savasana) and six meditations (settling in, body scan, mindfulness of breathing, loving-kindness, Yoga Nidra, walking meditation)
+- [x] Every step carries the alignment that keeps it safe, and every session carries its own caution — no headstand, no shoulder stand, no breath retention, and a plain line about pain, pregnancy and injury
+- [x] Finished sessions are recorded and travel in the backup file
+- [x] Tests that hold the content honest: no empty step, no zero-length step, no session without a note, unique ids, both kinds present
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

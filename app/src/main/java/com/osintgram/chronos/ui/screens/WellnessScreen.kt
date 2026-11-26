@@ -36,6 +36,7 @@ import com.osintgram.chronos.ui.screens.wellness.ActivitySection
 import com.osintgram.chronos.ui.screens.wellness.BodySection
 import com.osintgram.chronos.ui.screens.wellness.LearnSection
 import com.osintgram.chronos.ui.screens.wellness.MeditateSection
+import com.osintgram.chronos.ui.screens.wellness.GuidedPlayerScreen
 import com.osintgram.chronos.ui.screens.wellness.JapaScreen
 import com.osintgram.chronos.ui.screens.wellness.ProgressSection
 import com.osintgram.chronos.ui.screens.wellness.SadhanaSection
@@ -87,6 +88,9 @@ fun WellnessScreen() {
     // Which practice is open, if any. A practice takes the whole area: a gaze
     // hold or a sit is not something to do inside a scrolling list.
     var practice by rememberSaveable { mutableStateOf<String?>(null) }
+    // A guided session takes the whole area, like a practice: you cannot follow
+    // a posture from inside a scrolling list.
+    var guided by rememberSaveable { mutableStateOf<String?>(null) }
     val section = WellnessSection.entries.firstOrNull { it.name == current } ?: WellnessSection.Today
     val context = LocalContext.current
 
@@ -118,6 +122,13 @@ fun WellnessScreen() {
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { target ->
             Box(modifier = Modifier.fillMaxSize()) {
+                val openGuided = guided?.let { id ->
+                    com.osintgram.chronos.wellness.GuidedLibrary.find(id)
+                }
+                if (openGuided != null) {
+                    GuidedPlayerScreen(session = openGuided, onBack = { guided = null })
+                    return@Box
+                }
                 val openKind = practice
                     ?.takeIf { target == WellnessSection.Sadhana }
                     ?.let { id -> com.osintgram.chronos.wellness.SadhanaKind.entries.firstOrNull { it.id == id } }
@@ -143,11 +154,11 @@ fun WellnessScreen() {
                     WellnessSection.Sleep -> SleepSection()
                     WellnessSection.Activity -> ActivitySection()
                     WellnessSection.Body -> BodySection()
-                    WellnessSection.Meditate -> MeditateSection()
+                    WellnessSection.Meditate -> MeditateSection(onOpenGuided = { guided = it.id })
                     WellnessSection.Sadhana -> SadhanaSection(onOpen = { practice = it.id })
                     WellnessSection.Progress -> ProgressSection()
                     WellnessSection.Workout -> WorkoutSection()
-                    WellnessSection.Learn -> LearnSection()
+                    WellnessSection.Learn -> LearnSection(onOpenGuided = { guided = it.id })
                 }
             }
         }

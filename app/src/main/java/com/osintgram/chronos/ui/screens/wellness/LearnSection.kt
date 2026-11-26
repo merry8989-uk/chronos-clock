@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,7 +55,7 @@ import com.osintgram.chronos.wellness.WellnessPlans
  * page can be scanned by heading instead of read card by card.
  */
 @Composable
-fun LearnSection() {
+fun LearnSection(onOpenGuided: (com.osintgram.chronos.wellness.GuidedSession) -> Unit = {}) {
     val context = LocalContext.current
 
     LazyColumn(
@@ -67,6 +68,24 @@ fun LearnSection() {
         ),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
+        item {
+            WellnessLabel("GUIDED YOGA")
+            Text(
+                text = "Step-by-step sessions you can follow with the phone on the floor: one " +
+                    "posture at a time, timed, with the alignment that matters on screen.",
+                style = ChronosType.label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            GuidedLibraryList(
+                sessions = com.osintgram.chronos.wellness.GuidedLibrary.byKind(
+                    com.osintgram.chronos.wellness.GuidedKind.Yoga,
+                ),
+                onOpen = onOpenGuided,
+                modifier = Modifier.heightIn(max = 320.dp),
+            )
+        }
         item { WellnessLabel("YOGA POSES") }
         item {
             ListCard {

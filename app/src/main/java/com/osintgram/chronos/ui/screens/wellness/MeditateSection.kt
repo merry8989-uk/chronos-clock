@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -75,7 +76,7 @@ private val BREATH_SIZE = 196.dp
  * action, and the patterns are [Pill]s.
  */
 @Composable
-fun MeditateSection() {
+fun MeditateSection(onOpenGuided: (com.osintgram.chronos.wellness.GuidedSession) -> Unit = {}) {
     val context = LocalContext.current
     var patternId by rememberSaveable { mutableStateOf(WellnessPlans.patterns.first().id) }
     val pattern = WellnessPlans.pattern(patternId)
@@ -147,6 +148,24 @@ fun MeditateSection() {
         ),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
+        item {
+            WellnessLabel("GUIDED MEDITATIONS")
+            Text(
+                text = "A whole practice, one step at a time, with the cue on screen and the " +
+                    "bell at each change. Nothing to remember.",
+                style = ChronosType.label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            GuidedLibraryList(
+                sessions = com.osintgram.chronos.wellness.GuidedLibrary.byKind(
+                    com.osintgram.chronos.wellness.GuidedKind.Meditation,
+                ),
+                onOpen = onOpenGuided,
+                modifier = Modifier.heightIn(max = 320.dp),
+            )
+        }
         item {
             Box(
                 modifier = Modifier
