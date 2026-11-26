@@ -22,6 +22,7 @@ object WellnessStore {
     private const val KEY_ACTIVITIES = "activities"
     private const val KEY_HEIGHT = "height_cm"
     private const val KEY_SADHANA = "sadhana"
+    private const val KEY_GUIDED = "guided"
     private const val KEY_MEDITATIONS = "meditations"
     private const val KEY_DAYS = "days"
     private const val KEY_STEP_DATE = "step_baseline_date"
@@ -34,6 +35,7 @@ object WellnessStore {
     private val days: SnapshotStateList<DayLog> = mutableStateListOf()
     private val activities: SnapshotStateList<ActivitySession> = mutableStateListOf()
     private val sadhana: SnapshotStateList<SadhanaSession> = mutableStateListOf()
+    private val guided: SnapshotStateList<SadhanaSession> = mutableStateListOf()
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -43,6 +45,7 @@ object WellnessStore {
         workouts.addAll(WellnessCodec.workoutsFromJson(readArray(KEY_WORKOUTS)))
         activities.addAll(WellnessCodec.activitiesFromJson(readArray(KEY_ACTIVITIES)))
         sadhana.addAll(WellnessCodec.sadhanaFromJson(readArray(KEY_SADHANA)))
+        guided.addAll(WellnessCodec.guidedFromJson(readArray(KEY_GUIDED)))
         meditations.addAll(WellnessCodec.meditationsFromJson(readArray(KEY_MEDITATIONS)))
         days.addAll(WellnessCodec.daysFromJson(readArray(KEY_DAYS)))
         DiagnosticsLogger.log(
@@ -181,6 +184,23 @@ object WellnessStore {
         .filter { it.kind == kind }
         .maxWithOrNull(compareBy({ it.seconds }, { it.rounds }))
 
+    /**
+     * A finished guided practice. It is stored as a [SadhanaSession] with the
+     * kind `guided:<sessionId>`, so the practice history has one shape while the
+     * library keeps its own list of sessions.
+     */
+    fun addGuided(session: SadhanaSession) {
+        if (session.seconds <= 0) return
+        guided.add(0, session)
+        persistGuided()
+        DiagnosticsLogger.log("WellnessStore", "Guided session done: ${session.kind} ${session.seconds}s")
+    }
+
+    fun allGuided(): List<SadhanaSession> = guided.toList()
+
+    fun guidedFor(sessionId: String, limit: Int = 10): List<SadhanaSession> =
+        guided.filter { it.kind == "guided:$sessionId" }.sortedByDescending { it.startedAt }.take(limit)
+
     fun addSadhana(session: SadhanaSession) {
         if (session.seconds <= 0 && session.rounds <= 0) return
         sadhana.add(0, session)
@@ -304,6 +324,7 @@ object WellnessStore {
         days = days.toList(),
         activities = activities.toList(),
         sadhana = sadhana.toList(),
+        guided = guided.toList(),
     )
 
     /** Replaces everything with the records in [json]. Returns what was loaded. */
@@ -314,6 +335,7 @@ object WellnessStore {
         val restoredDays = WellnessCodec.daysFromJson(json.optJSONArray("days"))
         val restoredActivities = WellnessCodec.activitiesFromJson(json.optJSONArray("activities"))
         val restoredSadhana = WellnessCodec.sadhanaFromJson(json.optJSONArray("sadhana"))
+        val restoredGuided = WellnessCodec.guidedFromJson(json.optJSONArray("guided"))
         workouts.clear()
         workouts.addAll(restoredWorkouts)
         meditations.clear()
@@ -324,11 +346,14 @@ object WellnessStore {
         activities.addAll(restoredActivities)
         sadhana.clear()
         sadhana.addAll(restoredSadhana)
+        guided.clear()
+        guided.addAll(restoredGuided)
         persistWorkouts()
         persistMeditations()
         persistDays()
         persistActivities()
         persistSadhana()
+        persistGuided()
         return "${restoredWorkouts.size} workout(s), ${restoredMeditations.size} meditation(s), " +
             "${restoredDays.size} day(s), ${restoredActivities.size} activity session(s)"
     }
@@ -338,6 +363,7 @@ object WellnessStore {
         workouts.clear()
         activities.clear()
         sadhana.clear()
+        guided.clear()
         meditations.clear()
         days.clear()
         prefs?.edit()?.clear()?.apply()
@@ -361,6 +387,12 @@ object WellnessStore {
 
     private fun persistDays() =
         prefs?.edit()?.putString(KEY_DAYS, WellnessCodec.daysToJson(days.toList()).toString())?.apply()
+
+    private fun persistGuided() =
+        prefs?.edit()?.putString(
+            KEY_GUIDED,
+            WellnessCodec.guidedToJson(guided.toList()).toString(),
+        )?.apply()
 
     private fun persistSadhana() =
         prefs?.edit()?.putString(

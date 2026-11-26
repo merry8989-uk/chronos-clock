@@ -246,6 +246,33 @@ object WellnessCodec {
         return out
     }
 
+    /**
+     * Guided practices use the same record shape as sadhana, but their kind is
+     * `guided:<sessionId>`, so they are read without the enum check.
+     */
+    fun guidedToJson(list: List<SadhanaSession>): JSONArray = sadhanaToJson(list)
+
+    fun guidedFromJson(array: JSONArray?): List<SadhanaSession> {
+        if (array == null) return emptyList()
+        val out = mutableListOf<SadhanaSession>()
+        for (i in 0 until array.length()) {
+            val o = array.optJSONObject(i) ?: continue
+            val kind = o.optString("kind", "")
+            if (!kind.startsWith("guided:")) continue
+            val seconds = o.optInt("seconds", 0)
+            if (seconds <= 0) continue
+            out.add(
+                SadhanaSession(
+                    id = o.optLong("id", 0L),
+                    kind = kind,
+                    startedAt = o.optLong("startedAt", 0L),
+                    seconds = seconds,
+                ),
+            )
+        }
+        return out
+    }
+
     /** One object holding everything, used by the backup file. */
     fun toJson(
         workouts: List<WorkoutSession>,
@@ -253,6 +280,7 @@ object WellnessCodec {
         days: List<DayLog>,
         activities: List<ActivitySession> = emptyList(),
         sadhana: List<SadhanaSession> = emptyList(),
+        guided: List<SadhanaSession> = emptyList(),
     ): JSONObject = JSONObject()
         .put("formatVersion", FORMAT_VERSION)
         .put("workouts", workoutsToJson(workouts))
@@ -260,4 +288,5 @@ object WellnessCodec {
         .put("days", daysToJson(days))
         .put("activities", activitiesToJson(activities))
         .put("sadhana", sadhanaToJson(sadhana))
+        .put("guided", guidedToJson(guided))
 }
