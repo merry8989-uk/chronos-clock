@@ -99,6 +99,13 @@ object SpecialAccess {
             openSettings = { start(context, Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
         ),
         AccessItem(
+            title = "Block apps when a limit is up",
+            state = if (limitGuardEnabled(context)) "Allowed" else "Not allowed",
+            granted = limitGuardEnabled(context),
+            usedBy = "Screen time: sends you home and stops an app once its daily limit is used",
+            openSettings = { start(context, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+        ),
+        AccessItem(
             title = "All files access",
             state = if (hasAllFiles(context)) "Allowed" else "Not allowed",
             granted = hasAllFiles(context),
@@ -203,6 +210,16 @@ object SpecialAccess {
 
     fun notificationAccess(context: Context): Boolean =
         com.osintgram.chronos.screentime.NotificationWatcher.isEnabled(context)
+
+    /**
+     * True when the limit guard is switched on under Accessibility.
+     *
+     * This is the access that makes a limit actually hold: without it Chronos
+     * can only show an overlay, which the user can dismiss. The service itself
+     * does the reading, so the check lives with it.
+     */
+    fun limitGuardEnabled(context: Context): Boolean =
+        com.osintgram.chronos.screentime.LimitGuardService.isEnabled(context)
 
     fun hasCalendarRead(context: Context): Boolean = ContextCompat.checkSelfPermission(
         context,

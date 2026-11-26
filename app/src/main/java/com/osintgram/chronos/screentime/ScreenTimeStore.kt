@@ -1,7 +1,9 @@
 package com.osintgram.chronos.screentime
 
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.SharedPreferences
+import android.view.accessibility.AccessibilityManager
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.osintgram.chronos.diagnostics.DiagnosticsLogger
@@ -85,9 +87,82 @@ object ScreenTimeStore {
 
     fun allLimits(): Map<String, Int> = limits.toMap()
 
+    // ---- Enforcement health ------------------------------------------------
+    // Read-only views over state the watcher owns. They live here rather than in
+    // the screen so the Limits tab can say why a limit is not firing without
+    // knowing how enforcement works, and so the answer is one function to test.
+
+    /**
+     * The SharedPreferences key the watcher must write on every poll.
+     *
+     * It is public on purpose: [LimitService][com.osintgram.chronos.screentime.LimitService]
+     * is the writer and it lives in another file, so the key cannot be private to
+     * this object. The writer must `putLong` it into the `chronos_screentime`
+     * preferences (this object's [PREFS] file) on every tick; the readers below
+     * treat a heartbeat older than two minutes as a watcher that is not running.
+     */
+    const val KEY_WATCHER_TICK = "watcher_last_tick"
+
+    /** How stale a heartbeat may be before the watcher counts as stopped. */
+    private const val WATCHER_STALE_MILLIS = 2 * 60_000L
+
+    /** The package fragment that identifies an accessibility service as ours. */
+    private const val SELF_PACKAGE_FRAGMENT = "com.osintgram.chronos"
+
+    /**
+     * Whether Chronos' own accessibility service is switched on.
+     *
+     * Exists because the accessibility route is the only way the app is told an
+     * app came to the front at the moment it happens, rather than on the
+     * watcher's next poll — so "the limit is late" and "the limit never fires"
+     * both need this answer, and the screen should not be the place that knows
+     * how an AccessibilityManager is asked.
+     *
+     * @return true when any enabled service's id belongs to this package.
+     */
+    fun accessibilityBlockingEnabled(context: Context): Boolean = runCatching {
+        val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
+            ?: return@runCatching false
+        manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .any { info -> info?.id?.contains(SELF_PACKAGE_FRAGMENT, ignoreCase = true) == true }
+    }.getOrDefault(false)
+
+    /**
+     * When the watcher last reported that it was alive, as an epoch millisecond.
+     *
+     * Exists because `ActivityManager.getRunningServices` is deprecated and was
+     * never reliable across OEMs, so the app cannot ask the system whether its
+     * foreground service is up. A timestamp the service writes itself is the
+     * only honest answer available, and the screen needs it to explain a limit
+     * that is not firing.
+     *
+     * @return 0L when no heartbeat has ever been written — which reads as "not
+     *   running", because a watcher that has never ticked has never blocked.
+     */
+    fun watcherLastTick(context: Context): Long = runCatching {
+        val store = prefs ?: context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        store.getLong(KEY_WATCHER_TICK, 0L)
+    }.getOrDefault(0L)
+
+    /**
+     * Whether the watcher looks alive right now.
+     *
+     * Exists so the Limits tab can separate "the switch is off" from "the
+     * switch is on and the service was killed" — two failures with the same
+     * symptom and different fixes. A clock that jumped backwards is treated as
+     * alive rather than stopped, because a stale-looking heartbeat from a future
+     * timestamp is not evidence that the service died.
+     */
+    fun watcherRunning(context: Context): Boolean {
+        val last = watcherLastTick(context)
+        if (last <= 0L) return false
+        return System.currentTimeMillis() - last <= WATCHER_STALE_MILLIS
+    }
+
     // ---- Helpers -----------------------------------------------------------
 
-    fun todayKey(): String = com.osintgram.chronos.common.Dates.key()
+    /** The running day, which starts at the hour set in Settings (7 am by default). */
+    fun todayKey(): String = DayBoundary.todayKey()
 
     private fun readLimits(): Map<String, Int> = runCatching {
         val raw = prefs?.getString(KEY_LIMITS, null) ?: return emptyMap()

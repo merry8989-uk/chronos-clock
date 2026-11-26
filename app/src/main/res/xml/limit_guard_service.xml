@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Configuration for LimitGuardService.
+
+  Only window-state changes are requested, so the service is told when a new
+  screen comes to the front and nothing else. Window content is explicitly not
+  retrieved: Chronos needs to know *which* app opened, never what is on it.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:notificationTimeout="100"
+    android:accessibilityFlags="flagDefault"
+    android:description="@string/limit_guard_description"
+    android:summary="@string/limit_guard_summary" />

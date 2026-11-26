@@ -1,5 +1,6 @@
 package com.osintgram.chronos.ui.screens.screentime
 
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -122,6 +123,9 @@ fun ScreenTimeScreen() {
     var refresh by remember { mutableIntStateOf(0) }
     var limitTarget by remember { mutableStateOf<AppUsage?>(null) }
     var tick by remember { mutableIntStateOf(0) }
+    // Whether "Test the blocker" has been pressed this visit, so its note can say
+    // what happens next instead of sitting on the screen before it is asked for.
+    var blockerTested by remember { mutableStateOf(false) }
 
     val current = ScreenTab.entries.firstOrNull { it.name == tab } ?: ScreenTab.Today
     val usageAccess = remember(tick, refresh) { UsageSource.hasAccess(context) }
@@ -472,47 +476,12 @@ fun ScreenTimeScreen() {
                         }
                     }
                     item {
-                        val usageOk = UsageSource.hasAccess(context)
-                        val overlayOk = android.provider.Settings.canDrawOverlays(context)
-                        val armed = Settings.screenTimeLimiter.value
-                        if (!usageOk || !overlayOk || !armed) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.surface,
-                                shape = RoundedCornerShape(Radii.lg),
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Column(Modifier.padding(Spacing.lg)) {
-                                    Text(
-                                        text = "Limits cannot be enforced yet",
-                                        style = ChronosType.title,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                    Spacer(Modifier.height(Spacing.sm))
-                                    LimitCheck("Usage access", usageOk) {
-                                        context.startActivity(
-                                            Intent(
-                                                android.provider.Settings
-                                                    .ACTION_USAGE_ACCESS_SETTINGS,
-                                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                        )
-                                    }
-                                    LimitCheck("Draw over other apps", overlayOk) {
-                                        context.startActivity(
-                                            Intent(
-                                                android.provider.Settings
-                                                    .ACTION_MANAGE_OVERLAY_PERMISSION,
-                                                android.net.Uri.parse("package:${context.packageName}"),
-                                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                        )
-                                    }
-                                    LimitCheck("Limit watcher", armed) {
-                                        Settings.screenTimeLimiter.set(true)
-                                        LimitService.sync(context)
-                                        tick++
-                                    }
-                                }
-                            }
-                        }
+                        LimitsHealthPanel(
+                            context = context,
+                            blockerTested = blockerTested,
+                            onBlockerTested = { blockerTested = true },
+                            onChanged = { tick++ },
+                        )
                     }
                     item { WellnessLabel("DAILY LIMITS") }
                     if (limits.isEmpty()) {
@@ -564,6 +533,95 @@ fun ScreenTimeScreen() {
                                         LimitService.sync(context)
                                         tick++
                                     }) { Text("Remove", style = ChronosType.label) }
+                                }
+                            }
+                        }
+                    }
+                    // What the watcher is counting, per limited app, right under the
+                    // list it belongs to. "I used 40 minutes and it did not block" is
+                    // answerable here: the row either says Over (and the panel above says
+                    // why nothing drew) or says Under (and there is nothing to explain).
+                    if (limits.isNotEmpty()) {
+                        item {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(Radii.lg),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Column(Modifier.padding(Spacing.lg)) {
+                                    Text(
+                                        text = "Counted today, against each limit",
+                                        style = ChronosType.title,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    WellnessNote(
+                                        "The time the watcher is counting for every limited app. " +
+                                            "Over means the limit is past and the blocker should " +
+                                            "have appeared; Close means it is nearly there.",
+                                    )
+                                    limits.entries.toList().forEach { entry ->
+                                        val app = day.apps.firstOrNull {
+                                            it.packageName == entry.key
+                                        }
+                                        val used = app?.foregroundMillis ?: 0L
+                                        val progress = ScreenTimeLogic.limitProgress(
+                                            used,
+                                            entry.value,
+                                        )
+                                        val reached = ScreenTimeLogic.limitReached(used, entry.value)
+                                        val close = !reached && progress >= CLOSE_TO_LIMIT
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = Spacing.sm),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(
+                                                    text = app?.label
+                                                        ?: UsageSource.labelFor(context, entry.key),
+                                                    style = ChronosType.body,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                                Row(verticalAlignment = Alignment.Bottom) {
+                                                    Text(
+                                                        text = ScreenTimeLogic.formatDuration(used),
+                                                        style = ChronosType.numeric,
+                                                        color = if (reached) {
+                                                            StatusColors.warning
+                                                        } else {
+                                                            MaterialTheme.colorScheme.onSurface
+                                                        },
+                                                    )
+                                                    Spacer(Modifier.width(Spacing.xs))
+                                                    Text(
+                                                        text = "/ ${entry.value} min",
+                                                        style = ChronosType.label,
+                                                        color = MaterialTheme.colorScheme
+                                                            .onSurfaceVariant,
+                                                        modifier = Modifier.padding(
+                                                            bottom = Spacing.xs,
+                                                        ),
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = when {
+                                                    reached -> "Over"
+                                                    close -> "Close"
+                                                    else -> "Under"
+                                                },
+                                                style = ChronosType.label,
+                                                color = when {
+                                                    reached -> StatusColors.warning
+                                                    close -> StatusColors.info
+                                                    else -> StatusColors.success
+                                                },
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -717,9 +775,180 @@ private fun TodayHero(
     }
 }
 
+/**
+ * The health of limit enforcement: every check that has to pass before a limit
+ * can actually close an app, each with the one line that says what breaks
+ * without it and a Fix that opens the setting which owns it.
+ *
+ * A limit that silently does nothing looks exactly like a limit that is not
+ * there, so the rows are always shown. When all of them pass the panel says so
+ * instead of disappearing, because "nothing is wrong" is also an answer.
+ *
+ * The last row is a heartbeat rather than a permission: the watcher writes a
+ * timestamp into the shared preferences on every poll and anything older than
+ * two minutes counts as stopped. That is the only honest way to tell a running
+ * foreground service from one an OEM battery saver has killed, since
+ * `ActivityManager.getRunningServices` is deprecated and unreliable.
+ */
+@Composable
+private fun LimitsHealthPanel(
+    context: Context,
+    blockerTested: Boolean,
+    onBlockerTested: () -> Unit,
+    onChanged: () -> Unit,
+) {
+    val usageOk = UsageSource.hasAccess(context)
+    val overlayOk = android.provider.Settings.canDrawOverlays(context)
+    val accessibilityOk = ScreenTimeStore.accessibilityBlockingEnabled(context)
+    val armed = Settings.screenTimeLimiter.value
+    val lastTick = ScreenTimeStore.watcherLastTick(context)
+    val running = ScreenTimeStore.watcherRunning(context)
+    val allOk = usageOk && overlayOk && accessibilityOk && armed && running
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(Radii.lg),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(Spacing.lg)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (allOk) Icons.Filled.CheckCircle else Icons.Filled.ErrorOutline,
+                    contentDescription = null,
+                    tint = if (allOk) StatusColors.success else StatusColors.warning,
+                    modifier = Modifier.size(HeroIcon),
+                )
+                Spacer(Modifier.width(Spacing.sm))
+                Text(
+                    text = if (allOk) "Limits can be enforced" else "Why limits are not working",
+                    style = ChronosType.title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            WellnessNote(
+                if (allOk) {
+                    "Every check below passes, so a limit closes its app on the watcher's next " +
+                        "poll — a few seconds after the limit is passed."
+                } else {
+                    "A limit only closes an app when every row below passes. Without this, the " +
+                        "limit is only a number in this screen."
+                },
+            )
+            Spacer(Modifier.height(Spacing.sm))
+            LimitCheck(
+                label = "Usage access",
+                ok = usageOk,
+                detail = "Without this the watcher cannot see which app is in front, so no " +
+                    "limit can fire at all.",
+            ) {
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS,
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+            LimitCheck(
+                label = "Draw over other apps",
+                ok = overlayOk,
+                detail = "Without this a reached limit has nothing to draw on, so the app is " +
+                    "counted as over and never covered.",
+            ) {
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:${context.packageName}"),
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+            LimitCheck(
+                label = "Accessibility blocking",
+                ok = accessibilityOk,
+                detail = "Without this the foreground app is only noticed on the watcher's " +
+                    "4-second poll, not the moment it opens.",
+            ) {
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS,
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+            LimitCheck(
+                label = "Limit watcher switch",
+                ok = armed,
+                detail = "Without this nothing polls, so the limit is only a number in this " +
+                    "screen.",
+            ) {
+                Settings.screenTimeLimiter.set(true)
+                LimitService.sync(context)
+                onChanged()
+            }
+            LimitCheck(
+                label = "Watcher running",
+                ok = running,
+                detail = "Without this the switch is on but no service is alive — usually a " +
+                    "battery saver that stopped it — so the limit is only a number in this " +
+                    "screen.",
+            ) {
+                LimitService.sync(context)
+                onChanged()
+            }
+            if (lastTick <= 0L) {
+                WellnessNote(
+                    "No heartbeat has been recorded yet, so this row stays amber even when the " +
+                        "service is alive. It turns green once the watcher writes its first tick.",
+                )
+            } else {
+                val age = (System.currentTimeMillis() - lastTick).coerceAtLeast(0L)
+                WellnessNote(
+                    "Last heartbeat ${ScreenTimeLogic.formatDuration(age)} ago. Two minutes " +
+                        "without one counts as stopped.",
+                )
+            }
+            Spacer(Modifier.height(Spacing.md))
+            OutlinedButton(
+                onClick = {
+                    // The overlay is drawn by the watcher, from the service — the only
+                    // public way in from here is the service's own sync(). So the button
+                    // nudges the watcher and the blocker follows on its next poll.
+                    LimitService.sync(context)
+                    com.osintgram.chronos.diagnostics.DiagnosticsLogger.log(
+                        "ScreenTime",
+                        "Blocker test requested: usageAccess=$usageOk overlay=$overlayOk " +
+                            "accessibility=$accessibilityOk armed=$armed running=$running",
+                    )
+                    onBlockerTested()
+                    onChanged()
+                },
+                shape = RoundedCornerShape(Radii.md),
+            ) {
+                Text("Test the blocker", style = ChronosType.label)
+            }
+            WellnessNote(
+                if (!blockerTested) {
+                    "Signals the watcher rather than drawing anything itself."
+                } else if (!usageOk || !overlayOk) {
+                    "The blocker cannot draw until the rows marked Fix above pass."
+                } else if (!armed) {
+                    "The watcher is off, so nothing will draw. Switch the watcher on above and " +
+                        "press again."
+                } else {
+                    "Watcher signalled. Open an app with a limit and the blocker should appear " +
+                        "within a few seconds — the watcher polls every 4 seconds."
+                },
+            )
+        }
+    }
+}
+
 /** One "is this ready?" row with a fix button when it is not. */
 @Composable
-private fun LimitCheck(label: String, ok: Boolean, onFix: () -> Unit) {
+private fun LimitCheck(
+    label: String,
+    ok: Boolean,
+    detail: String? = null,
+    onFix: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
@@ -731,12 +960,22 @@ private fun LimitCheck(label: String, ok: Boolean, onFix: () -> Unit) {
             modifier = Modifier.size(SmallIcon),
         )
         Spacer(Modifier.width(Spacing.sm))
-        Text(
-            text = label,
-            style = ChronosType.body,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = ChronosType.body,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            // The cost of the check is only worth the space while it is failing:
+            // five lines of "what if" under five green ticks is noise.
+            if (!ok && detail != null) {
+                Text(
+                    text = detail,
+                    style = ChronosType.label,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         if (!ok) {
             TextButton(onClick = onFix) { Text("Fix", style = ChronosType.label) }
         } else {

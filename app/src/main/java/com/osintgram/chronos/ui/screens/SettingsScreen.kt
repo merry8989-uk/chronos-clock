@@ -114,6 +114,7 @@ private const val SEC_ALARMS = "alarms"
 private const val SEC_TIMER = "timer"
 private const val SEC_WELLNESS = "wellness"
 private const val SEC_GENERAL = "general"
+private const val SEC_SCREEN_TIME = "screen_time"
 private const val SEC_DATA = "data"
 private const val SEC_DIAGNOSTICS = "diagnostics"
 private const val SEC_RESET = "reset"
@@ -130,6 +131,7 @@ private const val SEC_FOOTER = "footer"
 private val SectionChips: List<Pair<String, String>> = listOf(
     "Appearance" to SEC_APPEARANCE,
     "Alarms" to SEC_ALARMS,
+    "Screen time" to SEC_SCREEN_TIME,
     "Timer" to SEC_TIMER,
     "Wellness" to SEC_WELLNESS,
     "General" to SEC_GENERAL,
@@ -597,6 +599,53 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
             }
 
             // ---- Alarms -------------------------------------------------------
+            // ---- Screen time ---------------------------------------------------
+            takeIndex(SEC_SCREEN_TIME)
+            item { SectionHeading("Screen time") }
+            item {
+                SettingsCard {
+                    Column(modifier = Modifier.padding(Spacing.lg)) {
+                        Text("Day starts at", style = ChronosType.title, color = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.height(Spacing.xs))
+                        Text(
+                            text = "Limits and screen time reset at this hour. A midnight reset " +
+                                "hands a fresh allowance to anyone still up after it.",
+                            style = ChronosType.label,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(Spacing.sm))
+                        SegmentedControl(
+                            options = listOf(5, 6, 7, 8, 9).map { "$it am" to "$it" },
+                            selected = Settings.dayStartHour.value.toString(),
+                            onSelect = { Settings.dayStartHour.set(it.toInt()) },
+                        )
+                    }
+                }
+            }
+            item {
+                SettingsCard {
+                    SettingsSwitchRow(
+                        title = "Block apps when a limit is up",
+                        subtitle = "Needs accessibility access. Without it a limit can only be " +
+                            "seen on a 4-second poll, and the app can be used in between",
+                        checked = Settings.strictLimits.value,
+                        onCheckedChange = { Settings.strictLimits.set(it) },
+                    )
+                    SettingsDivider()
+                    SettingsActionRow(
+                        title = "Accessibility access",
+                        subtitle = "Open the system screen and allow Chronos to see which " +
+                            "app is in front",
+                        onClick = {
+                            context.startActivity(
+                                Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        },
+                    )
+                }
+            }
+
             takeIndex(SEC_ALARMS)
             item { SectionHeading("Alarms") }
             item {
