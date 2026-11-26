@@ -634,7 +634,8 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     SettingsDivider()
                     SettingsActionRow(
                         title = "Accessibility access",
-                        value = if (Settings.strictLimits.value) "needed" else "off",
+                        subtitle = "Open the system screen and allow Chronos to see which " +
+                            "app is in front",
                         onClick = {
                             context.startActivity(
                                 Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
