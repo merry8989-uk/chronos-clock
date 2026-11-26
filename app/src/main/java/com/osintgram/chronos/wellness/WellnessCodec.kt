@@ -205,16 +205,59 @@ object WellnessCodec {
         return out
     }
 
+    fun sadhanaToJson(list: List<SadhanaSession>): JSONArray {
+        val array = JSONArray()
+        list.forEach { session ->
+            array.put(
+                JSONObject()
+                    .put("id", session.id)
+                    .put("kind", session.kind)
+                    .put("startedAt", session.startedAt)
+                    .put("seconds", session.seconds)
+                    .put("blinks", session.blinks)
+                    .put("rounds", session.rounds),
+            )
+        }
+        return array
+    }
+
+    /** A damaged record is skipped; a practice nobody finished is not invented. */
+    fun sadhanaFromJson(array: JSONArray?): List<SadhanaSession> {
+        if (array == null) return emptyList()
+        val out = mutableListOf<SadhanaSession>()
+        for (i in 0 until array.length()) {
+            val o = array.optJSONObject(i) ?: continue
+            val kind = o.optString("kind", "")
+            if (SadhanaKind.entries.none { it.id == kind }) continue
+            val seconds = o.optInt("seconds", 0)
+            val rounds = o.optInt("rounds", 0)
+            if (seconds <= 0 && rounds <= 0) continue
+            out.add(
+                SadhanaSession(
+                    id = o.optLong("id", 0L),
+                    kind = kind,
+                    startedAt = o.optLong("startedAt", 0L),
+                    seconds = seconds.coerceAtLeast(0),
+                    blinks = o.optInt("blinks", 0).coerceAtLeast(0),
+                    rounds = rounds.coerceAtLeast(0),
+                ),
+            )
+        }
+        return out
+    }
+
     /** One object holding everything, used by the backup file. */
     fun toJson(
         workouts: List<WorkoutSession>,
         meditations: List<MeditationSession>,
         days: List<DayLog>,
         activities: List<ActivitySession> = emptyList(),
+        sadhana: List<SadhanaSession> = emptyList(),
     ): JSONObject = JSONObject()
         .put("formatVersion", FORMAT_VERSION)
         .put("workouts", workoutsToJson(workouts))
         .put("meditations", meditationsToJson(meditations))
         .put("days", daysToJson(days))
         .put("activities", activitiesToJson(activities))
+        .put("sadhana", sadhanaToJson(sadhana))
 }

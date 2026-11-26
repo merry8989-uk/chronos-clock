@@ -387,6 +387,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Diagnostics got a labelled loading state while logcat is collected, and an empty state when there is nothing to export
 - [x] **Design baseline: 24 files → 3.** What is left is the puzzle palette, the widget preview's real colours, and three derived numeric steps in Screen time
 
+## Shipped in 6.20.0 — Sadhana: Trataka and the other practices
+
+- [x] **Trataka**: a steady point to look at, a stopwatch that restarts at every blink, and a saved record of your **longest unbroken hold**. The screen stays awake while you practise and tells you plainly that the blink count is yours — Chronos cannot see your eyes, and a camera watching them would be a worse trade than a button
+- [x] **Japa**: a 108-bead round with a bell at every completed round; the result is kept in rounds, not taps
+- [x] **Dhyana, Mauna, Yoga Nidra, Chakra and Om**: one timed sit, opened and closed by the bell, counting up rather than down — sitting longer than the bell is not a failure
+- [x] New **Sadhana** area in Wellness: every practice with the best result you have for it and how many sessions you have done
+- [x] Sessions are stored with the rest of wellness data, survive a damaged record, and travel in the backup file
+- [x] Seven unit tests for the model: how a hold reads, a hold with no blink, japa rounds, a timed sit, and an unknown practice
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

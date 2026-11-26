@@ -36,7 +36,11 @@ import com.osintgram.chronos.ui.screens.wellness.ActivitySection
 import com.osintgram.chronos.ui.screens.wellness.BodySection
 import com.osintgram.chronos.ui.screens.wellness.LearnSection
 import com.osintgram.chronos.ui.screens.wellness.MeditateSection
+import com.osintgram.chronos.ui.screens.wellness.JapaScreen
 import com.osintgram.chronos.ui.screens.wellness.ProgressSection
+import com.osintgram.chronos.ui.screens.wellness.SadhanaSection
+import com.osintgram.chronos.ui.screens.wellness.TimedSadhanaScreen
+import com.osintgram.chronos.ui.screens.wellness.TratakaScreen
 import com.osintgram.chronos.ui.screens.wellness.SleepSection
 import com.osintgram.chronos.ui.screens.wellness.TodaySection
 import com.osintgram.chronos.ui.screens.wellness.WorkoutSection
@@ -58,6 +62,7 @@ enum class WellnessSection(val label: String, val hidden: Boolean = false) {
     Activity("Activity"),
     Body("Body"),
     Meditate("Mind"),
+    Sadhana("Sadhana"),
     Progress("Progress"),
     Workout("Workout", hidden = true),
     Learn("Learn", hidden = true),
@@ -79,6 +84,9 @@ private val LABEL_TRACKING = 1.sp
 @Composable
 fun WellnessScreen() {
     var current by rememberSaveable { mutableStateOf(WellnessSection.Today.name) }
+    // Which practice is open, if any. A practice takes the whole area: a gaze
+    // hold or a sit is not something to do inside a scrolling list.
+    var practice by rememberSaveable { mutableStateOf<String?>(null) }
     val section = WellnessSection.entries.firstOrNull { it.name == current } ?: WellnessSection.Today
     val context = LocalContext.current
 
@@ -110,6 +118,19 @@ fun WellnessScreen() {
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { target ->
             Box(modifier = Modifier.fillMaxSize()) {
+                val openKind = practice
+                    ?.takeIf { target == WellnessSection.Sadhana }
+                    ?.let { id -> com.osintgram.chronos.wellness.SadhanaKind.entries.firstOrNull { it.id == id } }
+                if (openKind != null) {
+                    when (openKind) {
+                        com.osintgram.chronos.wellness.SadhanaKind.Trataka ->
+                            TratakaScreen(onBack = { practice = null })
+                        com.osintgram.chronos.wellness.SadhanaKind.Japa ->
+                            JapaScreen(onBack = { practice = null })
+                        else -> TimedSadhanaScreen(kind = openKind, onBack = { practice = null })
+                    }
+                    return@Box
+                }
                 when (target) {
                     WellnessSection.Today -> TodaySection(
                         onOpenWorkout = { current = WellnessSection.Workout.name },
@@ -123,6 +144,7 @@ fun WellnessScreen() {
                     WellnessSection.Activity -> ActivitySection()
                     WellnessSection.Body -> BodySection()
                     WellnessSection.Meditate -> MeditateSection()
+                    WellnessSection.Sadhana -> SadhanaSection(onOpen = { practice = it.id })
                     WellnessSection.Progress -> ProgressSection()
                     WellnessSection.Workout -> WorkoutSection()
                     WellnessSection.Learn -> LearnSection()
