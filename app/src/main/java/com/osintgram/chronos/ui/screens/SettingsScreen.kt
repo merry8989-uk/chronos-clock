@@ -622,6 +622,28 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                     }
                 }
             }
+            item {
+                SettingsCard {
+                    SettingsSwitchRow(
+                        title = "Block apps when a limit is up",
+                        subtitle = "Needs accessibility access. Without it a limit can only be " +
+                            "seen on a 4-second poll, and the app can be used in between",
+                        checked = Settings.strictLimits.value,
+                        onCheckedChange = { Settings.strictLimits.set(it) },
+                    )
+                    SettingsDivider()
+                    SettingsActionRow(
+                        title = "Accessibility access",
+                        value = if (Settings.strictLimits.value) "needed" else "off",
+                        onClick = {
+                            context.startActivity(
+                                Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        },
+                    )
+                }
+            }
 
             takeIndex(SEC_ALARMS)
             item { SectionHeading("Alarms") }

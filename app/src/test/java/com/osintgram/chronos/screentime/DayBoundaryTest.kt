@@ -50,12 +50,17 @@ class DayBoundaryTest {
         val start = DayBoundary.startMillis(at1am, startHour = 7, zone = kolkata)
         val next = millis(LocalDate.of(2026, 11, 27), 7)
         assertEquals(next - start, 24L * 60 * 60 * 1000)
+        assertEquals(next, DayBoundary.endMillis(at1am, startHour = 7, zone = kolkata))
     }
 
     @Test
     fun `a moment belongs to the running day or it does not`() {
         val at1am = millis(LocalDate.of(2026, 11, 27), 1)
-        assertTrue(DayBoundary.isToday(millis(LocalDate.of(2026, 11, 26), 20), now = at1am))
-        assertFalse(DayBoundary.isToday(millis(LocalDate.of(2026, 11, 27), 9), now = at1am))
+        assertTrue(
+            DayBoundary.isToday(millis(LocalDate.of(2026, 11, 26), 20), now = at1am, startHour = 7, zone = kolkata),
+        )
+        assertFalse(
+            DayBoundary.isToday(millis(LocalDate.of(2026, 11, 27), 9), now = at1am, startHour = 7, zone = kolkata),
+        )
     }
 }

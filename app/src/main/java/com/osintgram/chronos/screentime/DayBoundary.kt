@@ -37,12 +37,15 @@ object DayBoundary {
     }
 
     /** The instant the current day ends — the next start boundary. */
-    fun endMillis(now: Long = System.currentTimeMillis()): Long =
-        startMillis(now).let { start ->
-            val zone = ZoneId.systemDefault()
-            val date = Instant.ofEpochMilli(start).atZone(zone).toLocalDate().plusDays(1)
-            date.atTime(LocalTime.of(startHour(), 0)).atZone(zone).toInstant().toEpochMilli()
-        }
+    fun endMillis(
+        now: Long = System.currentTimeMillis(),
+        startHour: Int = startHour(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): Long {
+        val start = startMillis(now, startHour, zone)
+        val date = Instant.ofEpochMilli(start).atZone(zone).toLocalDate().plusDays(1)
+        return date.atTime(LocalTime.of(startHour, 0)).atZone(zone).toInstant().toEpochMilli()
+    }
 
     /**
      * The key a moment belongs to: the date of the day that began at the start
@@ -61,8 +64,12 @@ object DayBoundary {
     fun todayKey(): String = key()
 
     /** True when [millis] falls inside the day that is running now. */
-    fun isToday(millis: Long, now: Long = System.currentTimeMillis()): Boolean =
-        millis >= startMillis(now) && millis < endMillis(now)
+    fun isToday(
+        millis: Long,
+        now: Long = System.currentTimeMillis(),
+        startHour: Int = startHour(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): Boolean = millis >= startMillis(now, startHour, zone) && millis < endMillis(now, startHour, zone)
 
     /** The date a day key refers to, or null when it is not a date. */
     fun dateOf(key: String): LocalDate? = Dates.parse(key)

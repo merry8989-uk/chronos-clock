@@ -108,6 +108,15 @@ class LimitService : Service() {
 
     private fun tick() {
         val now = System.currentTimeMillis()
+        // A heartbeat, so the Limits screen can tell "the watcher is alive" from
+        // "the switch is on but nothing is running" — the difference between a
+        // limit that works and one that is only a number.
+        runCatching {
+            getSharedPreferences("chronos_screentime", Context.MODE_PRIVATE)
+                .edit()
+                .putLong(ScreenTimeStore.KEY_WATCHER_TICK, now)
+                .apply()
+        }
         if (now - lastRefresh > REFRESH_MS) {
             lastRefresh = now
             val day = UsageSource.today(this)

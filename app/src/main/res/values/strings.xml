@@ -26,6 +26,12 @@
     <string name="widget_header_alarms">ALARMS</string>
     <string name="widget_header_holidays">HOLIDAYS</string>
     <string name="widget_header_screen_time">SCREEN TIME</string>
+
+    <!-- Accessibility service that enforces the app-time limits. The description is
+         read aloud by TalkBack on the Accessibility settings screen, so it says what
+         the service does in plain words. -->
+    <string name="limit_guard_description">Sends you to the home screen when an app you set a daily limit for has used up its time. Chronos only sees which app came to the front — never what is on the screen.</string>
+    <string name="limit_guard_summary">Blocks apps whose daily limit is used up</string>
     <string name="widget_header_next_alarm">NEXT ALARM</string>
 
     <string name="widget_action_start">Start</string>
