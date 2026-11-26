@@ -87,7 +87,8 @@ object ScreenTimeStore {
 
     // ---- Helpers -----------------------------------------------------------
 
-    fun todayKey(): String = com.osintgram.chronos.common.Dates.key()
+    /** The running day, which starts at the hour set in Settings (7 am by default). */
+    fun todayKey(): String = DayBoundary.todayKey()
 
     private fun readLimits(): Map<String, Int> = runCatching {
         val raw = prefs?.getString(KEY_LIMITS, null) ?: return emptyMap()

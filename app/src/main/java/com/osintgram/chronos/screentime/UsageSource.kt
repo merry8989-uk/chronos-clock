@@ -44,8 +44,9 @@ object UsageSource {
     /** Today's usage, per app, with launches and screen-on/unlock counts. */
     fun today(context: Context, notifications: Map<String, Int> = emptyMap()): DayScreenTime {
         if (!hasAccess(context)) return DayScreenTime()
-        val zone = ZoneId.systemDefault()
-        val start = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+        // The same boundary the limits reset on, so "today" means the same
+        // thing to the numbers and to the blocker.
+        val start = DayBoundary.startMillis()
         val end = System.currentTimeMillis()
         return runCatching { read(context, start, end, notifications) }
             .onFailure {
@@ -66,8 +67,9 @@ object UsageSource {
      */
     fun hourlyToday(context: Context): List<Long> {
         if (!hasAccess(context)) return emptyList()
-        val zone = ZoneId.systemDefault()
-        val start = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
+        // The same boundary the limits reset on, so "today" means the same
+        // thing to the numbers and to the blocker.
+        val start = DayBoundary.startMillis()
         val end = System.currentTimeMillis()
         val manager = usageManager(context) ?: return emptyList()
         return runCatching {

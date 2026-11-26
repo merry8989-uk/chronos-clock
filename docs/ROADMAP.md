@@ -396,6 +396,15 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Sessions are stored with the rest of wellness data, survive a damaged record, and travel in the backup file
 - [x] Seven unit tests for the model: how a hold reads, a hold with no blink, japa rounds, a timed sit, and an unknown practice
 
+## Shipped in 6.21.0 — limits that are actually limits
+
+- [x] **The day starts at 7 am**, not midnight. A limit that resets at 00:00 hands a fresh allowance to anyone still awake after it. Settings → Screen time → "Day starts at" (5–9 am), and every counter, limit and total now uses that one boundary
+- [x] **The blocker offers the three ways out that were asked for**: 10 more minutes (recorded against the day), off for today (comes back at the next day boundary), or raise the limit
+- [x] **The blocked app's background work is stopped** with `killBackgroundProcesses` — an app that keeps syncing and notifying has not really been stopped
+- [x] A limit is now the stored limit **plus today's bonus**, and "off for today" wins over it, so the numbers on screen and the numbers the watcher enforces are the same ones
+- [x] Accessibility-based blocking (so a limited app cannot be opened at all) and a health panel that says exactly which check is failing, in parallel
+- [x] Five tests for the day boundary: 1 am belongs to yesterday, the day ends 24 hours after it starts, and a midnight start still behaves like the old calendar day
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

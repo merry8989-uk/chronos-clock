@@ -94,6 +94,11 @@ object Settings {
 
     // ---- Screen time ------------------------------------------------------
     val screenTimeLimiter = Setting("screen_time_limiter", false)
+    /**
+     * The hour the limits reset. A midnight reset hands a fresh allowance to
+     * someone still up at 1 am, so the day starts when the user says it does.
+     */
+    val dayStartHour = Setting("day_start_hour", 7)
 
     // ---- General / diagnostics -------------------------------------------
     val keepScreenOn = Setting("keep_screen_on", false)
@@ -163,6 +168,7 @@ object Settings {
         wellnessBellTone.load(p.getString(wellnessBellTone.key, wellnessBellTone.default) ?: "classic_bell")
         healthConnectSync.load(p.getBoolean(healthConnectSync.key, healthConnectSync.default))
         screenTimeLimiter.load(p.getBoolean(screenTimeLimiter.key, screenTimeLimiter.default))
+        dayStartHour.load(p.getInt(dayStartHour.key, dayStartHour.default))
 
         keepScreenOn.load(p.getBoolean(keepScreenOn.key, keepScreenOn.default))
         confirmDelete.load(p.getBoolean(confirmDelete.key, confirmDelete.default))
@@ -236,6 +242,7 @@ object Settings {
         wellnessBellTone.resetToDefault()
         healthConnectSync.resetToDefault()
         screenTimeLimiter.resetToDefault()
+        dayStartHour.resetToDefault()
         keepScreenOn.resetToDefault()
         confirmDelete.resetToDefault()
         diagnosticsEnabled.resetToDefault()
@@ -293,6 +300,7 @@ object Settings {
         wellnessBellTone.key to wellnessBellTone.value,
         healthConnectSync.key to healthConnectSync.value,
         screenTimeLimiter.key to screenTimeLimiter.value,
+        dayStartHour.key to dayStartHour.value,
         keepScreenOn.key to keepScreenOn.value,
         confirmDelete.key to confirmDelete.value,
         diagnosticsEnabled.key to diagnosticsEnabled.value,
@@ -311,6 +319,7 @@ object Settings {
         values.forEach { (key, raw) ->
             val text = raw.toString()
             val asBool = text.toBooleanStrictOrNull()
+            val asInt = text.toIntOrNull()
             when (key) {
                 themeMode.key -> themeMode.set(text)
                 accent.key -> accent.set(text)
@@ -352,6 +361,7 @@ object Settings {
                 wellnessBellTone.key -> wellnessBellTone.set(text)
                 healthConnectSync.key -> asBool?.let { healthConnectSync.set(it) }
                 screenTimeLimiter.key -> asBool?.let { screenTimeLimiter.set(it) }
+                dayStartHour.key -> asInt?.let { dayStartHour.set(it.coerceIn(0, 23)) }
                 keepScreenOn.key -> asBool?.let { keepScreenOn.set(it) }
                 confirmDelete.key -> asBool?.let { confirmDelete.set(it) }
                 diagnosticsEnabled.key -> asBool?.let { diagnosticsEnabled.set(it) }

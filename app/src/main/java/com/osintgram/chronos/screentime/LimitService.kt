@@ -136,7 +136,13 @@ class LimitService : Service() {
             hide()
             return
         }
-        val limit = ScreenTimeStore.limitFor(foreground)
+        // "Off for today" is a deliberate choice, so it wins over the limit.
+        if (LimitEnforcement.pausedForToday(this, foreground)) {
+            hide()
+            return
+        }
+        // A limit plus today's bonus is the number that actually applies.
+        val limit = LimitEnforcement.effectiveLimitMinutes(this, foreground)
         if (limit == null) {
             hide()
             return
@@ -164,6 +170,9 @@ class LimitService : Service() {
                     "LimitService",
                     "Limit reached for $foreground: used=$used limit=${limit}m",
                 )
+                // Stop the app's background work too: an app that keeps syncing
+                // and notifying has not really been stopped.
+                stopBackgroundWork(foreground)
                 LimitOverlay.show(
                     context = this,
                     appName = UsageSource.labelFor(this, foreground),
@@ -171,8 +180,29 @@ class LimitService : Service() {
                     limitLabel = "$limit min",
                     onGoHome = { LimitOverlay.hide(); goHome() },
                     onSnooze = {
+                        // Ten more minutes is the smallest escape hatch, and it
+                        // is recorded against the day so the next tick knows.
+                        LimitEnforcement.addBonus(this, foreground, 10)
                         snoozedUntil[foreground] = System.currentTimeMillis() + SNOOZE_MS
                         hide()
+                    },
+                    onOffForToday = {
+                        LimitEnforcement.pauseForToday(this, foreground)
+                        hide()
+                    },
+                    onRaiseLimit = {
+                        // Raising a limit is a decision, so it opens the screen
+                        // where limits live rather than guessing a number.
+                        hide()
+                        runCatching {
+                            startActivity(
+                                Intent(this, MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    .putExtra("open_screen_time_limits", true),
+                            )
+                        }.onFailure {
+                            DiagnosticsLogger.log("LimitService", "Could not open limits: ${it.message}")
+                        }
                     },
                 )
             }
@@ -191,6 +221,28 @@ class LimitService : Service() {
         if (shownFor != null) {
             shownFor = null
             LimitOverlay.hide()
+        }
+    }
+
+    /**
+     * Kills the app's background processes.
+     *
+     * `killBackgroundProcesses` is the only tool a normal app has for this: it
+     * does not stop the app from being launched again, which is why the blocker
+     * and the accessibility guard exist, but it does stop the work it left
+     * running — the sync, the listener, the notification that would otherwise
+     * keep arriving after the limit is up.
+     */
+    private fun stopBackgroundWork(packageName: String) {
+        runCatching {
+            val manager = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+            manager.killBackgroundProcesses(packageName)
+            DiagnosticsLogger.log("LimitService", "Stopped background work of $packageName")
+        }.onFailure {
+            DiagnosticsLogger.log(
+                "LimitService",
+                "Could not stop $packageName: ${it.javaClass.simpleName}: ${it.message}",
+            )
         }
     }
 
@@ -244,7 +296,7 @@ class LimitService : Service() {
         private const val NOTIFICATION_ID = 4242
         private const val TICK_MS = 4_000L
         private const val REFRESH_MS = 60_000L
-        private const val SNOOZE_MS = 5 * 60_000L
+        private const val SNOOZE_MS = 10 * 60_000L
         private const val STATE_LOG_MS = 60_000L
 
         /** Starts or stops the watcher to match the setting. */
@@ -284,6 +336,8 @@ object LimitOverlay {
         limitLabel: String,
         onGoHome: () -> Unit,
         onSnooze: () -> Unit,
+        onOffForToday: () -> Unit,
+        onRaiseLimit: () -> Unit,
     ) {
         if (!android.provider.Settings.canDrawOverlays(context)) {
             DiagnosticsLogger.log("LimitService", "Overlay permission missing; cannot block")
@@ -324,8 +378,29 @@ object LimitOverlay {
             )
             layout.addView(
                 Button(context).apply {
-                    text = "5 more minutes"
+                    text = "10 more minutes"
                     setOnClickListener { onSnooze() }
+                },
+            )
+            layout.addView(
+                Button(context).apply {
+                    text = "Off for today"
+                    setOnClickListener { onOffForToday() }
+                },
+            )
+            layout.addView(
+                Button(context).apply {
+                    text = "Raise the limit"
+                    setOnClickListener { onRaiseLimit() }
+                },
+            )
+            layout.addView(
+                TextView(context).apply {
+                    text = "The limit comes back at the start of your next day."
+                    textSize = 12f
+                    setTextColor(Color.parseColor("#9AA3B2"))
+                    gravity = Gravity.CENTER
+                    setPadding(0, 24, 0, 0)
                 },
             )
 
