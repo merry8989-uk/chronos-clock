@@ -36,7 +36,7 @@ data class AccessItem(
  */
 object SpecialAccess {
 
-    fun items(context: Context): List<AccessItem> = listOf(
+    fun items(context: Context): List<AccessItem> = listOfNotNull(
         AccessItem(
             title = "Install unknown apps",
             state = if (canInstall(context)) "Allowed" else "Not allowed",
@@ -95,16 +95,25 @@ object SpecialAccess {
             title = "Usage access",
             state = if (hasUsageAccess(context)) "Allowed" else "Not allowed",
             granted = hasUsageAccess(context),
-            usedBy = "Screen time: app usage, launch counts and the limit watcher",
+            usedBy = if (com.osintgram.chronos.data.Settings.limitsEnabled.value) {
+                "Screen time: app usage, launch counts and the limit watcher"
+            } else {
+                "Screen time: app usage and launch counts"
+            },
             openSettings = { start(context, Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
         ),
-        AccessItem(
-            title = "Block apps when a limit is up",
-            state = if (limitGuardEnabled(context)) "Allowed" else "Not allowed",
-            granted = limitGuardEnabled(context),
-            usedBy = "Screen time: sends you home and stops an app once its daily limit is used",
-            openSettings = { start(context, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
-        ),
+        // Part of the limit feature, so it is absent while that feature is off.
+        if (com.osintgram.chronos.data.Settings.limitsEnabled.value) {
+            AccessItem(
+                title = "Block apps when a limit is up",
+                state = if (limitGuardEnabled(context)) "Allowed" else "Not allowed",
+                granted = limitGuardEnabled(context),
+                usedBy = "Screen time: sends you home and stops an app once its daily limit is used",
+                openSettings = { start(context, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+            )
+        } else {
+            null
+        },
         AccessItem(
             title = "All files access",
             state = if (hasAllFiles(context)) "Allowed" else "Not allowed",

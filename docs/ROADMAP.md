@@ -413,6 +413,13 @@ Effort: **S** ≈ half a day, **M** ≈ 1–3 days, **L** ≈ a week or more.
 - [x] Finished sessions are recorded and travel in the backup file
 - [x] Tests that hold the content honest: no empty step, no zero-length step, no session without a note, unique ids, both kinds present
 
+## Changed in 6.23.0 — the time-limit feature is switched off
+
+- [x] **The whole limit feature is off**: no Limits tab, no watcher, no blocker, no accessibility guard, no limit settings, no limit rows in Special access
+- [x] Screen time itself is untouched — today's total, the hourly chart, the seven-day trend, per-app usage, launches, notification counts and the screen-time widget all still work
+- [x] The code is **kept, not deleted**, behind `Settings.limitsEnabled` (default off). Every entry point checks it, so nothing of the feature can run while it is off, and it can be switched back on without being rebuilt
+- [x] A running watcher stops itself on its next tick when the flag is off, rather than waiting for a reboot
+
 ## Next — alarms
 
 - [ ] **P1 M** Reliability check wizard: exact alarms, notifications, battery optimisation, DND — checked and explained in one screen

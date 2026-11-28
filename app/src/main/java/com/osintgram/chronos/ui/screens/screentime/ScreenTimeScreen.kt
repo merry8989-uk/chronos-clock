@@ -127,13 +127,22 @@ fun ScreenTimeScreen() {
     // what happens next instead of sitting on the screen before it is asked for.
     var blockerTested by remember { mutableStateOf(false) }
 
-    val current = ScreenTab.entries.firstOrNull { it.name == tab } ?: ScreenTab.Today
+    // With the limit feature off, the Limits tab does not exist — not a tab that
+    // says "off", no tab at all. The usage numbers stay where they are.
+    val tabs = if (Settings.limitsEnabled.value) {
+        ScreenTab.entries
+    } else {
+        ScreenTab.entries.filter { it != ScreenTab.Limits }
+    }
+    val current = tabs.firstOrNull { it.name == tab } ?: ScreenTab.Today
     val usageAccess = remember(tick, refresh) { UsageSource.hasAccess(context) }
     val listenerEnabled = remember(tick, refresh) { NotificationWatcher.isEnabled(context) }
     val day = remember(refresh, tick, listenerEnabled) {
         UsageSource.today(context, ScreenTimeStore.notificationsFor())
     }
-    val limits = ScreenTimeStore.allLimits()
+    // With the limit feature off, the screen shows usage and nothing about
+    // limits — not a zero, not a budget, not a tab.
+    val limits = if (Settings.limitsEnabled.value) ScreenTimeStore.allLimits() else emptyMap()
     val week = remember(refresh, tick, usageAccess) { UsageSource.week(context) }
     val use24Hour = Settings.use24Hour.value
     val currentHour = remember(refresh, tick) { java.time.LocalTime.now().hour }
@@ -168,7 +177,7 @@ fun ScreenTimeScreen() {
     ) {
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                items(ScreenTab.entries, key = { it.name }) { entry ->
+                items(tabs, key = { it.name }) { entry ->
                     Pill(
                         text = entry.label,
                         selected = entry == current,
@@ -433,7 +442,13 @@ fun ScreenTimeScreen() {
                     }
                 }
 
-                ScreenTab.Limits -> {
+                ScreenTab.Limits -> if (!Settings.limitsEnabled.value) {
+                    item {
+                        // Unreachable through the bar, kept so the when is
+                        // exhaustive; says why rather than showing a dead tab.
+                        WellnessNote("Limits are turned off in this build.")
+                    }
+                } else {
                     item {
                         Surface(
                             color = MaterialTheme.colorScheme.surface,

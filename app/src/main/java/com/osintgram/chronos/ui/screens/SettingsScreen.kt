@@ -600,6 +600,9 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
 
             // ---- Alarms -------------------------------------------------------
             // ---- Screen time ---------------------------------------------------
+            // The limit feature is off in this build, so none of its settings are
+            // shown: a switch for something that cannot run is worse than no switch.
+            if (Settings.limitsEnabled.value) {
             takeIndex(SEC_SCREEN_TIME)
             item { SectionHeading("Screen time") }
             item {
@@ -644,6 +647,7 @@ fun SettingsScreen(onBack: () -> Unit, scrollTo: String? = null) {
                         },
                     )
                 }
+            }
             }
 
             takeIndex(SEC_ALARMS)
