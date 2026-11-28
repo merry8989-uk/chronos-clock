@@ -119,6 +119,8 @@ class LimitGuardService : AccessibilityService() {
 
         // The off switch. Honest design: when the user turns strong limits off,
         // this service does nothing at all, rather than half-doing it.
+        // The whole feature off, or strict blocking off: do nothing at all.
+        if (!Settings.limitsEnabled.value) return
         if (!Settings.strictLimits.value) return
 
         // The limit that actually applies: the stored one plus today's bonus,

@@ -93,6 +93,15 @@ object Settings {
     val healthConnectSync = Setting("wellness_health_connect", true)
 
     // ---- Screen time ------------------------------------------------------
+    /**
+     * The app-time limit feature as a whole: the Limits tab, the watcher, the
+     * blocker and the accessibility guard.
+     *
+     * Off by default. The code is kept and every entry point checks this flag,
+     * so the feature can come back without being rebuilt — and so nothing of it
+     * can run while it is off.
+     */
+    val limitsEnabled = Setting("limits_enabled", false)
     val screenTimeLimiter = Setting("screen_time_limiter", false)
     /**
      * The hour the limits reset. A midnight reset hands a fresh allowance to
@@ -173,6 +182,7 @@ object Settings {
         wellnessBell.load(p.getBoolean(wellnessBell.key, wellnessBell.default))
         wellnessBellTone.load(p.getString(wellnessBellTone.key, wellnessBellTone.default) ?: "classic_bell")
         healthConnectSync.load(p.getBoolean(healthConnectSync.key, healthConnectSync.default))
+        limitsEnabled.load(p.getBoolean(limitsEnabled.key, limitsEnabled.default))
         screenTimeLimiter.load(p.getBoolean(screenTimeLimiter.key, screenTimeLimiter.default))
         dayStartHour.load(p.getInt(dayStartHour.key, dayStartHour.default))
         strictLimits.load(p.getBoolean(strictLimits.key, strictLimits.default))
@@ -248,6 +258,7 @@ object Settings {
         wellnessBell.resetToDefault()
         wellnessBellTone.resetToDefault()
         healthConnectSync.resetToDefault()
+        limitsEnabled.resetToDefault()
         screenTimeLimiter.resetToDefault()
         dayStartHour.resetToDefault()
         strictLimits.resetToDefault()
@@ -307,6 +318,7 @@ object Settings {
         wellnessBell.key to wellnessBell.value,
         wellnessBellTone.key to wellnessBellTone.value,
         healthConnectSync.key to healthConnectSync.value,
+        limitsEnabled.key to limitsEnabled.value,
         screenTimeLimiter.key to screenTimeLimiter.value,
         dayStartHour.key to dayStartHour.value,
         strictLimits.key to strictLimits.value,
@@ -369,6 +381,7 @@ object Settings {
                 wellnessBell.key -> asBool?.let { wellnessBell.set(it) }
                 wellnessBellTone.key -> wellnessBellTone.set(text)
                 healthConnectSync.key -> asBool?.let { healthConnectSync.set(it) }
+                limitsEnabled.key -> asBool?.let { limitsEnabled.set(it) }
                 screenTimeLimiter.key -> asBool?.let { screenTimeLimiter.set(it) }
                 dayStartHour.key -> asInt?.let { dayStartHour.set(it.coerceIn(0, 23)) }
                 strictLimits.key -> asBool?.let { strictLimits.set(it) }

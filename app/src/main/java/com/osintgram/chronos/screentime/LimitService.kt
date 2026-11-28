@@ -61,6 +61,11 @@ class LimitService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        if (!Settings.limitsEnabled.value) {
+            DiagnosticsLogger.log("LimitService", "Limit feature is off; not starting")
+            stopSelf()
+            return
+        }
         ensureChannel()
         startForegroundCompat()
         pollJob = scope.launch {
@@ -107,6 +112,13 @@ class LimitService : Service() {
     // ---- the loop ----------------------------------------------------------
 
     private fun tick() {
+        // A flag flipped mid-run stops the enforcement on the next tick, not on
+        // the next reboot.
+        if (!Settings.limitsEnabled.value) {
+            DiagnosticsLogger.log("LimitService", "Limit feature turned off; stopping")
+            stopSelf()
+            return
+        }
         val now = System.currentTimeMillis()
         // A heartbeat, so the Limits screen can tell "the watcher is alive" from
         // "the switch is on but nothing is running" — the difference between a
@@ -311,6 +323,11 @@ class LimitService : Service() {
         /** Starts or stops the watcher to match the setting. */
         fun sync(context: Context) {
             val intent = Intent(context, LimitService::class.java)
+            // The feature is off: make sure nothing of it is left running.
+            if (!Settings.limitsEnabled.value) {
+                runCatching { context.stopService(intent) }
+                return
+            }
             if (Settings.screenTimeLimiter.value && ScreenTimeStore.allLimits().isNotEmpty()) {
                 runCatching {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
